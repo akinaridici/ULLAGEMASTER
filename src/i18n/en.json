@@ -1,0 +1,117 @@
+{
+  "app_name": "UllageMaster",
+  "language": "English",
+  
+  "menu": {
+    "file": "File",
+    "new_voyage": "New Voyage",
+    "open_voyage": "Open Voyage",
+    "save_voyage": "Save Voyage",
+    "export": "Export",
+    "export_excel": "Export to Excel",
+    "export_pdf": "Export to PDF",
+    "export_ascii": "Export to ASCII",
+    "export_json": "Export Stowage Plan (JSON)",
+    "exit": "Exit",
+    "settings": "Settings",
+    "ship_config": "Ship Configuration",
+    "preferences": "Preferences",
+    "help": "Help",
+    "about": "About"
+  },
+  
+  "header": {
+    "loading_port": "Loading Port",
+    "loading_terminal": "Loading Terminal",
+    "voyage_no": "Voyage No",
+    "date": "Date",
+    "vef": "V.E.F.",
+    "draft_aft": "Draft AFT",
+    "draft_fwd": "Draft FWD",
+    "trim": "Trim",
+    "present_port": "Present Port",
+    "present_terminal": "Present Terminal"
+  },
+  
+  "grid": {
+    "tank_no": "Tank No",
+    "parcel": "Parcel",
+    "grades": "Grades (Products)",
+    "receiver": "Receiver",
+    "receiver_tank": "Tank No",
+    "ullage": "Ullage",
+    "fill_percent": "% Fill",
+    "trim_corr": "Trim Corr",
+    "corr": "Corr",
+    "tov": "TOV",
+    "temp": "Temp",
+    "thermal_corr": "Thermal Corr",
+    "vac_dens": "VAC Dens",
+    "air_dens": "Air Dens",
+    "vcf": "VCF",
+    "gsv": "GSV",
+    "mt_air": "MT (Air)",
+    "m3_vac": "M3 (VAC)",
+    "bl_figure": "B/L Figure",
+    "discrepancy": "Discrepancy"
+  },
+  
+  "footer": {
+    "total_gsv": "Total GSV",
+    "total_mt": "Total MT",
+    "discrepancy_loading": "Discrepancy (Loading)",
+    "discrepancy_discharging": "Discrepancy (Discharging)",
+    "chief_officer": "Chief Officer",
+    "master": "Master",
+    "stowage_plan": "Stowage Plan",
+    "total_ullage_report": "Total Ullage Report"
+  },
+  
+  "dialogs": {
+    "ship_setup_title": "Ship Configuration",
+    "ship_name": "Ship Name",
+    "tank_pairs": "Number of Tank Pairs",
+    "tank_capacity": "Capacity (m³)",
+    "upload_ullage_table": "Upload Ullage Table",
+    "upload_trim_table": "Upload Trim Table",
+    "save": "Save",
+    "cancel": "Cancel",
+    "ok": "OK"
+  },
+  
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "unit_system": "Unit System",
+    "metric": "Metric (M³, °C, kg/m³)",
+    "imperial": "Imperial (BBL, °F, API)",
+    "default_vef": "Default V.E.F."
+  },
+  
+  "warnings": {
+    "high_high": "HIGH HIGH - Loading must stop!",
+    "high": "HIGH - Approaching maximum level",
+    "low": "LOW - Slosh effect warning",
+    "normal": ""
+  },
+  
+  "messages": {
+    "save_success": "Voyage saved successfully",
+    "save_error": "Error saving voyage",
+    "load_success": "Voyage loaded successfully",
+    "load_error": "Error loading voyage",
+    "export_success": "Export completed successfully",
+    "export_error": "Error during export",
+    "invalid_input": "Invalid input value",
+    "missing_table": "Ullage table not loaded for this tank"
+  },
+  
+  "units": {
+    "cm": "cm",
+    "m": "m",
+    "m3": "m³",
+    "mt": "MT",
+    "celsius": "°C",
+    "kg_m3": "kg/m³"
+  }
+}

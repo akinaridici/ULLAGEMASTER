@@ -1,0 +1,108 @@
+{
+    "app_name": "UllageMaster",
+    "language": "Türkçe",
+    "menu": {
+        "file": "Dosya",
+        "new_voyage": "Yeni Sefer",
+        "open_voyage": "Sefer Aç",
+        "save_voyage": "Seferi Kaydet",
+        "export": "Dışa Aktar",
+        "export_excel": "Excel'e Aktar",
+        "export_pdf": "PDF'e Aktar",
+        "export_ascii": "ASCII'ye Aktar",
+        "export_json": "İstifleme Planı (JSON)",
+        "exit": "Çıkış",
+        "settings": "Ayarlar",
+        "ship_config": "Gemi Konfigürasyonu",
+        "preferences": "Tercihler",
+        "help": "Yardım",
+        "about": "Hakkında"
+    },
+    "header": {
+        "loading_port": "Yükleme Limanı",
+        "loading_terminal": "Yükleme Terminali",
+        "voyage_no": "Sefer No",
+        "date": "Tarih",
+        "vef": "V.E.F.",
+        "draft_aft": "Kıç Draft",
+        "draft_fwd": "Baş Draft",
+        "trim": "Trim",
+        "present_port": "Mevcut Liman",
+        "present_terminal": "Mevcut Terminal"
+    },
+    "grid": {
+        "tank_no": "Tank No",
+        "parcel": "Parsel",
+        "grades": "Ürün Cinsi",
+        "receiver": "Alıcı",
+        "receiver_tank": "Tank No",
+        "ullage": "Ullage",
+        "fill_percent": "% Doluluk",
+        "trim_corr": "Trim Düz.",
+        "corr": "Düz.",
+        "tov": "TOV",
+        "temp": "Sıcaklık",
+        "thermal_corr": "Isıl Düz.",
+        "vac_dens": "VAC Yoğ.",
+        "air_dens": "Hava Yoğ.",
+        "vcf": "VCF",
+        "gsv": "GSV",
+        "mt_air": "MT (Hava)",
+        "m3_vac": "M3 (VAC)",
+        "bl_figure": "Konşimento",
+        "discrepancy": "Fark"
+    },
+    "footer": {
+        "total_gsv": "Toplam GSV",
+        "total_mt": "Toplam MT",
+        "discrepancy_loading": "Fark (Yükleme)",
+        "discrepancy_discharging": "Fark (Boşaltma)",
+        "chief_officer": "Birinci Kaptan",
+        "master": "Kaptan",
+        "stowage_plan": "İstifleme Planı",
+        "total_ullage_report": "Toplam Ullage Raporu"
+    },
+    "dialogs": {
+        "ship_setup_title": "Gemi Konfigürasyonu",
+        "ship_name": "Gemi Adı",
+        "tank_pairs": "Tank Çifti Sayısı",
+        "tank_capacity": "Kapasite (m³)",
+        "upload_ullage_table": "Ullage Tablosu Yükle",
+        "upload_trim_table": "Trim Tablosu Yükle",
+        "save": "Kaydet",
+        "cancel": "İptal",
+        "ok": "Tamam"
+    },
+    "settings": {
+        "title": "Ayarlar",
+        "language": "Dil",
+        "unit_system": "Birim Sistemi",
+        "metric": "Metrik (M³, °C, kg/m³)",
+        "imperial": "İngiliz (BBL, °F, API)",
+        "default_vef": "Varsayılan V.E.F."
+    },
+    "warnings": {
+        "high_high": "ÇOK YÜKSEK - Yükleme durdurulmalı!",
+        "high": "YÜKSEK - Maksimum seviyeye yaklaşılıyor",
+        "low": "DÜŞÜK - Çalkalanma etkisi uyarısı",
+        "normal": ""
+    },
+    "messages": {
+        "save_success": "Sefer başarıyla kaydedildi",
+        "save_error": "Sefer kaydedilirken hata oluştu",
+        "load_success": "Sefer başarıyla yüklendi",
+        "load_error": "Sefer yüklenirken hata oluştu",
+        "export_success": "Dışa aktarma başarılı",
+        "export_error": "Dışa aktarma sırasında hata",
+        "invalid_input": "Geçersiz giriş değeri",
+        "missing_table": "Bu tank için ullage tablosu yüklenmemiş"
+    },
+    "units": {
+        "cm": "cm",
+        "m": "m",
+        "m3": "m³",
+        "mt": "MT",
+        "celsius": "°C",
+        "kg_m3": "kg/m³"
+    }
+}

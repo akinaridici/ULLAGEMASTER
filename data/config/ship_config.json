@@ -1,0 +1,105 @@
+{
+  "ship_name": "M/T EXAMPLE",
+  "tank_pairs": 6,
+  "default_vef": 1.0,
+  "tanks": [
+    {
+      "id": "1P",
+      "name": "No.1 Port",
+      "capacity_m3": 947.346,
+      "ullage_table_path": "D:/ULLAGEMASTER/data/Ullages/cot1p.csv",
+      "trim_table_path": ""
+    },
+    {
+      "id": "1S",
+      "name": "No.1 Starboard",
+      "capacity_m3": 946.611,
+      "ullage_table_path": "D:/ULLAGEMASTER/data/Ullages/cot1s.csv",
+      "trim_table_path": ""
+    },
+    {
+      "id": "2P",
+      "name": "No.2 Port",
+      "capacity_m3": 0.0,
+      "ullage_table_path": "",
+      "trim_table_path": ""
+    },
+    {
+      "id": "2S",
+      "name": "No.2 Starboard",
+      "capacity_m3": 0.0,
+      "ullage_table_path": "",
+      "trim_table_path": ""
+    },
+    {
+      "id": "3P",
+      "name": "No.3 Port",
+      "capacity_m3": 0.0,
+      "ullage_table_path": "",
+      "trim_table_path": ""
+    },
+    {
+      "id": "3S",
+      "name": "No.3 Starboard",
+      "capacity_m3": 0.0,
+      "ullage_table_path": "",
+      "trim_table_path": ""
+    },
+    {
+      "id": "4P",
+      "name": "No.4 Port",
+      "capacity_m3": 0.0,
+      "ullage_table_path": "",
+      "trim_table_path": ""
+    },
+    {
+      "id": "4S",
+      "name": "No.4 Starboard",
+      "capacity_m3": 0.0,
+      "ullage_table_path": "",
+      "trim_table_path": ""
+    },
+    {
+      "id": "5P",
+      "name": "No.5 Port",
+      "capacity_m3": 0.0,
+      "ullage_table_path": "",
+      "trim_table_path": ""
+    },
+    {
+      "id": "5S",
+      "name": "No.5 Starboard",
+      "capacity_m3": 0.0,
+      "ullage_table_path": "",
+      "trim_table_path": ""
+    },
+    {
+      "id": "6P",
+      "name": "No.6 Port",
+      "capacity_m3": 0.0,
+      "ullage_table_path": "",
+      "trim_table_path": ""
+    },
+    {
+      "id": "6S",
+      "name": "No.6 Starboard",
+      "capacity_m3": 0.0,
+      "ullage_table_path": "",
+      "trim_table_path": ""
+    },
+    {
+      "id": "SlopP",
+      "name": "Slop Port",
+      "capacity_m3": 0.0,
+      "ullage_table_path": "",
+      "trim_table_path": ""
+    },
+    {
+      "id": "SlopS",
+      "name": "Slop Starboard",
+      "capacity_m3": 0.0,
+      "ullage_table_path": "",
+      "trim_table_path": ""
+    }
+  ]
+}
