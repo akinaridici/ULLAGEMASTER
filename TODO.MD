@@ -75,6 +75,28 @@
 
 ---
 
+## Phase 10: Enhanced Reporting (Future)
+> **Note**: Implement after core app is complete.
+
+- [ ] Install Jinja2 + WeasyPrint for HTML/CSS-based PDF reports
+- [ ] Create flexible report template (`templates/ullage_report.html`)
+  - Dynamic tank loops (supports 6, 8, 9, 10 tank pair configurations)
+  - Conditional sections (slop tanks, thermal correction, etc.)
+  - Receiver-based cargo grouping
+  - Rich CSS styling (gradients, shadows, maritime theme)
+- [ ] Add page headers/footers with company branding
+- [ ] Support for embedded charts (cargo summary pie chart)
+- [ ] HTML preview before PDF export
+- [ ] Replace current ReportLab PDF with WeasyPrint
+
+**Why Jinja2 + WeasyPrint?**
+- Single template works for ALL ship configurations (no code changes needed)
+- Full CSS3 support for elegant, professional reports
+- Easy to iterate on design (preview in browser)
+- Data-driven: `{% for tank in tanks %}` handles any number of tanks
+
+---
+
 ## How to Run
 ```powershell
 cd d:\ULLAGEMASTER
