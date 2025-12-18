@@ -117,7 +117,6 @@ def _parse_ullage_sheet(ws, result: TemplateParseResult):
 def _parse_trim_sheet(ws, result: TemplateParseResult):
     """Parse the TRIM_CORRECTION sheet."""
     current_tank = None
-    trim_values = [-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0]
     
     for row in range(1, ws.max_row + 1):
         cell_val = ws.cell(row=row, column=1).value
@@ -130,9 +129,23 @@ def _parse_trim_sheet(ws, result: TemplateParseResult):
             
             # Check for header row
             if cell_val == "Ullage_mm":
-                # Read data rows below
+                # Dynamically determine trim values from headers
+                trim_headers = [] # List of (column_index, trim_value)
+                for col_idx in range(2, ws.max_column + 1):
+                    header_val = ws.cell(row=row, column=col_idx).value
+                    if header_val is not None:
+                        try:
+                            # Try to extract number from string like "-2.0m" or "+0.5m" or just "-2.0"
+                            header_str = str(header_val).lower().replace('m', '').replace('+', '').strip()
+                            trim_val = float(header_str)
+                            trim_headers.append((col_idx, trim_val))
+                        except (ValueError, TypeError):
+                            continue
+                
+                # Read all data rows below until empty
                 trim_data = []
-                for data_row in range(row + 1, row + 20):
+                data_row = row + 1
+                while data_row <= ws.max_row:
                     ullage_val = ws.cell(row=data_row, column=1).value
                     if ullage_val is None:
                         break
@@ -140,8 +153,8 @@ def _parse_trim_sheet(ws, result: TemplateParseResult):
                     try:
                         ullage_mm = int(float(ullage_val))
                         
-                        for trim_idx, trim_val in enumerate(trim_values, 2):
-                            correction = ws.cell(row=data_row, column=trim_idx).value
+                        for col_idx, trim_val in trim_headers:
+                            correction = ws.cell(row=data_row, column=col_idx).value
                             if correction is not None:
                                 trim_data.append({
                                     'ullage_cm': ullage_mm / 10.0,
@@ -149,10 +162,18 @@ def _parse_trim_sheet(ws, result: TemplateParseResult):
                                     'correction_m3': float(correction)
                                 })
                     except (ValueError, TypeError):
-                        continue
+                        pass # Skip invalid rows
+                    
+                    data_row += 1
                 
                 if current_tank and trim_data:
-                    result.trim_tables[current_tank] = pd.DataFrame(trim_data)
+                    # If we already have data for this tank (from another section?), append it
+                    if current_tank in result.trim_tables:
+                        existing_df = result.trim_tables[current_tank]
+                        new_df = pd.DataFrame(trim_data)
+                        result.trim_tables[current_tank] = pd.concat([existing_df, new_df]).drop_duplicates().reset_index(drop=True)
+                    else:
+                        result.trim_tables[current_tank] = pd.DataFrame(trim_data)
 
 
 def _parse_thermal_sheet(ws, result: TemplateParseResult):

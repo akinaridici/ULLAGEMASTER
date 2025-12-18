@@ -30,7 +30,9 @@ from export import (
     export_stowage_plan, export_ascii_report, 
     export_to_excel, export_to_pdf
 )
-from ui.dialogs import ShipSetupDialog, PreferencesDialog
+from ui.dialogs import ShipSetupDialog, ShipSetupWizard, PreferencesDialog
+from utils import config_exists, load_config, save_config
+import pandas as pd
 
 from .styles import (
     COLOR_CELL_INPUT, COLOR_CELL_CALCULATED, COLOR_CELL_TEXT,
@@ -51,23 +53,26 @@ class MainWindow(QMainWindow):
     """Main application window."""
     
     # Column definitions: (key, header, width, is_input, is_numeric)
+    # Only Ullage, Temp, and Parcel are user-editable
     COLUMNS = [
         ("tank_id", "Tank", 60, False, False),
-        ("parcel", "Parcel", 60, True, False),
-        ("grade", "Grade", 100, True, False),
-        ("receiver", "Receiver", 100, True, False),
-        ("receiver_tank", "Tank No", 60, True, False),
-        ("ullage", "Ullage", 70, True, True),
-        ("fill_percent", "% Fill", 60, True, True),
+        ("parcel", "Parcel", 70, True, False),        # Dropdown
+        ("grade", "Grade", 100, False, False),        # Auto from parcel
+        ("receiver", "Receiver", 100, False, False),  # Auto from parcel
+        ("receiver_tank", "Tank No", 60, False, False),
+        ("ullage", "Ullage", 70, True, True),         # User input
+        ("temp", "Temp", 60, True, True),             # User input
+        ("fill_percent", "% Fill", 60, False, True),
         ("trim_corr", "Trim Corr", 70, False, True),
+        ("corrected_ullage", "Corr Ullage", 80, False, True),
         ("tov", "TOV", 90, False, True),
-        ("temp", "Temp", 60, True, True),
+        ("therm_corr", "Therm.Corr", 80, False, True),  # Thermal correction factor
+        ("gov", "GOV", 90, False, True),                # TOV * Therm.Corr
         ("vcf", "VCF", 80, False, True),
-        ("density_vac", "VAC Dens", 80, True, True),
+        ("density_vac", "VAC Dens", 80, False, True), # Auto from parcel
         ("density_air", "Air Dens", 80, False, True),
         ("gsv", "GSV", 90, False, True),
         ("mt_air", "MT (Air)", 90, False, True),
-        ("bl_figure", "B/L Figure", 90, True, True),
         ("discrepancy", "Disc %", 70, False, True),
     ]
     
@@ -114,6 +119,12 @@ class MainWindow(QMainWindow):
         
         file_menu.addSeparator()
         
+        parcels_action = QAction("Edit Parcels...", self)
+        parcels_action.triggered.connect(self._edit_parcels)
+        file_menu.addAction(parcels_action)
+        
+        file_menu.addSeparator()
+        
         # Export submenu
         export_menu = file_menu.addMenu(t("export", "menu"))
         
@@ -146,6 +157,18 @@ class MainWindow(QMainWindow):
         ship_config_action = QAction(t("ship_config", "menu"), self)
         ship_config_action.triggered.connect(self._show_ship_config)
         settings_menu.addAction(ship_config_action)
+        
+        settings_menu.addSeparator()
+        
+        import_config_action = QAction("Import Configuration...", self)
+        import_config_action.triggered.connect(self._import_config)
+        settings_menu.addAction(import_config_action)
+        
+        delete_config_action = QAction("Delete Configuration (Fresh Start)", self)
+        delete_config_action.triggered.connect(self._delete_config)
+        settings_menu.addAction(delete_config_action)
+        
+        settings_menu.addSeparator()
         
         prefs_action = QAction(t("preferences", "menu"), self)
         prefs_action.triggered.connect(self._show_preferences)
@@ -248,6 +271,13 @@ class MainWindow(QMainWindow):
         table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectItems)
         
+        # Enable editing - but NOT on selection change (allows multiselect)
+        table.setEditTriggers(
+            QAbstractItemView.EditTrigger.DoubleClicked |
+            QAbstractItemView.EditTrigger.AnyKeyPressed |
+            QAbstractItemView.EditTrigger.EditKeyPressed
+        )
+        
         # Connect signals
         table.cellChanged.connect(self._on_cell_changed)
         
@@ -260,24 +290,28 @@ class MainWindow(QMainWindow):
         # Install event filter for bulk input
         table.installEventFilter(self)
         
+        # Enable context menu
+        table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        table.customContextMenuRequested.connect(self._show_context_menu)
+        
         return table
     
     def eventFilter(self, obj, event):
         """Handle key events for bulk input on selected cells."""
         if obj == self.tank_table and event.type() == event.Type.KeyPress:
             selected = self.tank_table.selectedItems()
+            # print(f"DEBUG: Key {repr(event.text())} Selected {len(selected)}")
             if len(selected) > 1:
                 # Multiple cells selected - handle bulk input
-                key = event.key()
-                if key in (Qt.Key.Key_0, Qt.Key.Key_1, Qt.Key.Key_2, Qt.Key.Key_3, 
-                           Qt.Key.Key_4, Qt.Key.Key_5, Qt.Key.Key_6, Qt.Key.Key_7,
-                           Qt.Key.Key_8, Qt.Key.Key_9, Qt.Key.Key_Period):
-                    # Numeric key pressed - prompt for value
-                    self._handle_bulk_input(selected)
-                    return True
+                text = event.text()
+                # Check for printable characters (numbers, dot, comma, minus, plus)
+                # This handles both main keyboard and numpad
+                if text and (text.isalnum() or text in ".-+,"):
+                     self._handle_bulk_input(selected, text)
+                     return True
         return super().eventFilter(obj, event)
     
-    def _handle_bulk_input(self, selected_items):
+    def _handle_bulk_input(self, selected_items, initial_char=""):
         """Handle bulk input for multiple selected cells."""
         # Check if all selected cells are in the same column
         columns = set(item.column() for item in selected_items)
@@ -294,18 +328,27 @@ class MainWindow(QMainWindow):
                 "Cannot edit calculated columns.")
             return
         
-        # Prompt for value
+        # Prompt for value (dialog opens empty, user types full value)
         if is_numeric:
-            value, ok = QInputDialog.getDouble(
+            text, ok = QInputDialog.getText(
                 self, f"Bulk Input - {header}",
-                f"Enter value for all {len(selected_items)} selected cells:",
-                decimals=2
+                f"Enter value for all {len(selected_items)} selected cells:"
             )
+            if ok and text:
+                try:
+                    value = float(text)
+                except ValueError:
+                    QMessageBox.warning(self, "Invalid Input", "Please enter a valid number.")
+                    return
+            else:
+                return
         else:
             value, ok = QInputDialog.getText(
                 self, f"Bulk Input - {header}",
                 f"Enter value for all {len(selected_items)} selected cells:"
             )
+            if not ok:
+                return
         
         if ok:
             self.tank_table.blockSignals(True)
@@ -370,26 +413,40 @@ class MainWindow(QMainWindow):
     
     def _init_default_data(self):
         """Initialize with default ship configuration."""
-        # Try to load saved ship config
-        config_path = self._get_config_path()
-        if config_path.exists():
-            try:
-                self.ship_config = ShipConfig.load_from_json(str(config_path))
-                self.status_bar.showMessage(f"Loaded ship config: {self.ship_config.ship_name}")
-                # Load ullage/trim tables
-                self._load_tank_tables()
-            except Exception as e:
-                print(f"Error loading config: {e}")
-                self.ship_config = ShipConfig.create_default("M/T EXAMPLE", 6)
+        # Single load pattern: try to load config directly
+        self.ship_config = load_config()
+        
+        if self.ship_config and self.ship_config.tanks:
+            # Config loaded successfully
+            self.status_bar.showMessage(f"Loaded ship config: {self.ship_config.ship_name}")
+            self._load_tank_tables()
         else:
-            # Create default ship with 6 tank pairs
-            self.ship_config = ShipConfig.create_default("M/T EXAMPLE", 6)
+            # No config or empty - show setup wizard
+            self._show_first_time_setup()
         
         # Create voyage
         self.voyage = Voyage.create_new("001/2024", "EXAMPLE PORT", "EXAMPLE TERMINAL")
         
         # Populate grid
         self._populate_grid()
+    
+    def _show_first_time_setup(self):
+        """Show the ship configuration wizard for first-time setup."""
+        from ui.dialogs import ShipSetupWizard
+        from PyQt6.QtWidgets import QWizard
+        
+        wizard = ShipSetupWizard(self)
+        if wizard.exec() == QWizard.DialogCode.Accepted:
+            self.ship_config = wizard.get_config()
+            if self.ship_config:
+                # Save the new config
+                save_config(self.ship_config)
+                # Load tank objects
+                self._load_tank_tables()
+                self.status_bar.showMessage(f"Ship configured: {self.ship_config.ship_name}")
+        else:
+            # User cancelled - create empty config for now
+            self.ship_config = ShipConfig.create_empty("New Ship")
     
     def _get_config_path(self) -> Path:
         """Get path to ship config file."""
@@ -400,7 +457,10 @@ class MainWindow(QMainWindow):
         return config_dir / "ship_config.json"
     
     def _load_tank_tables(self):
-        """Load ullage and trim tables for all tanks."""
+        """Load ullage and trim tables for all tanks from embedded JSON data."""
+        if not self.ship_config:
+            return
+        
         for tank_config in self.ship_config.tanks:
             # Create or get tank
             if tank_config.id not in self.tanks:
@@ -413,14 +473,30 @@ class MainWindow(QMainWindow):
             else:
                 tank = self.tanks[tank_config.id]
             
-            # Load tables if paths are set
-            if tank_config.ullage_table_path and os.path.exists(tank_config.ullage_table_path):
-                tank.load_ullage_table(tank_config.ullage_table_path)
-                # Update capacity from table's max volume
+            # Load ullage table from embedded data
+            if tank_config.ullage_table:
+                # Convert list of dicts to DataFrame
+                df = pd.DataFrame(tank_config.ullage_table)
+                # Ensure correct column names (ullage_cm for calculations)
+                if 'ullage_mm' in df.columns:
+                    df['ullage_cm'] = df['ullage_mm'] / 10.0
+                tank.ullage_table = df
                 if tank.has_ullage_table():
                     tank.capacity_m3 = tank.get_max_volume()
-            if tank_config.trim_table_path and os.path.exists(tank_config.trim_table_path):
-                tank.load_trim_table(tank_config.trim_table_path)
+            
+            # Load trim table from embedded data
+            if tank_config.trim_table:
+                df = pd.DataFrame(tank_config.trim_table)
+                if 'ullage_mm' in df.columns:
+                    df['ullage_cm'] = df['ullage_mm'] / 10.0
+                tank.trim_table = df
+            
+            # Load thermal table from embedded data
+            if tank_config.thermal_table:
+                df = pd.DataFrame(tank_config.thermal_table)
+                if 'temp_c' in df.columns:
+                    df = df.sort_values('temp_c').reset_index(drop=True)
+                tank.thermal_table = df
     
     def _save_ship_config(self):
         """Save ship config to file."""
@@ -454,9 +530,20 @@ class MainWindow(QMainWindow):
                 tank = self.tanks[tank_config.id]
                 tank.capacity_m3 = tank_config.capacity_m3
             
+            # Populate tables from config
+            if hasattr(tank, 'set_ullage_table'):
+                tank.set_ullage_table(tank_config.ullage_table)
+            if hasattr(tank, 'set_trim_table'):
+                tank.set_trim_table(tank_config.trim_table)
+            if hasattr(tank, 'set_thermal_table'):
+                tank.set_thermal_table(tank_config.thermal_table)
+            
             # Create TankReading if not exists
             if tank_config.id not in self.voyage.tank_readings:
                 self.voyage.add_reading(TankReading(tank_id=tank_config.id))
+            
+            # Force recalculate to update derived values (GOV, Therm.Corr) with latest logic
+            self._recalculate_tank(row, tank_config.id)
             
             reading = self.voyage.get_reading(tank_config.id)
             
@@ -470,11 +557,17 @@ class MainWindow(QMainWindow):
                     if is_numeric:
                         # Format based on column type
                         if key == "ullage":
-                            item.setText(f"{int(value)}" if isinstance(value, (int, float)) else str(value))
+                            item.setText(f"{value:.1f}" if isinstance(value, (int, float)) else str(value))
                         elif key == "fill_percent":
                             item.setText(f"{value:.1f}" if isinstance(value, float) else str(value))
+                        elif key in ("temp", "corrected_ullage", "trim_corr"):
+                             item.setText(f"{value:.1f}" if isinstance(value, float) else str(value))
+                        elif key in ("density_vac", "density_air"):
+                            item.setText(f"{value:.4f}" if isinstance(value, float) else str(value))
                         elif key == "vcf":
                             item.setText(f"{value:.5f}" if isinstance(value, float) else str(value))
+                        elif key == "therm_corr":
+                            item.setText(f"{value:.6f}" if isinstance(value, float) else str(value))
                         else:
                             item.setText(f"{value:.3f}" if isinstance(value, float) else str(value))
                     else:
@@ -482,11 +575,31 @@ class MainWindow(QMainWindow):
                 
                 # Set cell properties
                 item.setForeground(COLOR_TEXT)  # Set black text color
-                if is_input:
+                
+                # Parcel column should be read-only to force context menu usage
+                if is_input and key != "parcel":
                     item.setBackground(COLOR_INPUT)
                 else:
                     item.setBackground(COLOR_CALCULATED)
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                
+                # Apply fill_percent color based on value
+                if key == "fill_percent" and reading.fill_percent is not None:
+                    fill = reading.fill_percent
+                    if fill >= 98:
+                        item.setBackground(QColor(220, 38, 38))  # Red
+                    elif fill >= 95:
+                        t = (fill - 95) / 3.0
+                        r = int(234 + t * (220 - 234))
+                        g = int(179 - t * (179 - 38))
+                        b = int(8 + t * (38 - 8))
+                        item.setBackground(QColor(r, g, b))
+                    elif fill >= 65:
+                        item.setBackground(QColor(34, 197, 94))  # Green
+                    elif fill > 10:
+                        item.setBackground(QColor(249, 115, 22))  # Orange
+                    elif fill > 0:
+                        item.setBackground(QColor(34, 197, 94))  # Green
                 
                 self.tank_table.setItem(row, col, item)
         
@@ -494,23 +607,28 @@ class MainWindow(QMainWindow):
     
     def _get_reading_value(self, reading: TankReading, key: str):
         """Get value from reading based on column key."""
+        # Get parcel for deriving grade/receiver
+        parcel = self._get_parcel(reading.parcel_id) if reading.parcel_id else None
+        
         mapping = {
             "tank_id": reading.tank_id,
-            "parcel": reading.parcel,
-            "grade": reading.grade,
-            "receiver": reading.receiver,
-            "receiver_tank": reading.receiver_tank,
+            "parcel": reading.parcel_id,
+            "grade": parcel.name if parcel else "",
+            "receiver": parcel.receiver if parcel else "",
+            "receiver_tank": reading.tank_id,  # Default to tank_id
             "ullage": reading.ullage,
             "fill_percent": reading.fill_percent,
             "trim_corr": reading.trim_correction,
+            "corrected_ullage": reading.corrected_ullage,
             "tov": reading.tov,
+            "therm_corr": reading.therm_corr,
+            "gov": reading.gov,
             "temp": reading.temp_celsius,
             "vcf": reading.vcf,
             "density_vac": reading.density_vac,
             "density_air": reading.density_air,
             "gsv": reading.gsv,
             "mt_air": reading.mt_air,
-            "bl_figure": reading.bl_figure,
             "discrepancy": reading.discrepancy,
         }
         return mapping.get(key)
@@ -552,13 +670,11 @@ class MainWindow(QMainWindow):
     def _update_reading(self, reading: TankReading, key: str, value):
         """Update reading field based on key."""
         if key == "parcel":
-            reading.parcel = str(value) if value else ""
-        elif key == "grade":
-            reading.grade = str(value) if value else ""
-        elif key == "receiver":
-            reading.receiver = str(value) if value else ""
-        elif key == "receiver_tank":
-            reading.receiver_tank = str(value) if value else ""
+            reading.parcel_id = str(value) if value else ""
+            # Sync density from parcel
+            parcel = self._get_parcel(reading.parcel_id)
+            if parcel:
+                reading.density_vac = parcel.density_vac
         elif key == "ullage":
             reading.ullage = float(value) if value else None
             # Clear fill_percent so it gets recalculated from ullage
@@ -573,8 +689,6 @@ class MainWindow(QMainWindow):
             reading.temp_celsius = float(value) if value else None
         elif key == "density_vac":
             reading.density_vac = float(value) if value else None
-        elif key == "bl_figure":
-            reading.bl_figure = float(value) if value else None
     
     def _recalculate_tank(self, row: int, tank_id: str):
         """Recalculate values for a single tank."""
@@ -592,36 +706,67 @@ class MainWindow(QMainWindow):
         
         try:
             # Handle dual input (Ullage ↔ Fill%)
+            # NOTE: User inputs ullage in cm, config tables use mm
             if reading.ullage is not None:
-                reading.tov = calculate_tov(reading.ullage, tank.ullage_table)
-                reading.fill_percent = calculate_fill_percent(reading.tov, tank.capacity_m3)
+                measured_ullage_cm = reading.ullage  # User input is in cm
+                measured_ullage_mm = measured_ullage_cm * 10  # Convert to mm for table lookup
             elif reading.fill_percent is not None:
-                reading.ullage = calculate_ullage_from_percent(
+                # Calculate ullage from fill percent first (returns cm from table)
+                measured_ullage_cm = calculate_ullage_from_percent(
                     reading.fill_percent, tank.capacity_m3, tank.ullage_table
                 )
-                reading.tov = calculate_tov(reading.ullage, tank.ullage_table)
-            
-            # Trim correction
-            trim = self.draft_aft_spin.value() - self.draft_fwd_spin.value()
-            if tank.has_trim_table() and reading.ullage:
-                reading.gov, reading.trim_correction = apply_trim_correction(
-                    reading.tov, reading.ullage, trim, tank.trim_table
-                )
+                reading.ullage = measured_ullage_cm
+                measured_ullage_mm = measured_ullage_cm * 10
             else:
-                reading.gov = reading.tov
-                reading.trim_correction = 0
+                measured_ullage_mm = None
+            
+            if measured_ullage_mm is not None:
+                # Apply trim correction to ullage
+                trim = self.draft_fwd_spin.value() - self.draft_aft_spin.value()
+                if tank.has_trim_table():
+                    # Get trim correction value (in cm from trim table)
+                    from core.calculations import get_trim_correction
+                    trim_corr_cm = get_trim_correction(
+                        measured_ullage_mm, trim, tank.trim_table
+                    )
+                    # Trim correction is in cm, convert to mm
+                    trim_corr_mm = trim_corr_cm * 10
+                    reading.trim_correction = trim_corr_cm  # Store in cm for display
+                    corrected_ullage_mm = measured_ullage_mm + trim_corr_mm
+                else:
+                    reading.trim_correction = 0
+                    corrected_ullage_mm = measured_ullage_mm
+                
+                # Store corrected ullage in cm for display
+                reading.corrected_ullage = corrected_ullage_mm / 10  # mm → cm
+                
+                # Calculate TOV from corrected ullage (table uses mm, so convert)
+                reading.tov = calculate_tov(corrected_ullage_mm / 10, tank.ullage_table)  # cm for lookup
+                
+                # Thermal correction (from table if available, else 1.0)
+                if reading.temp_celsius is not None:
+                    reading.therm_corr = tank.get_thermal_factor(reading.temp_celsius)
+                else:
+                    reading.therm_corr = 1.0
+                
+                # GOV = TOV * Therm.Corr
+                reading.gov = reading.tov * reading.therm_corr
+                
+                reading.fill_percent = calculate_fill_percent(reading.tov, tank.capacity_m3)
             
             # VCF and GSV
             if reading.temp_celsius and reading.density_vac:
                 reading.vcf = calculate_vcf(reading.temp_celsius, reading.density_vac)
-                reading.gsv = calculate_gsv(reading.gov, reading.vcf, self.vef_spin.value())
-                reading.density_air = vac_to_air(reading.density_vac)
+                reading.gsv = reading.gov * reading.vcf * self.vef_spin.value()  # GSV = GOV * VCF * VEF
+                
+                # Air density = Vac Density - 0.0011 (for g/cm³) or - 1.1 (for kg/m³)
+                if reading.density_vac < 10:  # g/cm³ format
+                    reading.density_air = reading.density_vac - 0.0011
+                else:  # kg/m³ format
+                    reading.density_air = reading.density_vac - 1.1
+                
                 reading.mt_air = calculate_mass(reading.gsv, reading.density_air)
                 reading.mt_vac = calculate_mass(reading.gsv, reading.density_vac)
-            
-            # Discrepancy
-            if reading.bl_figure and reading.mt_air:
-                reading.discrepancy = ((reading.mt_air - reading.bl_figure) / reading.bl_figure) * 100
             
             # Warning
             if reading.fill_percent:
@@ -642,7 +787,7 @@ class MainWindow(QMainWindow):
         self.tank_table.blockSignals(True)
         
         for col, (key, _, _, is_input, is_numeric) in enumerate(self.COLUMNS):
-            if is_input and key not in ("ullage", "fill_percent"):
+            if is_input and key not in ("ullage", "fill_percent", "parcel"):
                 continue
             
             item = self.tank_table.item(row, col)
@@ -653,25 +798,44 @@ class MainWindow(QMainWindow):
             if value is not None:
                 if is_numeric:
                     if key == "ullage":
-                        item.setText(f"{int(value)}" if isinstance(value, (int, float)) else str(value))
+                        item.setText(f"{value:.1f}" if isinstance(value, (int, float)) else str(value))
                     elif key == "vcf":
                         item.setText(f"{value:.5f}")
-                    elif key == "fill_percent":
+                    elif key == "therm_corr":
+                        item.setText(f"{value:.6f}")
+                    elif key in ("density_vac", "density_air"):
+                        item.setText(f"{value:.4f}")
+                    elif key in ("fill_percent", "temp", "corrected_ullage", "trim_corr"):
                         item.setText(f"{value:.1f}")
                     else:
                         item.setText(f"{value:.3f}")
                 else:
                     item.setText(str(value))
             
-            # Apply warning color to fill_percent column
-            if key == "fill_percent" and reading.warning:
-                if reading.warning == "high_high":
-                    item.setBackground(COLOR_WARNING_CRITICAL)
-                elif reading.warning == "high":
-                    item.setBackground(COLOR_WARNING_HIGH)
-                elif reading.warning == "low":
-                    item.setBackground(COLOR_WARNING_LOW)
+            # Apply warning color to fill_percent column based on value
+            if key == "fill_percent" and reading.fill_percent is not None:
+                fill = reading.fill_percent
+                if fill >= 98:
+                    # Critical - full red
+                    item.setBackground(QColor(220, 38, 38))  # Red
+                elif fill >= 95:
+                    # Gradient from yellow (95%) to red (98%)
+                    t = (fill - 95) / 3.0
+                    r = int(234 + t * (220 - 234))
+                    g = int(179 - t * (179 - 38))
+                    b = int(8 + t * (38 - 8))
+                    item.setBackground(QColor(r, g, b))
+                elif fill >= 65:
+                    # Good fill - green
+                    item.setBackground(QColor(34, 197, 94))  # Green
+                elif fill > 10:
+                    # Low fill warning - orange
+                    item.setBackground(QColor(249, 115, 22))  # Orange
+                elif fill > 0:
+                    # Very low fill - green (ballast/empty)
+                    item.setBackground(QColor(34, 197, 94))  # Green
                 else:
+                    # Empty - normal
                     item.setBackground(COLOR_INPUT)
         
         self.tank_table.blockSignals(False)
@@ -687,7 +851,7 @@ class MainWindow(QMainWindow):
     
     def _on_draft_changed(self):
         """Handle draft value change."""
-        trim = self.draft_aft_spin.value() - self.draft_fwd_spin.value()
+        trim = self.draft_fwd_spin.value() - self.draft_aft_spin.value()
         self.trim_label.setText(f"{trim:+.2f} m")
         self._recalculate_all()
     
@@ -807,58 +971,24 @@ class MainWindow(QMainWindow):
     
     def _show_ship_config(self):
         """Show ship configuration dialog."""
-        dialog = ShipSetupDialog(self, self.ship_config)
-        if dialog.exec():
-            # Get updated config
-            self.ship_config = dialog.get_config()
-            parsed_data = dialog.get_parsed_data()
-            
-            # Reload tanks with updated config
-            for tank_config in self.ship_config.tanks:
-                # Create tank if not exists
-                if tank_config.id not in self.tanks:
-                    tank = Tank(
-                        id=tank_config.id,
-                        name=tank_config.name,
-                        capacity_m3=tank_config.capacity_m3
-                    )
-                    self.tanks[tank_config.id] = tank
-                else:
-                    tank = self.tanks[tank_config.id]
-                
-                tank.capacity_m3 = tank_config.capacity_m3
-                
-                # Load tables from parsed template data
-                if parsed_data:
-                    # Load ullage table directly from DataFrame
-                    if tank_config.id in parsed_data.ullage_tables:
-                        tank.ullage_table = parsed_data.ullage_tables[tank_config.id]
-                        # Update capacity from table's max volume
-                        if tank.has_ullage_table():
-                            tank.capacity_m3 = tank.get_max_volume()
-                            tank_config.capacity_m3 = tank.capacity_m3
-                    
-                    # Load trim table directly from DataFrame
-                    if tank_config.id in parsed_data.trim_tables:
-                        tank.trim_table = parsed_data.trim_tables[tank_config.id]
-                
-                # Legacy: Load CSV tables if paths provided
-                elif tank_config.ullage_table_path:
-                    tank.load_ullage_table(tank_config.ullage_table_path)
-                    if tank.has_ullage_table():
-                        tank.capacity_m3 = tank.get_max_volume()
-                        tank_config.capacity_m3 = tank.capacity_m3
-                    
-                    if tank_config.trim_table_path:
-                        tank.load_trim_table(tank_config.trim_table_path)
-            
-            # Save config for next startup
-            self._save_ship_config()
-            
-            # Refresh grid
-            self._populate_grid()
-            self._recalculate_all()
-            self.status_bar.showMessage(f"Ship configuration saved: {len(self.ship_config.tanks)} tanks loaded")
+        from ui.dialogs import ConfigEditorDialog
+        
+        # If config exists and has tanks, show editor; otherwise show wizard
+        if self.ship_config and self.ship_config.tanks:
+            dialog = ConfigEditorDialog(self.ship_config, self)
+            if dialog.exec():
+                # Reload tanks from updated config
+                self._load_tank_tables()
+                self._populate_grid()
+                self._recalculate_all()
+                self.status_bar.showMessage(f"Configuration updated: {self.ship_config.ship_name}")
+        else:
+            # No config - show wizard
+            self._show_first_time_setup()
+            if self.ship_config:
+                self._populate_grid()
+                self._recalculate_all()
+                self.status_bar.showMessage(f"Ship configuration saved: {len(self.ship_config.tanks)} tanks loaded")
     
     def _show_preferences(self):
         """Show preferences dialog."""
@@ -872,6 +1002,196 @@ class MainWindow(QMainWindow):
                 self.status_bar.showMessage(
                     f"Language changed to {settings['language']}. Restart for full effect."
                 )
+    
+    def _import_config(self):
+        """Import configuration from an external JSON file."""
+        filepath, _ = QFileDialog.getOpenFileName(
+            self, "Import Configuration", "", "JSON Files (*.json)"
+        )
+        if filepath:
+            try:
+                imported_config = ShipConfig.load_from_json(filepath)
+                if imported_config and imported_config.tanks:
+                    # Confirm import
+                    reply = QMessageBox.question(
+                        self, "Import Configuration",
+                        f"Import configuration for '{imported_config.ship_name}' "
+                        f"with {len(imported_config.tanks)} tanks?\n\n"
+                        "This will replace your current configuration.",
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                    )
+                    if reply == QMessageBox.StandardButton.Yes:
+                        self.ship_config = imported_config
+                        save_config(self.ship_config)
+                        self.tanks.clear()
+                        self._load_tank_tables()
+                        self._populate_grid()
+                        self._recalculate_all()
+                        self.status_bar.showMessage(
+                            f"Imported configuration: {self.ship_config.ship_name}"
+                        )
+                else:
+                    QMessageBox.warning(
+                        self, "Import Error",
+                        "The selected file does not contain a valid ship configuration."
+                    )
+            except Exception as e:
+                QMessageBox.critical(
+                    self, "Import Error",
+                    f"Failed to import configuration:\n{e}"
+                )
+    
+    def _delete_config(self):
+        """Delete current configuration and start fresh."""
+        reply = QMessageBox.warning(
+            self, "Delete Configuration",
+            "Are you sure you want to delete the current configuration?\n\n"
+            "This will remove all ship and tank data and cannot be undone.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            from utils import delete_config
+            if delete_config():
+                # Clear current data
+                self.ship_config = None
+                self.tanks.clear()
+                self.voyage = None
+                
+                # Show wizard for fresh start
+                self._show_first_time_setup()
+                
+                if self.ship_config:
+                    self.voyage = Voyage.create_new("001/2024", "", "")
+                    self._populate_grid()
+                    self.status_bar.showMessage("Configuration deleted. New configuration created.")
+                else:
+                    self.status_bar.showMessage("Configuration deleted.")
+            else:
+                QMessageBox.critical(self, "Error", "Failed to delete configuration.")
+    
+    def _show_context_menu(self, position):
+        """Show context menu for the table."""
+        index = self.tank_table.indexAt(position)
+        if not index.isValid():
+            return
+        
+        row = index.row()
+        col = index.column()
+        
+        # Check if it's the parcel column
+        parcel_col_idx = -1
+        for i, (key, _, _, _, _) in enumerate(self.COLUMNS):
+            if key == "parcel":
+                parcel_col_idx = i
+                break
+        
+        if col == parcel_col_idx:
+            menu = QMenu(self)
+            
+            # Add "Select Parcel" section
+            menu.addSection("Select Parcel")
+            
+            # Add option to clear
+            action_clear = menu.addAction("None (Clear)")
+            action_clear.triggered.connect(lambda: self._on_parcel_selected(row, ""))
+            
+            # Add SLOP option (always available)
+            menu.addSeparator()
+            action_slop = menu.addAction("SLOP")
+            action_slop.triggered.connect(lambda: self._on_parcel_selected(row, "SLOP"))
+            
+            if self.voyage and self.voyage.parcels:
+                menu.addSeparator()
+                for parcel in self.voyage.parcels:
+                    action = menu.addAction(f"{parcel.id} - {parcel.name}")
+                    # Use default parameter to capture loop variable
+                    action.triggered.connect(lambda checked, r=row, p=parcel.id: self._on_parcel_selected(r, p))
+            else:
+                menu.addAction("No parcels defined").setEnabled(False)
+                
+            menu.addSeparator()
+            action_edit = menu.addAction("Edit Parcels...")
+            action_edit.triggered.connect(self._edit_parcels)
+            
+            menu.exec(self.tank_table.viewport().mapToGlobal(position))
+    
+    def _edit_parcels(self):
+        """Edit voyage parcels."""
+        from ui.dialogs import ParcelSetupDialog
+        
+        if not self.voyage:
+            self.voyage = Voyage.create_new("001/2024", "", "")
+        
+        dialog = ParcelSetupDialog(self.voyage.parcels, self)
+        if dialog.exec():
+            self.voyage.parcels = dialog.get_parcels()
+            self._update_parcel_dropdowns()
+            self.status_bar.showMessage(f"Updated {len(self.voyage.parcels)} parcels")
+    
+    def _update_parcel_dropdowns(self):
+        """Update parcel display in the grid."""
+        # Refresh grid to show current parcel data
+        self._populate_grid()
+    
+    def _get_parcel(self, parcel_id: str):
+        """Get parcel by ID."""
+        if not self.voyage or not parcel_id:
+            return None
+        for p in self.voyage.parcels:
+            if p.id == parcel_id:
+                return p
+        return None
+    
+    def _on_parcel_selected(self, row: int, parcel_id: str):
+        """Handle parcel selection - auto-populate related fields or clear row."""
+        if not self.voyage:
+            return
+        
+        tank_id_item = self.tank_table.item(row, 0)
+        if not tank_id_item:
+            return
+        
+        tank_id = tank_id_item.text()
+        reading = self.voyage.get_reading(tank_id)
+        if not reading:
+            return
+        
+        if not parcel_id:  # "None (Clear)" selected - clear entire row
+            reading.parcel_id = ""
+            reading.density_vac = None
+            reading.ullage = None
+            reading.temp_celsius = None
+            reading.fill_percent = None
+            reading.tov = 0.0
+            reading.trim_correction = 0.0
+            reading.corrected_ullage = None
+            reading.therm_corr = 1.0
+            reading.gov = 0.0
+            reading.vcf = 1.0
+            reading.gsv = 0.0
+            reading.density_air = 0.0
+            reading.mt_air = 0.0
+            reading.mt_vac = 0.0
+            reading.discrepancy = 0.0
+            self._update_row(row, reading)
+            return
+        
+        reading.parcel_id = parcel_id
+        
+        if parcel_id == "SLOP":
+            # Use slop density from ship config
+            if self.ship_config:
+                reading.density_vac = getattr(self.ship_config, 'slop_density', 0.85)
+            else:
+                reading.density_vac = 0.85
+        else:
+            parcel = self._get_parcel(parcel_id)
+            if parcel:
+                reading.density_vac = parcel.density_vac
+        
+        self._recalculate_tank(row, tank_id)
+        self._update_row(row, reading)
     
     def _show_about(self):
         """Show about dialog."""

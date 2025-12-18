@@ -65,7 +65,6 @@ def export_stowage_plan(voyage: 'Voyage', filepath: str) -> bool:
                 "density_air": round(reading.density_air, 3),
                 "mt_air": round(reading.mt_air, 3),
                 "mt_vac": round(reading.mt_vac, 3),
-                "bl_figure": reading.bl_figure,
                 "discrepancy": round(reading.discrepancy, 3),
                 "warning": reading.warning
             }

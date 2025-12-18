@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 from dataclasses import dataclass, field, asdict
 
 from .tank import TankReading
+from .parcel import Parcel
 
 
 @dataclass
@@ -39,6 +40,9 @@ class Voyage:
     # Officer information
     chief_officer: str = ""
     master: str = ""
+    
+    # Parcels defined for this voyage
+    parcels: List[Parcel] = field(default_factory=list)
     
     # Tank readings
     tank_readings: Dict[str, TankReading] = field(default_factory=dict)
@@ -81,6 +85,7 @@ class Voyage:
             },
             'chief_officer': self.chief_officer,
             'master': self.master,
+            'parcels': [p.to_dict() for p in self.parcels],
             'tank_readings': {
                 tank_id: reading.to_dict() 
                 for tank_id, reading in self.tank_readings.items()
@@ -115,6 +120,10 @@ class Voyage:
                 aft=data['drafts'].get('aft', 0.0),
                 fwd=data['drafts'].get('fwd', 0.0)
             )
+        
+        # Load parcels
+        for parcel_data in data.get('parcels', []):
+            voyage.parcels.append(Parcel.from_dict(parcel_data))
         
         # Load tank readings
         for tank_id, reading_data in data.get('tank_readings', {}).items():

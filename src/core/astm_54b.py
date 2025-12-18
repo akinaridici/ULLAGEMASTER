@@ -59,7 +59,7 @@ def calculate_vcf(temp_celsius: float, density_15: float) -> float:
     
     Args:
         temp_celsius: Observed temperature in Celsius
-        density_15: Density at 15°C in kg/m³
+        density_15: Density at 15°C in kg/m³ (or g/cm³ - auto-converted)
         
     Returns:
         Volume Correction Factor (VCF)
@@ -68,6 +68,12 @@ def calculate_vcf(temp_celsius: float, density_15: float) -> float:
         >>> vcf = calculate_vcf(25.0, 800.0)  # 25°C, 800 kg/m³
         >>> print(f"VCF: {vcf:.5f}")
     """
+    # Auto-convert density from g/cm³ to kg/m³ if needed
+    # Petroleum products have density 600-1000 kg/m³
+    # If value < 10, assume it's in g/cm³ and convert
+    if density_15 < 10:
+        density_15 = density_15 * 1000
+    
     # Calculate temperature difference from 15°C
     delta_t = temp_celsius - 15.0
     

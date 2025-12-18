@@ -78,7 +78,7 @@ def export_to_excel(voyage: 'Voyage', filepath: str) -> bool:
         headers = [
             "Tank", "Parcel", "Grade", "Receiver", "Ullage", "% Fill",
             "TOV", "Trim Corr", "GOV", "Temp", "VCF", "GSV",
-            "Dens VAC", "Dens Air", "MT (Air)", "MT (VAC)", "B/L", "Disc."
+            "Dens VAC", "Dens Air", "MT (Air)", "MT (VAC)", "Disc."
         ]
         
         for col, header in enumerate(headers, 1):
@@ -108,7 +108,6 @@ def export_to_excel(voyage: 'Voyage', filepath: str) -> bool:
                 reading.density_air,
                 reading.mt_air,
                 reading.mt_vac,
-                reading.bl_figure,
                 reading.discrepancy
             ]
             

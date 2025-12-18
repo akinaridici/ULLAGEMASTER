@@ -113,6 +113,52 @@ def apply_trim_correction(
     return corrected_volume, correction
 
 
+def get_trim_correction(
+    ullage_mm: float,
+    trim: float,
+    trim_table: pd.DataFrame
+) -> float:
+    """
+    Get trim correction value to apply to ullage (in mm).
+    
+    The trim correction table stores correction values in mm that are
+    added to the measured ullage to get the corrected ullage.
+    
+    Args:
+        ullage_mm: Ullage reading in mm
+        trim: Ship trim in meters (negative = stern deeper)
+        trim_table: Trim correction table with 'ullage_mm' or 'ullage_cm', 
+                   'trim_m', and correction column
+        
+    Returns:
+        Trim correction in mm (to be added to ullage)
+    """
+    # Determine the ullage column name
+    if 'ullage_mm' in trim_table.columns:
+        ullage_col = 'ullage_mm'
+        ullage_value = ullage_mm
+    else:
+        ullage_col = 'ullage_cm'
+        ullage_value = ullage_mm / 10.0  # Convert mm to cm
+    
+    # Determine the correction column name
+    if 'correction_mm' in trim_table.columns:
+        corr_col = 'correction_mm'
+    elif 'correction_m3' in trim_table.columns:
+        corr_col = 'correction_m3'
+    else:
+        # Default - assume first non-ullage, non-trim column
+        corr_col = [c for c in trim_table.columns if c not in [ullage_col, 'trim_m']][0]
+    
+    correction = bilinear_interpolate(
+        trim_table,
+        ullage_col, 'trim_m', corr_col,
+        ullage_value, trim
+    )
+    
+    return correction
+
+
 def calculate_gov(tov: float, trim_correction: float) -> float:
     """
     Calculate Gross Observed Volume.
@@ -148,16 +194,23 @@ def calculate_mass(gsv: float, density: float, in_air: bool = True) -> float:
     
     Args:
         gsv: Gross Standard Volume in m³
-        density: Density in kg/m³
+        density: Density in kg/m³ or g/cm³ (auto-detected)
         in_air: If True, calculate MT in air; if False, MT in vacuum
         
     Returns:
         Mass in metric tons (MT)
+        
+    Note:
+        g/cm³ = ton/m³ (metric tons per cubic meter)
+        So 0.750 g/cm³ means 0.750 tons per m³
     """
-    # GSV is in m³, density in kg/m³
-    # Result in kg, convert to MT (÷1000)
-    mass_kg = gsv * density
-    mass_mt = mass_kg / 1000.0
+    # Auto-detect density unit:
+    # If density < 10: g/cm³ (= ton/m³), so MT = GSV(m³) × density(ton/m³)
+    # If density >= 10: kg/m³, so MT = GSV × density / 1000
+    if density < 10:  # g/cm³ = ton/m³
+        mass_mt = gsv * density
+    else:  # kg/m³
+        mass_mt = gsv * density / 1000.0
     return mass_mt
 
 
