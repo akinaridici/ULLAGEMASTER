@@ -62,7 +62,7 @@ class MainWindow(QMainWindow):
         ("receiver_tank", "Tank No", 60, False, False),
         ("ullage", "Ullage", 70, True, True),         # User input
         ("temp", "Temp", 60, True, True),             # User input
-        ("fill_percent", "% Fill", 60, False, True),
+        ("fill_percent", "% Fill", 60, True, True),   # Editable - bidirectional with Ullage
         ("trim_corr", "Trim Corr", 70, False, True),
         ("corrected_ullage", "Corr Ullage", 80, False, True),
         ("tov", "TOV", 90, False, True),
