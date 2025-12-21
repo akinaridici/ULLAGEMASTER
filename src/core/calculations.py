@@ -121,14 +121,14 @@ def get_trim_correction(
     """
     Get trim correction value to apply to ullage (in mm).
     
-    The trim correction table stores correction values in mm that are
-    added to the measured ullage to get the corrected ullage.
+    IMPORTANT: Configuration tables store all correction values in millimeters (mm).
+    The UI displays values in centimeters (cm), so callers must convert (mm / 10).
     
     Args:
         ullage_mm: Ullage reading in mm
         trim: Ship trim in meters (negative = stern deeper)
         trim_table: Trim correction table with 'ullage_mm' or 'ullage_cm', 
-                   'trim_m', and correction column
+                   'trim_m', and correction column (values in mm)
         
     Returns:
         Trim correction in mm (to be added to ullage)

@@ -120,8 +120,14 @@ class ConfigEditorDialog(QDialog):
             "Tank ID", "Tank Name", "Capacity (m³)", "Ullage Rows", "Trim Rows"
         ])
         self.overview_table.horizontalHeader().setStretchLastSection(True)
-        self.overview_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        # Allow editing capacity column only (column 2)
+        self.overview_table.setEditTriggers(QTableWidget.EditTrigger.DoubleClicked)
         layout.addWidget(self.overview_table)
+        
+        # Help text
+        help_label = QLabel("💡 Double-click the Capacity column to edit tank capacity values.")
+        help_label.setStyleSheet("color: #666; font-style: italic;")
+        layout.addWidget(help_label)
         
         self.tabs.addTab(widget, "Tank Overview")
     
@@ -174,11 +180,29 @@ class ConfigEditorDialog(QDialog):
         # Tank overview
         self.overview_table.setRowCount(len(self.config.tanks))
         for row, tank in enumerate(self.config.tanks):
-            self.overview_table.setItem(row, 0, QTableWidgetItem(tank.id))
-            self.overview_table.setItem(row, 1, QTableWidgetItem(tank.name))
-            self.overview_table.setItem(row, 2, QTableWidgetItem(f"{tank.capacity_m3:.1f}"))
-            self.overview_table.setItem(row, 3, QTableWidgetItem(str(len(tank.ullage_table))))
-            self.overview_table.setItem(row, 4, QTableWidgetItem(str(len(tank.trim_table))))
+            # Tank ID - read-only
+            id_item = QTableWidgetItem(tank.id)
+            id_item.setFlags(id_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.overview_table.setItem(row, 0, id_item)
+            
+            # Tank Name - read-only
+            name_item = QTableWidgetItem(tank.name)
+            name_item.setFlags(name_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.overview_table.setItem(row, 1, name_item)
+            
+            # Capacity - EDITABLE
+            capacity_item = QTableWidgetItem(f"{tank.capacity_m3:.1f}")
+            self.overview_table.setItem(row, 2, capacity_item)
+            
+            # Ullage Rows - read-only
+            ullage_item = QTableWidgetItem(str(len(tank.ullage_table)))
+            ullage_item.setFlags(ullage_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.overview_table.setItem(row, 3, ullage_item)
+            
+            # Trim Rows - read-only
+            trim_item = QTableWidgetItem(str(len(tank.trim_table)))
+            trim_item.setFlags(trim_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.overview_table.setItem(row, 4, trim_item)
         
         # Ullage grids
         self.ullage_tabs.clear()
@@ -257,9 +281,23 @@ class ConfigEditorDialog(QDialog):
                             })
                         except ValueError:
                             pass
-                # Update capacity
-                if tank.ullage_table:
-                    tank.capacity_m3 = max(item['volume_m3'] for item in tank.ullage_table)
+        
+        # Update capacity from overview table (user-editable)
+        for row in range(self.overview_table.rowCount()):
+            tank_id_item = self.overview_table.item(row, 0)
+            capacity_item = self.overview_table.item(row, 2)
+            if tank_id_item and capacity_item:
+                tank = self.config.get_tank(tank_id_item.text())
+                if tank:
+                    try:
+                        user_capacity = float(capacity_item.text())
+                        if user_capacity > 0:
+                            tank.capacity_m3 = user_capacity
+                        elif tank.ullage_table:
+                            # Fallback to max volume if user left it at 0
+                            tank.capacity_m3 = max(item['volume_m3'] for item in tank.ullage_table)
+                    except ValueError:
+                        pass
         
         # Update trim tables
         for tank_id, grid in self.trim_grids.items():

@@ -299,6 +299,11 @@ class MainWindow(QMainWindow):
     def eventFilter(self, obj, event):
         """Handle key events for bulk input on selected cells."""
         if obj == self.tank_table and event.type() == event.Type.KeyPress:
+            # Handle Ctrl+C for multi-cell copy
+            if event.matches(QKeySequence.StandardKey.Copy):
+                self._handle_copy()
+                return True
+            
             selected = self.tank_table.selectedItems()
             # print(f"DEBUG: Key {repr(event.text())} Selected {len(selected)}")
             if len(selected) > 1:
@@ -310,6 +315,42 @@ class MainWindow(QMainWindow):
                      self._handle_bulk_input(selected, text)
                      return True
         return super().eventFilter(obj, event)
+    
+    def _handle_copy(self):
+        """Handle Ctrl+C - copy selected cells to clipboard in Excel-compatible format."""
+        selection = self.tank_table.selectedRanges()
+        if not selection:
+            return
+        
+        # Combine all selection ranges
+        all_rows = set()
+        all_cols = set()
+        for range_ in selection:
+            for row in range(range_.topRow(), range_.bottomRow() + 1):
+                all_rows.add(row)
+            for col in range(range_.leftColumn(), range_.rightColumn() + 1):
+                all_cols.add(col)
+        
+        # Sort to maintain order
+        rows = sorted(all_rows)
+        cols = sorted(all_cols)
+        
+        # Build tab-separated text
+        lines = []
+        for row in rows:
+            row_data = []
+            for col in cols:
+                item = self.tank_table.item(row, col)
+                row_data.append(item.text() if item else "")
+            lines.append("\t".join(row_data))
+        
+        # Copy to clipboard
+        clipboard = QApplication.clipboard()
+        clipboard.setText("\n".join(lines))
+        
+        # Show feedback
+        cell_count = len(rows) * len(cols)
+        self.status_bar.showMessage(f"Copied {cell_count} cells to clipboard")
     
     def _handle_bulk_input(self, selected_items, initial_char=""):
         """Handle bulk input for multiple selected cells."""
@@ -396,11 +437,13 @@ class MainWindow(QMainWindow):
         layout.addWidget(QLabel(t("chief_officer", "footer")))
         self.chief_officer_edit = QLineEdit()
         self.chief_officer_edit.setMaximumWidth(150)
+        self.chief_officer_edit.editingFinished.connect(self._save_officer_names)
         layout.addWidget(self.chief_officer_edit)
         
         layout.addWidget(QLabel(t("master", "footer")))
         self.master_edit = QLineEdit()
         self.master_edit.setMaximumWidth(150)
+        self.master_edit.editingFinished.connect(self._save_officer_names)
         layout.addWidget(self.master_edit)
         
         return group
@@ -420,6 +463,9 @@ class MainWindow(QMainWindow):
             # Config loaded successfully
             self.status_bar.showMessage(f"Loaded ship config: {self.ship_config.ship_name}")
             self._load_tank_tables()
+            # Load officer names from config
+            self.chief_officer_edit.setText(self.ship_config.chief_officer)
+            self.master_edit.setText(self.ship_config.master)
         else:
             # No config or empty - show setup wizard
             self._show_first_time_setup()
@@ -481,7 +527,10 @@ class MainWindow(QMainWindow):
                 if 'ullage_mm' in df.columns:
                     df['ullage_cm'] = df['ullage_mm'] / 10.0
                 tank.ullage_table = df
-                if tank.has_ullage_table():
+                # Use stored capacity if set, otherwise derive from ullage table max
+                if tank_config.capacity_m3 > 0:
+                    tank.capacity_m3 = tank_config.capacity_m3
+                elif tank.has_ullage_table():
                     tank.capacity_m3 = tank.get_max_volume()
             
             # Load trim table from embedded data
@@ -583,24 +632,6 @@ class MainWindow(QMainWindow):
                     item.setBackground(COLOR_CALCULATED)
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 
-                # Apply fill_percent color based on value
-                if key == "fill_percent" and reading.fill_percent is not None:
-                    fill = reading.fill_percent
-                    if fill >= 98:
-                        item.setBackground(QColor(220, 38, 38))  # Red
-                    elif fill >= 95:
-                        t = (fill - 95) / 3.0
-                        r = int(234 + t * (220 - 234))
-                        g = int(179 - t * (179 - 38))
-                        b = int(8 + t * (38 - 8))
-                        item.setBackground(QColor(r, g, b))
-                    elif fill >= 65:
-                        item.setBackground(QColor(34, 197, 94))  # Green
-                    elif fill > 10:
-                        item.setBackground(QColor(249, 115, 22))  # Orange
-                    elif fill > 0:
-                        item.setBackground(QColor(34, 197, 94))  # Green
-                
                 self.tank_table.setItem(row, col, item)
         
         self.tank_table.blockSignals(False)
@@ -608,13 +639,25 @@ class MainWindow(QMainWindow):
     def _get_reading_value(self, reading: TankReading, key: str):
         """Get value from reading based on column key."""
         # Get parcel for deriving grade/receiver
-        parcel = self._get_parcel(reading.parcel_id) if reading.parcel_id else None
+        parcel = None
+        grade = ""
+        receiver = ""
+        
+        if reading.parcel_id:
+            if reading.parcel_id == "SLOP":
+                grade = "SLOP"
+                receiver = ""
+            else:
+                parcel = self._get_parcel(reading.parcel_id)
+                if parcel:
+                    grade = parcel.name
+                    receiver = parcel.receiver
         
         mapping = {
             "tank_id": reading.tank_id,
             "parcel": reading.parcel_id,
-            "grade": parcel.name if parcel else "",
-            "receiver": parcel.receiver if parcel else "",
+            "grade": grade,
+            "receiver": receiver,
             "receiver_tank": reading.tank_id,  # Default to tank_id
             "ullage": reading.ullage,
             "fill_percent": reading.fill_percent,
@@ -707,6 +750,9 @@ class MainWindow(QMainWindow):
         try:
             # Handle dual input (Ullage ↔ Fill%)
             # NOTE: User inputs ullage in cm, config tables use mm
+            # Track whether user entered ullage or fill% to avoid overwriting their input
+            user_entered_fill_percent = reading.fill_percent is not None and reading.ullage is None
+            
             if reading.ullage is not None:
                 measured_ullage_cm = reading.ullage  # User input is in cm
                 measured_ullage_mm = measured_ullage_cm * 10  # Convert to mm for table lookup
@@ -724,14 +770,13 @@ class MainWindow(QMainWindow):
                 # Apply trim correction to ullage
                 trim = self.draft_fwd_spin.value() - self.draft_aft_spin.value()
                 if tank.has_trim_table():
-                    # Get trim correction value (in cm from trim table)
+                    # Get trim correction value in mm (config tables store values in mm)
                     from core.calculations import get_trim_correction
-                    trim_corr_cm = get_trim_correction(
+                    trim_corr_mm = get_trim_correction(
                         measured_ullage_mm, trim, tank.trim_table
                     )
-                    # Trim correction is in cm, convert to mm
-                    trim_corr_mm = trim_corr_cm * 10
-                    reading.trim_correction = trim_corr_cm  # Store in cm for display
+                    # Store in cm for display (mm / 10)
+                    reading.trim_correction = trim_corr_mm / 10.0
                     corrected_ullage_mm = measured_ullage_mm + trim_corr_mm
                 else:
                     reading.trim_correction = 0
@@ -752,7 +797,9 @@ class MainWindow(QMainWindow):
                 # GOV = TOV * Therm.Corr
                 reading.gov = reading.tov * reading.therm_corr
                 
-                reading.fill_percent = calculate_fill_percent(reading.tov, tank.capacity_m3)
+                # Only recalculate fill% if user entered ullage (not when they entered fill%)
+                if not user_entered_fill_percent:
+                    reading.fill_percent = calculate_fill_percent(reading.tov, tank.capacity_m3)
             
             # VCF and GSV
             if reading.temp_celsius and reading.density_vac:
@@ -811,32 +858,6 @@ class MainWindow(QMainWindow):
                         item.setText(f"{value:.3f}")
                 else:
                     item.setText(str(value))
-            
-            # Apply warning color to fill_percent column based on value
-            if key == "fill_percent" and reading.fill_percent is not None:
-                fill = reading.fill_percent
-                if fill >= 98:
-                    # Critical - full red
-                    item.setBackground(QColor(220, 38, 38))  # Red
-                elif fill >= 95:
-                    # Gradient from yellow (95%) to red (98%)
-                    t = (fill - 95) / 3.0
-                    r = int(234 + t * (220 - 234))
-                    g = int(179 - t * (179 - 38))
-                    b = int(8 + t * (38 - 8))
-                    item.setBackground(QColor(r, g, b))
-                elif fill >= 65:
-                    # Good fill - green
-                    item.setBackground(QColor(34, 197, 94))  # Green
-                elif fill > 10:
-                    # Low fill warning - orange
-                    item.setBackground(QColor(249, 115, 22))  # Orange
-                elif fill > 0:
-                    # Very low fill - green (ballast/empty)
-                    item.setBackground(QColor(34, 197, 94))  # Green
-                else:
-                    # Empty - normal
-                    item.setBackground(COLOR_INPUT)
         
         self.tank_table.blockSignals(False)
     
@@ -861,6 +882,21 @@ class MainWindow(QMainWindow):
             tank_id_item = self.tank_table.item(row, 0)
             if tank_id_item:
                 self._recalculate_tank(row, tank_id_item.text())
+    
+    def _save_officer_names(self):
+        """Save officer names to ship config whenever they change."""
+        if not self.ship_config:
+            return
+        
+        chief_officer = self.chief_officer_edit.text().strip()
+        master = self.master_edit.text().strip()
+        
+        # Only save if changed
+        if self.ship_config.chief_officer != chief_officer or self.ship_config.master != master:
+            self.ship_config.chief_officer = chief_officer
+            self.ship_config.master = master
+            save_config(self.ship_config)
+            self.status_bar.showMessage("Officer names saved", 2000)
     
     # Menu actions
     def _new_voyage(self):

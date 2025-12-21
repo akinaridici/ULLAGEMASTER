@@ -451,8 +451,8 @@ class UllageEntryPage(QWizardPage):
                             'ullage_mm': float(row[0]),
                             'volume_m3': float(row[1])
                         })
-                # Set capacity as max volume
-                if tank.ullage_table:
+                # Only auto-derive capacity from ullage table if user didn't specify one
+                if tank.ullage_table and tank.capacity_m3 == 0:
                     tank.capacity_m3 = max(item['volume_m3'] for item in tank.ullage_table)
         
         return True

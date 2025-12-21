@@ -29,6 +29,9 @@ class ShipConfig:
     has_thermal_correction: bool = False
     default_vef: float = 1.0000
     slop_density: float = 0.85  # Default density for SLOP parcels
+    # Officer names (persisted across voyages)
+    chief_officer: str = ""
+    master: str = ""
     # User-defined list of trim values (supports non-uniform steps)
     trim_values: List[float] = field(default_factory=lambda: [-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0])
     tanks: List[TankConfig] = field(default_factory=list)
@@ -74,6 +77,9 @@ class ShipConfig:
             'tank_count': self.tank_count,
             'has_thermal_correction': self.has_thermal_correction,
             'default_vef': self.default_vef,
+            'slop_density': self.slop_density,
+            'chief_officer': self.chief_officer,
+            'master': self.master,
             'trim_values': self.trim_values,
             'tanks': [asdict(tank) for tank in self.tanks]
         }
@@ -106,6 +112,9 @@ class ShipConfig:
             tank_count=data.get('tank_count', data.get('tank_pairs', 6) * 2),  # Backward compat
             has_thermal_correction=data.get('has_thermal_correction', False),
             default_vef=data.get('default_vef', 1.0),
+            slop_density=data.get('slop_density', 0.85),
+            chief_officer=data.get('chief_officer', ''),
+            master=data.get('master', ''),
             trim_values=trim_values
         )
         

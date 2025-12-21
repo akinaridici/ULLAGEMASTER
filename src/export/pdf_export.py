@@ -78,10 +78,23 @@ def export_to_pdf(voyage: 'Voyage', filepath: str) -> bool:
         
         data = [headers]
         for tank_id, reading in voyage.tank_readings.items():
+            # Lookup parcel for grade/receiver
+            grade = ""
+            receiver = ""
+            if reading.parcel_id:
+                if reading.parcel_id == "SLOP":
+                    grade = "SLOP"
+                else:
+                    for parcel in voyage.parcels:
+                        if parcel.id == reading.parcel_id:
+                            grade = parcel.name[:12] if parcel.name else ""
+                            receiver = parcel.receiver[:12] if parcel.receiver else ""
+                            break
+            
             row = [
                 tank_id,
-                reading.grade[:12] if reading.grade else "",
-                reading.receiver[:12] if reading.receiver else "",
+                grade,
+                receiver,
                 f"{reading.ullage:.1f}" if reading.ullage else "-",
                 f"{reading.fill_percent:.1f}" if reading.fill_percent else "-",
                 f"{reading.tov:.3f}",

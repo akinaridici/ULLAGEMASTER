@@ -3,6 +3,9 @@
   "tank_count": 14,
   "has_thermal_correction": true,
   "default_vef": 1.0,
+  "slop_density": 0.85,
+  "chief_officer": "Harun",
+  "master": "Akın",
   "trim_values": [
     -2.0,
     -1.5,
@@ -18,7 +21,7 @@
     {
       "id": "1P",
       "name": "No.1 Port",
-      "capacity_m3": 798.25,
+      "capacity_m3": 798.2,
       "ullage_table": [
         {
           "ullage_mm": 669.0,
@@ -10166,7 +10169,7 @@
     {
       "id": "1S",
       "name": "No.1 Starboard",
-      "capacity_m3": 798.25,
+      "capacity_m3": 792.4,
       "ullage_table": [
         {
           "ullage_mm": 669.0,
@@ -20314,7 +20317,7 @@
     {
       "id": "2P",
       "name": "No.2 Port",
-      "capacity_m3": 798.25,
+      "capacity_m3": 1635.5,
       "ullage_table": [
         {
           "ullage_mm": 669.0,
@@ -30462,7 +30465,7 @@
     {
       "id": "2S",
       "name": "No.2 Starboard",
-      "capacity_m3": 798.25,
+      "capacity_m3": 798.2,
       "ullage_table": [
         {
           "ullage_mm": 669.0,
@@ -40610,7 +40613,7 @@
     {
       "id": "3P",
       "name": "No.3 Port",
-      "capacity_m3": 798.25,
+      "capacity_m3": 798.2,
       "ullage_table": [
         {
           "ullage_mm": 669.0,
@@ -50758,7 +50761,7 @@
     {
       "id": "3S",
       "name": "No.3 Starboard",
-      "capacity_m3": 798.25,
+      "capacity_m3": 798.2,
       "ullage_table": [
         {
           "ullage_mm": 669.0,
@@ -60906,7 +60909,7 @@
     {
       "id": "4P",
       "name": "No.4 Port",
-      "capacity_m3": 798.25,
+      "capacity_m3": 798.2,
       "ullage_table": [
         {
           "ullage_mm": 669.0,
@@ -71054,7 +71057,7 @@
     {
       "id": "4S",
       "name": "No.4 Starboard",
-      "capacity_m3": 798.25,
+      "capacity_m3": 798.2,
       "ullage_table": [
         {
           "ullage_mm": 669.0,
@@ -81202,7 +81205,7 @@
     {
       "id": "5P",
       "name": "No.5 Port",
-      "capacity_m3": 798.25,
+      "capacity_m3": 798.2,
       "ullage_table": [
         {
           "ullage_mm": 669.0,
@@ -91350,7 +91353,7 @@
     {
       "id": "5S",
       "name": "No.5 Starboard",
-      "capacity_m3": 798.25,
+      "capacity_m3": 798.2,
       "ullage_table": [
         {
           "ullage_mm": 669.0,
@@ -101498,7 +101501,7 @@
     {
       "id": "6P",
       "name": "No.6 Port",
-      "capacity_m3": 798.25,
+      "capacity_m3": 798.2,
       "ullage_table": [
         {
           "ullage_mm": 669.0,
@@ -111646,7 +111649,7 @@
     {
       "id": "6S",
       "name": "No.6 Starboard",
-      "capacity_m3": 798.25,
+      "capacity_m3": 798.2,
       "ullage_table": [
         {
           "ullage_mm": 669.0,
@@ -121794,7 +121797,7 @@
     {
       "id": "SlopP",
       "name": "Slop Port",
-      "capacity_m3": 798.25,
+      "capacity_m3": 798.2,
       "ullage_table": [
         {
           "ullage_mm": 669.0,
@@ -131942,7 +131945,7 @@
     {
       "id": "SlopS",
       "name": "Slop Starboard",
-      "capacity_m3": 798.25,
+      "capacity_m3": 798.2,
       "ullage_table": [
         {
           "ullage_mm": 669.0,
