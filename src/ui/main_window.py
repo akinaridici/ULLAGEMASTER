@@ -28,7 +28,8 @@ from core import (
 )
 from export import (
     export_stowage_plan, export_ascii_report, 
-    export_to_excel, export_to_pdf, generate_stowage_plan
+    export_to_excel, export_to_pdf, generate_stowage_plan,
+    export_template_report, get_template_path
 )
 from ui.dialogs import ShipSetupDialog, ShipSetupWizard, PreferencesDialog
 from utils import config_exists, load_config, save_config
@@ -148,6 +149,12 @@ class MainWindow(QMainWindow):
         visual_action = QAction("Visual Stowage Plan (PDF)", self)
         visual_action.triggered.connect(lambda: self._export("visual"))
         export_menu.addAction(visual_action)
+        
+        export_menu.addSeparator()
+        
+        template_action = QAction("Template Report (XLSM)", self)
+        template_action.triggered.connect(self._export_template_report)
+        export_menu.addAction(template_action)
         
         file_menu.addSeparator()
         
@@ -1024,6 +1031,44 @@ class MainWindow(QMainWindow):
                 
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Export failed: {e}")
+    
+    def _export_template_report(self):
+        """Export grid data to a copy of the XLSM template."""
+        if not self.voyage:
+            QMessageBox.warning(self, "Warning", "No voyage data to export")
+            return
+        
+        # Check if template exists
+        template_path = get_template_path()
+        if not template_path.exists():
+            QMessageBox.warning(
+                self, "Template Not Found",
+                f"Template file not found:\n{template_path}\n\n"
+                "Please place your TEMPLATE.XLSM file in the TEMPLATE folder."
+            )
+            return
+        
+        # Prompt for save location
+        default_name = f"{self.voyage.voyage_number.replace('/', '-')}_report.xlsm"
+        filepath, _ = QFileDialog.getSaveFileName(
+            self, "Export Template Report", 
+            default_name, 
+            "Excel Macro Files (*.xlsm)"
+        )
+        
+        if not filepath:
+            return
+        
+        # Get column keys from COLUMNS definition
+        column_keys = [col[0] for col in self.COLUMNS]
+        
+        success = export_template_report(self.voyage, filepath, column_keys)
+        
+        if success:
+            self.status_bar.showMessage(f"Exported Template Report: {filepath}")
+            QMessageBox.information(self, t("success", "dialog"), f"Exported to {filepath}")
+        else:
+            QMessageBox.warning(self, t("error", "dialog"), "Export failed. Check console for details.")
     
     def _save_voyage_data(self):
         """Save current UI data to voyage object."""
