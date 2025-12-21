@@ -2,6 +2,8 @@
 PDF export using reportlab.
 """
 
+import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 try:
@@ -10,12 +12,32 @@ try:
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import cm
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
     REPORTLAB_AVAILABLE = True
 except ImportError:
     REPORTLAB_AVAILABLE = False
 
 if TYPE_CHECKING:
     from ..models.voyage import Voyage
+
+
+def register_fonts():
+    """Register Unicode-compatible fonts for ReportLab."""
+    if not REPORTLAB_AVAILABLE:
+        return
+
+    # Try to find Arial in standard Windows location
+    font_path = Path("C:/Windows/Fonts/arial.ttf")
+    font_bold_path = Path("C:/Windows/Fonts/arialbd.ttf")
+
+    try:
+        if font_path.exists():
+            pdfmetrics.registerFont(TTFont('Arial', str(font_path)))
+        if font_bold_path.exists():
+            pdfmetrics.registerFont(TTFont('Arial-Bold', str(font_bold_path)))
+    except Exception as e:
+        print(f"Warning: Could not register Arial fonts: {e}")
 
 
 def export_to_pdf(voyage: 'Voyage', filepath: str) -> bool:
@@ -32,6 +54,22 @@ def export_to_pdf(voyage: 'Voyage', filepath: str) -> bool:
     if not REPORTLAB_AVAILABLE:
         print("reportlab not installed. Run: pip install reportlab")
         return False
+    
+    # Register fonts before building the doc
+    register_fonts()
+    
+    # Determine font names (fallback to Helvetica if Arial not registered)
+    try:
+        pdfmetrics.getFont('Arial')
+        font_normal = 'Arial'
+    except:
+        font_normal = 'Helvetica'
+
+    try:
+        pdfmetrics.getFont('Arial-Bold')
+        font_bold = 'Arial-Bold'
+    except:
+        font_bold = 'Helvetica-Bold'
     
     try:
         doc = SimpleDocTemplate(
@@ -50,6 +88,7 @@ def export_to_pdf(voyage: 'Voyage', filepath: str) -> bool:
         title_style = ParagraphStyle(
             'Title',
             parent=styles['Heading1'],
+            fontName=font_bold,
             fontSize=18,
             alignment=1  # Center
         )
@@ -64,10 +103,10 @@ def export_to_pdf(voyage: 'Voyage', filepath: str) -> bool:
         ]
         info_table = Table(info_data, colWidths=[3*cm, 5*cm, 3*cm, 5*cm])
         info_table.setStyle(TableStyle([
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTNAME', (0, 0), (-1, -1), font_normal),
             ('FONTSIZE', (0, 0), (-1, -1), 10),
-            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-            ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 0), (0, -1), font_bold),
+            ('FONTNAME', (2, 0), (2, -1), font_bold),
         ]))
         elements.append(info_table)
         elements.append(Spacer(1, 0.5*cm))
@@ -117,17 +156,17 @@ def export_to_pdf(voyage: 'Voyage', filepath: str) -> bool:
             # Header row
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4472C4')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 0), (-1, 0), font_bold),
             ('FONTSIZE', (0, 0), (-1, 0), 9),
             ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
             
             # Data rows
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTNAME', (0, 1), (-1, -1), font_normal),
             ('FONTSIZE', (0, 1), (-1, -1), 8),
             ('ALIGN', (3, 1), (-1, -1), 'RIGHT'),
             
             # Totals row
-            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (0, -1), (-1, -1), font_bold),
             ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#D9E1F2')),
             
             # Grid
@@ -153,6 +192,12 @@ def export_to_pdf(voyage: 'Voyage', filepath: str) -> bool:
             ["Chief Officer:", voyage.chief_officer, "Master:", voyage.master]
         ]
         officers_table = Table(officers_data, colWidths=[3*cm, 6*cm, 3*cm, 6*cm])
+        # Set font for officers table
+        officers_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), font_normal),
+            ('FONTNAME', (0, 0), (0, -1), font_bold),
+            ('FONTNAME', (2, 0), (2, -1), font_bold),
+        ]))
         elements.append(officers_table)
         
         # Build PDF
@@ -162,3 +207,4 @@ def export_to_pdf(voyage: 'Voyage', filepath: str) -> bool:
     except Exception as e:
         print(f"Error exporting to PDF: {e}")
         return False
+

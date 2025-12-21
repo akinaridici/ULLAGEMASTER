@@ -28,7 +28,7 @@ from core import (
 )
 from export import (
     export_stowage_plan, export_ascii_report, 
-    export_to_excel, export_to_pdf
+    export_to_excel, export_to_pdf, generate_stowage_plan
 )
 from ui.dialogs import ShipSetupDialog, ShipSetupWizard, PreferencesDialog
 from utils import config_exists, load_config, save_config
@@ -38,6 +38,7 @@ from .styles import (
     COLOR_CELL_INPUT, COLOR_CELL_CALCULATED, COLOR_CELL_TEXT,
     COLOR_DANGER, COLOR_WARNING_HIGH, COLOR_WARNING_LOW, COLOR_WINDOW_BG
 )
+from .widgets.delegates import TankGridDelegate
 
 # Legacy naming for compatibility with existing logic
 COLOR_INPUT = COLOR_CELL_INPUT
@@ -73,7 +74,6 @@ class MainWindow(QMainWindow):
         ("density_air", "Air Dens", 80, False, True),
         ("gsv", "GSV", 90, False, True),
         ("mt_air", "MT (Air)", 90, False, True),
-        ("discrepancy", "Disc %", 70, False, True),
     ]
     
     def __init__(self):
@@ -83,6 +83,7 @@ class MainWindow(QMainWindow):
         self.ship_config: Optional[ShipConfig] = None
         self.tanks: Dict[str, Tank] = {}
         self.voyage: Optional[Voyage] = None
+        self.tank_table = None
         
         # Setup UI
         self.setWindowTitle("UllageMaster - Tanker Cargo Calculator")
@@ -143,6 +144,10 @@ class MainWindow(QMainWindow):
         json_action = QAction(t("export_json", "menu"), self)
         json_action.triggered.connect(lambda: self._export("json"))
         export_menu.addAction(json_action)
+        
+        visual_action = QAction("Visual Stowage Plan (PDF)", self)
+        visual_action.triggered.connect(lambda: self._export("visual"))
+        export_menu.addAction(visual_action)
         
         file_menu.addSeparator()
         
@@ -286,6 +291,8 @@ class MainWindow(QMainWindow):
         header.setStyleSheet(
             "QHeaderView::section { background-color: #4472C4; color: white; font-weight: bold; }"
         )
+        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        header.setMinimumSectionSize(50) # Ensure columns don't get too small to click
         
         # Install event filter for bulk input
         table.installEventFilter(self)
@@ -293,6 +300,13 @@ class MainWindow(QMainWindow):
         # Enable context menu
         table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         table.customContextMenuRequested.connect(self._show_context_menu)
+        
+        # Apply custom delegate for row separators
+        # table.setItemDelegate(TankGridDelegate(table)) # Global delegate
+        # However, we might want to keep default delegates for editors...
+        # QStyledItemDelegate handles editors fine via createEditor.
+        delegate = TankGridDelegate(table)
+        table.setItemDelegate(delegate)
         
         return table
     
@@ -980,12 +994,34 @@ class MainWindow(QMainWindow):
                     export_to_excel(self.voyage, filepath)
                 elif format_type == "pdf":
                     export_to_pdf(self.voyage, filepath)
+                    self.status_bar.showMessage(f"Exported to: {filepath}")
                 elif format_type == "ascii":
                     export_ascii_report(self.voyage, filepath)
+                    self.status_bar.showMessage(f"Exported to: {filepath}")
                 elif format_type == "json":
-                    export_stowage_plan(self.voyage, filepath)
+                    success = export_stowage_plan(self.voyage, filepath)
+                    if success:
+                        self.status_bar.showMessage(f"Exported to JSON: {filepath}")
+                        QMessageBox.information(self, t("success", "dialog"), f"Exported to {filepath}")
+                    else:
+                        QMessageBox.warning(self, t("error", "dialog"), "Export failed")
+                elif format_type == "visual":
+                    filepath, _ = QFileDialog.getSaveFileName(
+                        self, "Export Visual Stowage", 
+                        f"stowage_plan_{self.voyage.voyage_number.replace('/', '-')}.pdf", 
+                        "PDF Files (*.pdf)"
+                    )
+                    if not filepath:
+                        return
+                        
+                    success = generate_stowage_plan(self.voyage, filepath, 
+                                                  self.ship_config.ship_name if self.ship_config else "")
+                    if success:
+                        self.status_bar.showMessage(f"Exported Visual Stowage: {filepath}")
+                        QMessageBox.information(self, t("success", "dialog"), f"Exported to {filepath}")
+                    else:
+                        QMessageBox.warning(self, t("error", "dialog"), "Export failed")
                 
-                self.status_bar.showMessage(f"Exported to: {filepath}")
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Export failed: {e}")
     

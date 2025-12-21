@@ -129,6 +129,21 @@ QTableWidget::item:selected {
     color: white;
 }
 
+/* Fix for Table Cell Editors - prevent thick borders/padding from clipping text */
+QTableWidget QLineEdit {
+    border: none;
+    padding: 0px;
+    margin: 0px;
+    border-radius: 0px;
+    background-color: #ffffff;
+    color: #0f172a;
+}
+QTableWidget QLineEdit:focus {
+    border: 2px solid #38bdf8; /* Visible focus but minimal padding */
+    padding: 0px;
+    background-color: #ffffff;
+}
+
 /* Table Header */
 QHeaderView::section {
     background-color: #334155;
