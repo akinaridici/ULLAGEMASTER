@@ -148,7 +148,7 @@ class Voyage:
         """Create a new voyage with current date."""
         return cls(
             voyage_number=voyage_number,
-            date=datetime.now().strftime('%Y-%m-%d'),
+            date=datetime.now().strftime('%d-%m-%Y'),
             port=port,
             terminal=terminal
         )

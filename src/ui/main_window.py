@@ -16,7 +16,7 @@ from PyQt6.QtWidgets import (
     QStatusBar, QMessageBox, QFileDialog, QGroupBox, QFrame,
     QAbstractItemView, QApplication, QInputDialog
 )
-from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtCore import Qt, QSize, QSettings
 from PyQt6.QtGui import QColor, QFont, QAction, QKeySequence, QKeyEvent
 
 from i18n import t, set_language, get_current_language
@@ -71,9 +71,10 @@ class MainWindow(QMainWindow):
         ("therm_corr", "Therm.Corr", 80, False, True),  # Thermal correction factor
         ("gov", "GOV", 90, False, True),                # TOV * Therm.Corr
         ("vcf", "VCF", 80, False, True),
+        ("gsv", "GSV", 90, False, True),              # GSV = GOV * VCF
         ("density_vac", "VAC Dens", 80, False, True), # Auto from parcel
+        ("mt_vac", "MT(VAC)", 90, False, True),       # MT(VAC) = GSV * VAC Dens
         ("density_air", "Air Dens", 80, False, True),
-        ("gsv", "GSV", 90, False, True),
         ("mt_air", "MT (Air)", 90, False, True),
     ]
     
@@ -86,6 +87,10 @@ class MainWindow(QMainWindow):
         self.voyage: Optional[Voyage] = None
         self.tank_table = None
         
+        # Persistence
+        self.settings = QSettings("UllageMaster", "UllageMaster")
+        self.last_dir = self.settings.value("last_dir", "")
+        
         # Setup UI
         self.setWindowTitle("UllageMaster - Tanker Cargo Calculator")
         self.setMinimumSize(1400, 800)
@@ -96,6 +101,14 @@ class MainWindow(QMainWindow):
         
         # Load default or create new
         self._init_default_data()
+    
+    def _update_last_dir(self, filepath: str):
+        """Update last used directory in settings."""
+        if not filepath:
+            return
+        self.last_dir = str(Path(filepath).parent)
+        self.settings.setValue("last_dir", self.last_dir)
+
     
     def _create_menu(self):
         """Create menu bar."""
@@ -233,7 +246,7 @@ class MainWindow(QMainWindow):
         
         layout.addWidget(QLabel(t("date", "header")), 0, 6)
         self.date_edit = QLineEdit()
-        self.date_edit.setText(datetime.now().strftime("%Y-%m-%d"))
+        self.date_edit.setText(datetime.now().strftime("%d-%m-%Y"))
         layout.addWidget(self.date_edit, 0, 7)
         
         # Row 2
@@ -437,35 +450,49 @@ class MainWindow(QMainWindow):
     def _create_footer(self) -> QWidget:
         """Create footer section with totals."""
         group = QGroupBox("Summary")
-        layout = QHBoxLayout(group)
+        main_layout = QVBoxLayout(group)
+        
+        # Row 1: Grand totals and officers
+        top_row = QHBoxLayout()
         
         # Totals
-        layout.addWidget(QLabel(t("total_gsv", "footer")))
+        top_row.addWidget(QLabel(t("total_gsv", "footer")))
         self.total_gsv_label = QLabel("0.000")
         self.total_gsv_label.setStyleSheet("font-weight: bold; font-size: 14px;")
-        layout.addWidget(self.total_gsv_label)
+        top_row.addWidget(self.total_gsv_label)
         
-        layout.addSpacing(30)
+        top_row.addSpacing(30)
         
-        layout.addWidget(QLabel(t("total_mt", "footer")))
+        top_row.addWidget(QLabel(t("total_mt", "footer")))
         self.total_mt_label = QLabel("0.000")
         self.total_mt_label.setStyleSheet("font-weight: bold; font-size: 14px;")
-        layout.addWidget(self.total_mt_label)
+        top_row.addWidget(self.total_mt_label)
         
-        layout.addStretch()
+        top_row.addStretch()
         
         # Officers
-        layout.addWidget(QLabel(t("chief_officer", "footer")))
+        top_row.addWidget(QLabel(t("chief_officer", "footer")))
         self.chief_officer_edit = QLineEdit()
         self.chief_officer_edit.setMaximumWidth(150)
         self.chief_officer_edit.editingFinished.connect(self._save_officer_names)
-        layout.addWidget(self.chief_officer_edit)
+        top_row.addWidget(self.chief_officer_edit)
         
-        layout.addWidget(QLabel(t("master", "footer")))
+        top_row.addWidget(QLabel(t("master", "footer")))
         self.master_edit = QLineEdit()
         self.master_edit.setMaximumWidth(150)
         self.master_edit.editingFinished.connect(self._save_officer_names)
-        layout.addWidget(self.master_edit)
+        top_row.addWidget(self.master_edit)
+        
+        main_layout.addLayout(top_row)
+        
+        # Row 2: Parcel summary (MT AIR per parcel)
+        self.parcel_summary_layout = QHBoxLayout()
+        self.parcel_summary_layout.addWidget(QLabel("Parcel Totals (MT Air):"))
+        self.parcel_summary_layout.addStretch()
+        main_layout.addLayout(self.parcel_summary_layout)
+        
+        # Store parcel labels for dynamic updates
+        self.parcel_mt_labels = {}  # {parcel_id: QLabel}
         
         return group
     
@@ -665,7 +692,7 @@ class MainWindow(QMainWindow):
         receiver = ""
         
         if reading.parcel_id:
-            if reading.parcel_id == "SLOP":
+            if reading.parcel_id == "0":
                 grade = "SLOP"
                 receiver = ""
             else:
@@ -676,7 +703,7 @@ class MainWindow(QMainWindow):
         
         mapping = {
             "tank_id": reading.tank_id,
-            "parcel": reading.parcel_id,
+            "parcel": reading.parcel_id,  # Shows "0" for SLOP
             "grade": grade,
             "receiver": receiver,
             "receiver_tank": reading.tank_id,  # Default to tank_id
@@ -690,6 +717,7 @@ class MainWindow(QMainWindow):
             "temp": reading.temp_celsius,
             "vcf": reading.vcf,
             "density_vac": reading.density_vac,
+            "mt_vac": reading.mt_vac,
             "density_air": reading.density_air,
             "gsv": reading.gsv,
             "mt_air": reading.mt_air,
@@ -821,20 +849,20 @@ class MainWindow(QMainWindow):
                 # Only recalculate fill% if user entered ullage (not when they entered fill%)
                 if not user_entered_fill_percent:
                     reading.fill_percent = calculate_fill_percent(reading.tov, tank.capacity_m3)
-            
-            # VCF and GSV
-            if reading.temp_celsius and reading.density_vac:
-                reading.vcf = calculate_vcf(reading.temp_celsius, reading.density_vac)
-                reading.gsv = reading.gov * reading.vcf * self.vef_spin.value()  # GSV = GOV * VCF * VEF
                 
-                # Air density = Vac Density - 0.0011 (for g/cm³) or - 1.1 (for kg/m³)
-                if reading.density_vac < 10:  # g/cm³ format
-                    reading.density_air = reading.density_vac - 0.0011
-                else:  # kg/m³ format
-                    reading.density_air = reading.density_vac - 1.1
-                
-                reading.mt_air = calculate_mass(reading.gsv, reading.density_air)
-                reading.mt_vac = calculate_mass(reading.gsv, reading.density_vac)
+                # VCF and GSV - only calculate when we have fresh GOV
+                if reading.temp_celsius and reading.density_vac:
+                    reading.vcf = calculate_vcf(reading.temp_celsius, reading.density_vac)
+                    reading.gsv = reading.gov * reading.vcf  # GSV = GOV * VCF
+                    
+                    # Air density = Vac Density - 0.0011 (for g/cm³) or - 1.1 (for kg/m³)
+                    if reading.density_vac < 10:  # g/cm³ format
+                        reading.density_air = reading.density_vac - 0.0011
+                    else:  # kg/m³ format
+                        reading.density_air = reading.density_vac - 1.1
+                    
+                    reading.mt_air = calculate_mass(reading.gsv, reading.density_air)
+                    reading.mt_vac = calculate_mass(reading.gsv, reading.density_vac)
             
             # Warning
             if reading.fill_percent:
@@ -883,13 +911,59 @@ class MainWindow(QMainWindow):
         self.tank_table.blockSignals(False)
     
     def _update_totals(self):
-        """Update total GSV and MT."""
+        """Update total GSV and MT, plus per-parcel MT AIR."""
         if not self.voyage:
             return
         
         self.voyage.calculate_totals()
         self.total_gsv_label.setText(f"{self.voyage.total_gsv:.3f}")
         self.total_mt_label.setText(f"{self.voyage.total_mt:.3f}")
+        
+        # Calculate per-parcel MT AIR totals
+        parcel_totals = {}  # {parcel_id: {name, receiver, mt_air}}
+        
+        for reading in self.voyage.tank_readings.values():
+            pid = reading.parcel_id
+            if not pid:
+                continue
+            
+            if pid not in parcel_totals:
+                # Get parcel name and receiver
+                if pid == "0":
+                    name = "SLOP"
+                    receiver = ""
+                else:
+                    name = pid
+                    receiver = ""
+                    for p in self.voyage.parcels:
+                        if p.id == pid:
+                            name = p.name or pid
+                            receiver = p.receiver or ""
+                            break
+                parcel_totals[pid] = {'name': name, 'receiver': receiver, 'mt_air': 0.0}
+            
+            parcel_totals[pid]['mt_air'] += reading.mt_air or 0.0
+        
+        # Clear existing parcel labels (except the header label)
+        while self.parcel_summary_layout.count() > 2:  # Keep first label and stretch
+            item = self.parcel_summary_layout.takeAt(2)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        # Remove stored labels
+        self.parcel_mt_labels.clear()
+        
+        # Add parcel labels
+        for pid, data in parcel_totals.items():
+            # Format: "Grade (Receiver): MT value" or "Grade: MT value" if no receiver
+            if data['receiver']:
+                label_text = f"{data['name']} ({data['receiver']}): {data['mt_air']:.3f} MT"
+            else:
+                label_text = f"{data['name']}: {data['mt_air']:.3f} MT"
+            label = QLabel(label_text)
+            label.setStyleSheet("font-weight: bold; margin-left: 15px;")
+            self.parcel_summary_layout.addWidget(label)
+            self.parcel_mt_labels[pid] = label
     
     def _on_draft_changed(self):
         """Handle draft value change."""
@@ -926,16 +1000,17 @@ class MainWindow(QMainWindow):
         self.port_edit.clear()
         self.terminal_edit.clear()
         self.voyage_edit.clear()
-        self.date_edit.setText(datetime.now().strftime("%Y-%m-%d"))
+        self.date_edit.setText(datetime.now().strftime("%d-%m-%Y"))
         self._populate_grid()
         self.status_bar.showMessage("New voyage created")
     
     def _open_voyage(self):
         """Open existing voyage."""
         filepath, _ = QFileDialog.getOpenFileName(
-            self, "Open Voyage", "", "JSON Files (*.json)"
+            self, "Open Voyage", self.last_dir, "JSON Files (*.json)"
         )
         if filepath:
+            self._update_last_dir(filepath)
             try:
                 self.voyage = Voyage.load_from_json(filepath)
                 self.port_edit.setText(self.voyage.port)
@@ -967,9 +1042,10 @@ class MainWindow(QMainWindow):
         self.voyage.master = self.master_edit.text()
         
         filepath, _ = QFileDialog.getSaveFileName(
-            self, "Save Voyage", "", "JSON Files (*.json)"
+            self, "Save Voyage", self.last_dir, "JSON Files (*.json)"
         )
         if filepath:
+            self._update_last_dir(filepath)
             try:
                 self.voyage.save_to_json(filepath)
                 self.status_bar.showMessage(f"Voyage saved: {filepath}")
@@ -991,11 +1067,20 @@ class MainWindow(QMainWindow):
             "json": "JSON Files (*.json)"
         }
         
+        # Prepare default filename for export
+        default_file = ""
+        if format_type == "visual":
+            default_file = f"stowage_plan_{self.voyage.voyage_number.replace('/', '-')}.pdf"
+        
+        # Combine last_dir with default_file if provided
+        initial_path = str(Path(self.last_dir) / default_file) if default_file else self.last_dir
+        
         filepath, _ = QFileDialog.getSaveFileName(
-            self, f"Export to {format_type.upper()}", "", filters.get(format_type, "*.*")
+            self, f"Export to {format_type.upper()}", initial_path, filters.get(format_type, "*.*")
         )
         
         if filepath:
+            self._update_last_dir(filepath)
             try:
                 if format_type == "excel":
                     export_to_excel(self.voyage, filepath)
@@ -1013,14 +1098,6 @@ class MainWindow(QMainWindow):
                     else:
                         QMessageBox.warning(self, t("error", "dialog"), "Export failed")
                 elif format_type == "visual":
-                    filepath, _ = QFileDialog.getSaveFileName(
-                        self, "Export Visual Stowage", 
-                        f"stowage_plan_{self.voyage.voyage_number.replace('/', '-')}.pdf", 
-                        "PDF Files (*.pdf)"
-                    )
-                    if not filepath:
-                        return
-                        
                     success = generate_stowage_plan(self.voyage, filepath, 
                                                   self.ship_config.ship_name if self.ship_config else "")
                     if success:
@@ -1050,19 +1127,28 @@ class MainWindow(QMainWindow):
         
         # Prompt for save location
         default_name = f"{self.voyage.voyage_number.replace('/', '-')}_report.xlsm"
+        initial_path = str(Path(self.last_dir) / default_name)
+        
         filepath, _ = QFileDialog.getSaveFileName(
             self, "Export Template Report", 
-            default_name, 
+            initial_path, 
             "Excel Macro Files (*.xlsm)"
         )
         
         if not filepath:
             return
         
+        self._update_last_dir(filepath)
+
+        
         # Get column keys from COLUMNS definition
         column_keys = [col[0] for col in self.COLUMNS]
         
-        success = export_template_report(self.voyage, filepath, column_keys)
+        # Get draft values
+        draft_aft = self.draft_aft_spin.value()
+        draft_fwd = self.draft_fwd_spin.value()
+        
+        success = export_template_report(self.voyage, filepath, column_keys, draft_aft, draft_fwd)
         
         if success:
             self.status_bar.showMessage(f"Exported Template Report: {filepath}")
@@ -1123,9 +1209,10 @@ class MainWindow(QMainWindow):
     def _import_config(self):
         """Import configuration from an external JSON file."""
         filepath, _ = QFileDialog.getOpenFileName(
-            self, "Import Configuration", "", "JSON Files (*.json)"
+            self, "Import Configuration", self.last_dir, "JSON Files (*.json)"
         )
         if filepath:
+            self._update_last_dir(filepath)
             try:
                 imported_config = ShipConfig.load_from_json(filepath)
                 if imported_config and imported_config.tanks:
@@ -1213,15 +1300,20 @@ class MainWindow(QMainWindow):
             action_clear = menu.addAction("None (Clear)")
             action_clear.triggered.connect(lambda: self._on_parcel_selected(row, ""))
             
-            # Add SLOP option (always available)
+            # Add SLOP option (always available, stored as "0")
             menu.addSeparator()
             action_slop = menu.addAction("SLOP")
-            action_slop.triggered.connect(lambda: self._on_parcel_selected(row, "SLOP"))
+            action_slop.triggered.connect(lambda: self._on_parcel_selected(row, "0"))
             
             if self.voyage and self.voyage.parcels:
                 menu.addSeparator()
                 for parcel in self.voyage.parcels:
-                    action = menu.addAction(f"{parcel.id} - {parcel.name}")
+                    # Show "ID - Grade (Receiver)" or just "ID - Grade" if no receiver
+                    if parcel.receiver:
+                        label = f"{parcel.id} - {parcel.name} ({parcel.receiver})"
+                    else:
+                        label = f"{parcel.id} - {parcel.name}"
+                    action = menu.addAction(label)
                     # Use default parameter to capture loop variable
                     action.triggered.connect(lambda checked, r=row, p=parcel.id: self._on_parcel_selected(r, p))
             else:
@@ -1296,7 +1388,7 @@ class MainWindow(QMainWindow):
         
         reading.parcel_id = parcel_id
         
-        if parcel_id == "SLOP":
+        if parcel_id == "0":  # SLOP parcel
             # Use slop density from ship config
             if self.ship_config:
                 reading.density_vac = getattr(self.ship_config, 'slop_density', 0.85)

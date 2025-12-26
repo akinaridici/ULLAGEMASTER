@@ -18,6 +18,13 @@ try:
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.ttfonts import TTFont
     REPORTLAB_AVAILABLE = True
+    
+    # Constants for layout (only defined when reportlab is available)
+    PAGE_WIDTH, PAGE_HEIGHT = landscape(A4)
+    MARGIN_X = 1 * cm
+    MARGIN_Y = 1 * cm
+    DRAW_AREA_WIDTH = PAGE_WIDTH - (2 * MARGIN_X)
+    DRAW_AREA_HEIGHT = PAGE_HEIGHT - (2 * MARGIN_Y)
 except ImportError:
     REPORTLAB_AVAILABLE = False
 
@@ -25,13 +32,6 @@ if TYPE_CHECKING:
     from ..models.voyage import Voyage
     from ..models.tank import TankReading
     from ..models.parcel import Parcel
-
-# Constants for layout
-PAGE_WIDTH, PAGE_HEIGHT = landscape(A4)
-MARGIN_X = 1 * cm
-MARGIN_Y = 1 * cm
-DRAW_AREA_WIDTH = PAGE_WIDTH - (2 * MARGIN_X)
-DRAW_AREA_HEIGHT = PAGE_HEIGHT - (2 * MARGIN_Y)
 
 
 def _get_contrast_color(hex_color: str) -> colors.Color:
@@ -72,7 +72,7 @@ def _draw_tank_cell(c: canvas.Canvas, x: float, y: float, w: float, h: float,
             text_color = _get_contrast_color(parcel.color)
         except:
             pass
-    elif reading.parcel_id == "SLOP":
+    elif reading.parcel_id == "0":  # SLOP
         bg_color = colors.HexColor("#9CA3AF")
         text_color = colors.black
     
@@ -105,7 +105,7 @@ def _draw_tank_cell(c: canvas.Canvas, x: float, y: float, w: float, h: float,
     c.drawCentredString(x + w/2, y + h - 12, tank_name)
     
     # Row 2: Parcel Name
-    parcel_name = parcel.name if parcel else ("SLOP" if reading.parcel_id == "SLOP" else "")
+    parcel_name = parcel.name if parcel else ("SLOP" if reading.parcel_id == "0" else "")
     c.setFont(font_bold, 9)
     # Wrap text if too long
     if c.stringWidth(parcel_name, font_bold, 9) > w - 4:
@@ -241,7 +241,7 @@ def generate_stowage_plan(voyage: 'Voyage', filepath: str, ship_name: str = "") 
             if 'P' in group:
                 tank_id, reading = group['P']
                 parcel = None
-                if reading.parcel_id and reading.parcel_id != "SLOP":
+                if reading.parcel_id and reading.parcel_id != "0":  # Not SLOP
                     # Find parcel
                     for p in voyage.parcels:
                         if p.id == reading.parcel_id:
@@ -255,7 +255,7 @@ def generate_stowage_plan(voyage: 'Voyage', filepath: str, ship_name: str = "") 
             if 'S' in group:
                 tank_id, reading = group['S']
                 parcel = None
-                if reading.parcel_id and reading.parcel_id != "SLOP":
+                if reading.parcel_id and reading.parcel_id != "0":  # Not SLOP
                     for p in voyage.parcels:
                         if p.id == reading.parcel_id:
                             parcel = p
@@ -271,7 +271,7 @@ def generate_stowage_plan(voyage: 'Voyage', filepath: str, ship_name: str = "") 
             if 'C' in group:
                 tank_id, reading = group['C']
                 parcel = None
-                if reading.parcel_id and reading.parcel_id != "SLOP":
+                if reading.parcel_id and reading.parcel_id != "0":  # Not SLOP
                     for p in voyage.parcels:
                         if p.id == reading.parcel_id:
                             parcel = p
@@ -299,11 +299,11 @@ def generate_stowage_plan(voyage: 'Voyage', filepath: str, ship_name: str = "") 
             
             if pid not in summary_data:
                 p_obj = None
-                name = "SLOP" if pid == "SLOP" else "Unknown"
-                color = "#9CA3AF" if pid == "SLOP" else "#FFFFFF"
+                name = "SLOP" if pid == "0" else "Unknown"
+                color = "#9CA3AF" if pid == "0" else "#FFFFFF"
                 density = 0.0
                 
-                if pid != "SLOP":
+                if pid != "0":  # Not SLOP
                     for p in voyage.parcels:
                         if p.id == pid:
                             p_obj = p

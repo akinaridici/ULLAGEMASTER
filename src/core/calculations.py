@@ -173,19 +173,20 @@ def calculate_gov(tov: float, trim_correction: float) -> float:
     return tov + trim_correction
 
 
-def calculate_gsv(gov: float, vcf: float, vef: float = 1.0) -> float:
+def calculate_gsv(gov: float, vcf: float) -> float:
     """
     Calculate Gross Standard Volume.
+    
+    GSV = GOV * VCF
     
     Args:
         gov: Gross Observed Volume in m³
         vcf: Volume Correction Factor
-        vef: Vessel Experience Factor (default 1.0)
         
     Returns:
         GSV in m³
     """
-    return gov * vcf * vef
+    return gov * vcf
 
 
 def calculate_mass(gsv: float, density: float, in_air: bool = True) -> float:
@@ -269,8 +270,8 @@ def calculate_tank_full(
     # Step 3: Calculate VCF
     vcf = calculate_vcf(temp_celsius, density_vac)
     
-    # Step 4: Calculate GSV
-    gsv = calculate_gsv(gov, vcf, vef)
+    # Step 4: Calculate GSV = GOV * VCF
+    gsv = calculate_gsv(gov, vcf)
     
     # Step 5: Convert density
     density_air = vac_to_air(density_vac)

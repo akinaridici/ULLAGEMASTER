@@ -121,7 +121,7 @@ def export_to_pdf(voyage: 'Voyage', filepath: str) -> bool:
             grade = ""
             receiver = ""
             if reading.parcel_id:
-                if reading.parcel_id == "SLOP":
+                if reading.parcel_id == "0":  # SLOP
                     grade = "SLOP"
                 else:
                     for parcel in voyage.parcels:
