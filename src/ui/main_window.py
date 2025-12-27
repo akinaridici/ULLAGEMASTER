@@ -950,38 +950,42 @@ class MainWindow(QMainWindow):
     def _update_row(self, row: int, reading: TankReading):
         """Update row with calculated values and apply parcel-based colors.
         
-        NOTE: Callers are responsible for blocking table signals if needed.
+        NOTE: Signals are blocked to prevent recursion loops (update -> signal -> recalc -> update).
         """
-        for col, (key, _, _, is_input, is_numeric) in enumerate(self.COLUMNS):
-            item = self.tank_table.item(row, col)
-            if not item:
-                continue
-            
-            # Update background color based on parcel (for ALL cells)
-            parcel_color = self._get_parcel_bg_color(reading.parcel_id, is_input and key != "parcel")
-            item.setData(Qt.ItemDataRole.BackgroundRole, QBrush(parcel_color))
-            
-            # Only update text for non-input columns (except ullage, fill_percent, parcel)
-            if is_input and key not in ("ullage", "fill_percent", "parcel"):
-                continue
-            
-            value = self._get_reading_value(reading, key)
-            if value is not None:
-                if is_numeric:
-                    if key == "ullage":
-                        item.setText(f"{value:.1f}" if isinstance(value, (int, float)) else str(value))
-                    elif key == "vcf":
-                        item.setText(f"{value:.5f}")
-                    elif key == "therm_corr":
-                        item.setText(f"{value:.6f}")
-                    elif key in ("density_vac", "density_air"):
-                        item.setText(f"{value:.4f}")
-                    elif key in ("fill_percent", "temp", "corrected_ullage", "trim_corr"):
-                        item.setText(f"{value:.1f}")
+        self.tank_table.blockSignals(True)
+        try:
+            for col, (key, _, _, is_input, is_numeric) in enumerate(self.COLUMNS):
+                item = self.tank_table.item(row, col)
+                if not item:
+                    continue
+                
+                # Update background color based on parcel (for ALL cells)
+                parcel_color = self._get_parcel_bg_color(reading.parcel_id, is_input and key != "parcel")
+                item.setData(Qt.ItemDataRole.BackgroundRole, QBrush(parcel_color))
+                
+                # Only update text for non-input columns (except ullage, fill_percent, parcel)
+                # AND update inputs if they are calculated/derived to keep UI in sync
+                # We update EVERYTHING to ensure consistency
+                
+                value = self._get_reading_value(reading, key)
+                if value is not None:
+                    if is_numeric:
+                        if key == "ullage":
+                            item.setText(f"{value:.1f}" if isinstance(value, (int, float)) else str(value))
+                        elif key == "vcf":
+                            item.setText(f"{value:.5f}")
+                        elif key == "therm_corr":
+                            item.setText(f"{value:.6f}")
+                        elif key in ("density_vac", "density_air"):
+                            item.setText(f"{value:.4f}")
+                        elif key in ("fill_percent", "temp", "corrected_ullage", "trim_corr"):
+                            item.setText(f"{value:.1f}")
+                        else:
+                            item.setText(f"{value:.3f}")
                     else:
-                        item.setText(f"{value:.3f}")
-                else:
-                    item.setText(str(value))
+                        item.setText(str(value))
+        finally:
+            self.tank_table.blockSignals(False)
     
     def _update_totals(self):
         """Update total GSV and MT, plus per-parcel MT AIR."""

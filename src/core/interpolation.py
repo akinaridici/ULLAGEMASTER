@@ -27,6 +27,20 @@ def linear_interpolate(table: pd.DataFrame, x_col: str, y_col: str, x_value: flo
     x_arr = table[x_col].values
     y_arr = table[y_col].values
     
+    # Sort by x_arr to ensure search logic (np.where) works correctly
+    # This handles descending data (e.g. Reverse lookup: Volume -> Ullage)
+    if len(x_arr) > 1 and x_arr[0] > x_arr[-1]:
+        # If strictly descending, simple reversal is faster than full sort
+        # But argsort is safer for mixed/unsorted data
+        idx = np.argsort(x_arr)
+        x_arr = x_arr[idx]
+        y_arr = y_arr[idx]
+    elif len(x_arr) > 1 and x_arr.min() < x_arr[0]: 
+        # Detect unsorted data generally
+        idx = np.argsort(x_arr)
+        x_arr = x_arr[idx]
+        y_arr = y_arr[idx]
+    
     # Check bounds
     if x_value < x_arr.min() or x_value > x_arr.max():
         raise ValueError(f"Value {x_value} is outside table range [{x_arr.min()}, {x_arr.max()}]")
