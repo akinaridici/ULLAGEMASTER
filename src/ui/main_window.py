@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
     QTableWidget, QTableWidgetItem, QHeaderView, QLabel, QLineEdit,
     QDoubleSpinBox, QComboBox, QPushButton, QMenuBar, QMenu,
     QStatusBar, QMessageBox, QFileDialog, QGroupBox, QFrame,
-    QAbstractItemView, QApplication, QInputDialog
+    QAbstractItemView, QApplication, QInputDialog, QTabWidget
 )
 from PyQt6.QtCore import Qt, QSize, QSettings
 from PyQt6.QtGui import QColor, QFont, QAction, QKeySequence, QKeyEvent, QBrush
@@ -92,6 +92,11 @@ class MainWindow(QMainWindow):
         # Persistence
         self.settings = QSettings("UllageMaster", "UllageMaster")
         self.last_dir = self.settings.value("last_dir", "")
+        
+        # Colorize state
+        self.is_colorized: bool = False
+        self.original_cargo_colors: Dict[str, str] = {}
+        self.original_custom_colors: Dict[str, Optional[str]] = {}
         
         # Setup UI
         self.setWindowTitle("UllageMaster - Tanker Cargo Calculator")
@@ -201,6 +206,33 @@ class MainWindow(QMainWindow):
         prefs_action.triggered.connect(self._show_preferences)
         settings_menu.addAction(prefs_action)
         
+        # Stowage Plan menu
+        stowage_menu = menubar.addMenu("Stowage Plan")
+        
+        save_plan_action = QAction("💾 Plan Kaydet", self)
+        save_plan_action.setShortcut("Ctrl+Shift+S")
+        save_plan_action.triggered.connect(self._save_stowage_plan)
+        stowage_menu.addAction(save_plan_action)
+        
+        load_plan_action = QAction("📂 Plan Yükle", self)
+        load_plan_action.setShortcut("Ctrl+Shift+O")
+        load_plan_action.triggered.connect(self._load_stowage_plan)
+        stowage_menu.addAction(load_plan_action)
+        
+        stowage_menu.addSeparator()
+        
+        clear_all_action = QAction("Tüm Tankları Boşalt", self)
+        clear_all_action.setShortcut("Ctrl+E")
+        clear_all_action.triggered.connect(self._clear_all_tanks)
+        stowage_menu.addAction(clear_all_action)
+        
+        stowage_menu.addSeparator()
+        
+        transfer_action = QAction("➡️ Ullage'a Aktar", self)
+        transfer_action.setShortcut("Ctrl+Shift+T")
+        transfer_action.triggered.connect(self._transfer_stowage_to_ullage)
+        stowage_menu.addAction(transfer_action)
+        
         # Help menu
         help_menu = menubar.addMenu(t("help", "menu"))
         
@@ -209,11 +241,612 @@ class MainWindow(QMainWindow):
         help_menu.addAction(about_action)
     
     def _create_central_widget(self):
-        """Create main content area."""
-        central = QWidget()
-        self.setCentralWidget(central)
+        """Create main content area with tabs."""
+        # Create tab widget
+        self.tab_widget = QTabWidget()
+        self.setCentralWidget(self.tab_widget)
         
-        layout = QVBoxLayout(central)
+        # Tab 1: Stowage Planning (placeholder for now)
+        self.stowage_tab = self._create_stowage_tab()
+        self.tab_widget.addTab(self.stowage_tab, "📋 Stowage Plan")
+        
+        # Tab 2: Ullage Calculation (existing functionality)
+        self.ullage_tab = self._create_ullage_tab()
+        self.tab_widget.addTab(self.ullage_tab, "📊 Ullage Calculation")
+        
+        # Restore last active tab
+        last_tab = self.settings.value("last_tab", 1, type=int)  # Default to Ullage tab
+        self.tab_widget.setCurrentIndex(last_tab)
+        
+        # Save tab on change
+        self.tab_widget.currentChanged.connect(self._on_tab_changed)
+    
+    def _on_tab_changed(self, index: int):
+        """Save last active tab to settings."""
+        self.settings.setValue("last_tab", index)
+    
+    def _create_stowage_tab(self) -> QWidget:
+        """Create the Stowage Planning tab with STOWAGEMASTER-style layout.
+        
+        Layout:
+        ┌─────────────────────────────────────────────────────────────┐
+        │  TOP: Kontrol Paneli - Cargo Legend (draggable cards)       │
+        ├─────────────────────────────────────────────────────────────┤
+        │  MIDDLE: Ship Schematic (tank grid with Port/Starboard)     │
+        ├───────────────────────────┬─────────────────────────────────┤
+        │  BOTTOM LEFT:              │  BOTTOM RIGHT:                  │
+        │  "Yükleme Talepleri"       │  "Yükleme Planı"                │
+        └───────────────────────────┴─────────────────────────────────┘
+        """
+        from PyQt6.QtWidgets import QSplitter, QGroupBox
+        from ui.widgets import ShipSchematicWidget, CargoLegendWidget, CargoInputWidget, PlanViewerWidget
+        from models import StowagePlan
+        
+        tab = QWidget()
+        main_layout = QVBoxLayout(tab)
+        main_layout.setContentsMargins(5, 5, 5, 5)
+        
+        # Main vertical splitter: Top (40%) vs Bottom (60%)
+        main_splitter = QSplitter(Qt.Orientation.Vertical)
+        
+        # === TOP PANEL: Control Panel ===
+        top_panel = QGroupBox("Kontrol Paneli")
+        top_layout = QVBoxLayout(top_panel)
+        top_layout.setContentsMargins(5, 5, 5, 5)
+        top_layout.setSpacing(5)
+        
+        # Cargo legend row with buttons
+        legend_button_row = QHBoxLayout()
+        
+        self.cargo_legend = CargoLegendWidget()
+        self.cargo_legend.cargo_color_changed.connect(self._on_stowage_changed)
+        legend_button_row.addWidget(self.cargo_legend, 1)
+        
+        # Right-side buttons
+        buttons_col = QVBoxLayout()
+        buttons_col.setSpacing(6)
+        buttons_col.setAlignment(Qt.AlignmentFlag.AlignTop)
+        
+        # Colorize button (hold to colorize by receiver)
+        self.colorize_btn = QPushButton("Colorize")
+        self.colorize_btn.setMinimumHeight(35)
+        self.colorize_btn.setStyleSheet("""
+            font-size: 10pt; font-weight: bold;
+            background-color: #8b5cf6; color: white;
+            border-radius: 5px; padding: 8px;
+        """)
+        self.colorize_btn.setToolTip("Basılı tutun: Alıcı adının ilk 4 harfine göre gruplandırır")
+        self.colorize_btn.pressed.connect(self._apply_colorize)
+        self.colorize_btn.released.connect(self._restore_colorize)
+        buttons_col.addWidget(self.colorize_btn)
+        
+        # %100 Yap button
+        self.fill_100_btn = QPushButton("%100 Yap")
+        self.fill_100_btn.setMinimumHeight(35)
+        self.fill_100_btn.setStyleSheet("""
+            font-size: 10pt; font-weight: bold;
+            background-color: #f59e0b; color: white;
+            border-radius: 5px; padding: 8px;
+        """)
+        self.fill_100_btn.setToolTip("Tüm yüklü tankları %100 kapasiteye getir")
+        self.fill_100_btn.clicked.connect(self._fill_tanks_to_100)
+        buttons_col.addWidget(self.fill_100_btn)
+        
+        legend_button_row.addLayout(buttons_col)
+        top_layout.addLayout(legend_button_row)
+        
+        # Ship schematic widget
+        self.ship_schematic = ShipSchematicWidget()
+        top_layout.addWidget(self.ship_schematic, 1)
+        
+        main_splitter.addWidget(top_panel)
+        
+        # === BOTTOM PANEL: Horizontal splitter for tables ===
+        bottom_splitter = QSplitter(Qt.Orientation.Horizontal)
+        
+        # Left: Cargo Input (Yükleme Talepleri)
+        left_panel = QGroupBox("Yükleme Talepleri")
+        left_layout = QVBoxLayout(left_panel)
+        left_layout.setContentsMargins(5, 5, 5, 5)
+        
+        self.cargo_input_widget = CargoInputWidget()
+        self.cargo_input_widget.cargo_list_changed.connect(self._on_cargo_input_changed)
+        left_layout.addWidget(self.cargo_input_widget)
+        
+        bottom_splitter.addWidget(left_panel)
+        
+        # Right: Plan Viewer (Yükleme Planı)
+        right_panel = QGroupBox("Yükleme Planı")
+        right_layout = QVBoxLayout(right_panel)
+        right_layout.setContentsMargins(5, 5, 5, 5)
+        
+        self.plan_viewer_widget = PlanViewerWidget()
+        right_layout.addWidget(self.plan_viewer_widget)
+        
+        bottom_splitter.addWidget(right_panel)
+        
+        # Set bottom splitter proportions (40% left, 60% right)
+        bottom_splitter.setSizes([400, 600])
+        
+        main_splitter.addWidget(bottom_splitter)
+        
+        # Set main splitter proportions (40% top, 60% bottom)
+        main_splitter.setSizes([320, 480])
+        
+        main_layout.addWidget(main_splitter)
+        
+        # Initialize stowage plan and locked tanks
+        self.stowage_plan = StowagePlan()
+        self.locked_tanks = set()  # Tank IDs that are locked
+        
+        self.cargo_legend.set_stowage_plan(self.stowage_plan)
+        self.ship_schematic.set_stowage_plan(self.stowage_plan)
+        
+        # Connect signals
+        self.cargo_legend.cargos_changed.connect(self._on_stowage_changed)
+        self.ship_schematic.assignment_changed.connect(self._on_stowage_changed)
+        
+        return tab
+    
+    def _on_cargo_input_changed(self):
+        """Handle cargo input table changes - sync to stowage plan and legend."""
+        from ui.widgets.cargo_legend_widget import CARGO_COLORS
+        
+        cargo_list = self.cargo_input_widget.get_cargo_list()
+        
+        # Assign colors to cargos that don't have one
+        for i, cargo in enumerate(cargo_list):
+            if not cargo.custom_color:
+                cargo.custom_color = CARGO_COLORS[i % len(CARGO_COLORS)]
+        
+        # Update stowage plan cargo requests
+        self.stowage_plan.cargo_requests = cargo_list
+        
+        # Update cargo legend
+        self.cargo_legend.set_stowage_plan(self.stowage_plan)
+        
+        # Update displays
+        self._on_stowage_changed()
+    
+    def _on_stowage_changed(self):
+        """Handle changes to stowage plan."""
+        if hasattr(self, 'ship_schematic') and hasattr(self, 'cargo_legend'):
+            # Update colors from cargo legend
+            self.ship_schematic.set_cargo_colors(self.cargo_legend.get_cargo_colors())
+            self.ship_schematic.refresh()
+            self.ship_schematic.repaint()  # Force immediate repaint
+            
+            # Update cargo cards to show remaining quantities
+            self.cargo_legend.update_loaded_quantities()
+        
+        # Update plan viewer
+        if hasattr(self, 'plan_viewer_widget') and hasattr(self, 'stowage_plan'):
+            total_capacity = 0
+            if hasattr(self, 'ship_config') and self.ship_config:
+                total_capacity = sum(getattr(t, 'capacity_m3', 0) for t in self.ship_config.tanks)
+            self.plan_viewer_widget.display_plan(
+                self.stowage_plan,
+                self.cargo_legend.get_cargo_colors() if hasattr(self, 'cargo_legend') else [],
+                total_capacity
+            )
+    
+    def _init_stowage_with_ship_config(self):
+        """Initialize stowage tab with current ship config."""
+        if hasattr(self, 'ship_schematic') and self.ship_config:
+            self.ship_schematic.set_ship_config(self.ship_config)
+            if hasattr(self, 'stowage_plan'):
+                self.stowage_plan.ship_name = self.ship_config.ship_name
+    
+    # --- Drag-Drop Handlers ---
+    
+    def handle_cargo_drop(self, cargo_id: str, tank_id: str):
+        """Handle dropping a cargo onto a tank."""
+        from models.stowage_plan import TankAssignment
+        
+        if not self.stowage_plan:
+            return
+        
+        cargo = self.stowage_plan.get_cargo_by_id(cargo_id)
+        if not cargo:
+            return
+        
+        # Get tank capacity
+        tank_config = None
+        for t in self.ship_config.tanks:
+            if t.id == tank_id:
+                tank_config = t
+                break
+        
+        if not tank_config:
+            return
+        
+        capacity = getattr(tank_config, 'capacity_m3', 0)
+        
+        # Create assignment (fill tank to capacity or remaining cargo)
+        already_loaded = self.stowage_plan.get_cargo_total_loaded(cargo_id)
+        remaining = cargo.quantity - already_loaded
+        quantity_to_load = min(capacity, remaining) if remaining > 0 else capacity
+        
+        assignment = TankAssignment(
+            tank_id=tank_id,
+            cargo=cargo,
+            quantity_loaded=quantity_to_load
+        )
+        self.stowage_plan.add_assignment(tank_id, assignment)
+        
+        self._on_stowage_changed()
+    
+    def handle_tank_swap(self, source_tank_id: str, target_tank_id: str):
+        """Handle swapping cargo between two tanks."""
+        if not self.stowage_plan:
+            return
+        
+        source_assignment = self.stowage_plan.get_assignment(source_tank_id)
+        target_assignment = self.stowage_plan.get_assignment(target_tank_id)
+        
+        # Swap assignments
+        if source_assignment:
+            source_assignment.tank_id = target_tank_id
+            self.stowage_plan.assignments[target_tank_id] = source_assignment
+        else:
+            self.stowage_plan.remove_assignment(target_tank_id)
+        
+        if target_assignment:
+            target_assignment.tank_id = source_tank_id
+            self.stowage_plan.assignments[source_tank_id] = target_assignment
+        else:
+            self.stowage_plan.remove_assignment(source_tank_id)
+        
+        self._on_stowage_changed()
+    
+    def handle_empty_tank(self, tank_id: str):
+        """Handle emptying a tank (removing its assignment)."""
+        if not self.stowage_plan:
+            return
+        
+        self.stowage_plan.remove_assignment(tank_id)
+        self._on_stowage_changed()
+    
+    def handle_exclude_tank(self, tank_id: str, exclude: bool):
+        """Handle excluding/including a tank from planning."""
+        if not self.stowage_plan:
+            return
+        
+        if exclude:
+            if tank_id not in self.stowage_plan.excluded_tanks:
+                self.stowage_plan.excluded_tanks.append(tank_id)
+        else:
+            if tank_id in self.stowage_plan.excluded_tanks:
+                self.stowage_plan.excluded_tanks.remove(tank_id)
+        
+        if hasattr(self, 'ship_schematic'):
+            self.ship_schematic.excluded_tanks = set(self.stowage_plan.excluded_tanks)
+        
+        self._on_stowage_changed()
+    
+    def handle_lock_tank(self, tank_id: str):
+        """Handle locking a tank (preserve assignment during clear)."""
+        if not hasattr(self, 'locked_tanks'):
+            self.locked_tanks = set()
+        self.locked_tanks.add(tank_id)
+        self._on_stowage_changed()
+    
+    def handle_unlock_tank(self, tank_id: str):
+        """Handle unlocking a tank."""
+        if hasattr(self, 'locked_tanks') and tank_id in self.locked_tanks:
+            self.locked_tanks.remove(tank_id)
+        self._on_stowage_changed()
+    
+    def is_tank_locked(self, tank_id: str) -> bool:
+        """Check if a tank is locked."""
+        return hasattr(self, 'locked_tanks') and tank_id in self.locked_tanks
+    
+    def _clear_all_tanks(self):
+        """Clear all tank assignments (CTRL+E)."""
+        if not hasattr(self, 'stowage_plan') or not self.stowage_plan:
+            QMessageBox.information(self, "Bilgi", "Aktif bir plan bulunmuyor.")
+            return
+        
+        if not self.stowage_plan.assignments:
+            QMessageBox.information(self, "Bilgi", "Boşaltılacak tank yok.")
+            return
+        
+        # Check for locked tanks
+        has_locked = hasattr(self, 'locked_tanks') and len(self.locked_tanks) > 0
+        
+        if has_locked:
+            # Show dialog with three options
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Tüm Tankları Boşalt")
+            msg_box.setText("Kilitli tanklar bulunuyor. Nasıl devam etmek istersiniz?")
+            msg_box.setInformativeText(
+                f"Toplam {len(self.locked_tanks)} kilitli tank var.\n\n"
+                "• Tümünü Boşalt: Tüm tankları (kilitli dahil) boşaltır\n"
+                "• Sadece Planlananları Boşalt: Kilitli tankları korur\n"
+                "• İptal: İşlemi iptal eder"
+            )
+            
+            clear_all_btn = msg_box.addButton("Tümünü Boşalt", QMessageBox.ButtonRole.AcceptRole)
+            clear_planned_btn = msg_box.addButton("Sadece Planlananları", QMessageBox.ButtonRole.AcceptRole)
+            cancel_btn = msg_box.addButton("İptal", QMessageBox.ButtonRole.RejectRole)
+            msg_box.setDefaultButton(cancel_btn)
+            
+            msg_box.exec()
+            
+            if msg_box.clickedButton() == cancel_btn:
+                return
+            elif msg_box.clickedButton() == clear_all_btn:
+                # Clear all including locked
+                self.stowage_plan.assignments.clear()
+                self.locked_tanks.clear()
+            elif msg_box.clickedButton() == clear_planned_btn:
+                # Clear only non-locked
+                for tank_id in list(self.stowage_plan.assignments.keys()):
+                    if tank_id not in self.locked_tanks:
+                        self.stowage_plan.remove_assignment(tank_id)
+        else:
+            # Simple confirmation
+            reply = QMessageBox.question(
+                self, "Tüm Tankları Boşalt",
+                "Tüm tank atamalarını temizlemek istediğinizden emin misiniz?\n\n"
+                "Bu işlem geri alınamaz.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+            
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+            
+            self.stowage_plan.assignments.clear()
+        
+        self._on_stowage_changed()
+    
+    def _fill_tanks_to_100(self):
+        """Fill all loaded tanks to 100% capacity while preserving cargo type."""
+        from models.stowage_plan import TankAssignment
+        
+        if not self.stowage_plan or not self.ship_config:
+            return
+        
+        # Check if there are any loaded tanks
+        has_loaded_tanks = any(
+            self.stowage_plan.get_assignment(tank.id) 
+            for tank in self.ship_config.tanks
+        )
+        
+        if not has_loaded_tanks:
+            QMessageBox.information(
+                self,
+                "Bilgi",
+                "Yüklü tank bulunamadı."
+            )
+            return
+        
+        # Fill each loaded tank to 100%
+        filled_count = 0
+        for tank in self.ship_config.tanks:
+            assignment = self.stowage_plan.get_assignment(tank.id)
+            if assignment:
+                tank_capacity = getattr(tank, 'capacity_m3', 0)
+                if tank_capacity > 0:
+                    # Update quantity to tank capacity
+                    new_assignment = TankAssignment(
+                        tank_id=tank.id,
+                        cargo=assignment.cargo,
+                        quantity_loaded=tank_capacity
+                    )
+                    self.stowage_plan.assignments[tank.id] = new_assignment
+                    filled_count += 1
+        
+        # Refresh UI
+        self._on_stowage_changed()
+        
+        # Show confirmation
+        QMessageBox.information(
+            self,
+            "Tamamlandı",
+            f"{filled_count} tank %100 kapasiteye getirildi.\n\n"
+            f"Not: Bu işlem sipariş miktarını aşabilir."
+        )
+    
+    def _apply_colorize(self):
+        """Apply colorization based on receiver name prefixes (on button press)."""
+        if not self.stowage_plan or not self.stowage_plan.cargo_requests:
+            return
+        
+        # Store original colors if not already stored
+        if not self.is_colorized:
+            self._store_original_colors()
+        
+        # Group cargos by first 4 characters of receiver names
+        groups = self._group_cargos_by_receiver_prefix()
+        
+        # Define color palette for first 5 groups (bright, distinct colors)
+        group_colors = [
+            "#FF0000",  # Red
+            "#0000FF",  # Blue
+            "#00FF00",  # Green
+            "#FFFF00",  # Yellow
+            "#FFA500"   # Orange
+        ]
+        
+        # Apply colors to cargos in first 5 groups
+        for group_index, (prefix, cargo_list) in enumerate(groups[:5]):
+            color = group_colors[group_index]
+            for cargo in cargo_list:
+                cargo.custom_color = color
+        
+        # Refresh displays
+        self._on_stowage_changed()
+        self.is_colorized = True
+    
+    def _restore_colorize(self):
+        """Restore original colors (on button release)."""
+        if not self.is_colorized or not self.stowage_plan:
+            return
+        
+        # Restore original custom_color values
+        for cargo in self.stowage_plan.cargo_requests:
+            cargo_id = cargo.unique_id
+            if cargo_id in self.original_custom_colors:
+                cargo.custom_color = self.original_custom_colors[cargo_id]
+            else:
+                cargo.custom_color = None
+        
+        # Refresh displays
+        self._on_stowage_changed()
+        self.is_colorized = False
+    
+    def _store_original_colors(self):
+        """Store original cargo colors before colorization."""
+        if not self.stowage_plan:
+            return
+        
+        self.original_cargo_colors.clear()
+        self.original_custom_colors.clear()
+        
+        for cargo in self.stowage_plan.cargo_requests:
+            cargo_id = cargo.unique_id
+            self.original_custom_colors[cargo_id] = cargo.custom_color
+    
+    def _group_cargos_by_receiver_prefix(self) -> list:
+        """Group cargos by first 4 characters of receiver names.
+        
+        Returns:
+            List of tuples (prefix, cargo_list) sorted by prefix
+        """
+        if not self.stowage_plan:
+            return []
+        
+        prefix_groups = {}
+        
+        for cargo in self.stowage_plan.cargo_requests:
+            # Get first receiver name (or empty string if no receivers)
+            if cargo.receivers and len(cargo.receivers) > 0:
+                first_receiver_name = cargo.receivers[0].name
+                # Get first 4 characters (pad if shorter)
+                prefix = (first_receiver_name[:4] + "    ")[:4].upper()
+            else:
+                # No receiver - use special prefix
+                prefix = "NONE"
+            
+            if prefix not in prefix_groups:
+                prefix_groups[prefix] = []
+            prefix_groups[prefix].append(cargo)
+        
+        # Sort by prefix and return as list of tuples
+        sorted_groups = sorted(prefix_groups.items())
+        return sorted_groups
+    
+    def _transfer_stowage_to_ullage(self):
+        """Transfer stowage plan to ullage tab as parcels."""
+        from models import Parcel
+        
+        if not self.stowage_plan or not self.stowage_plan.cargo_requests:
+            QMessageBox.warning(
+                self, "Kargo Yok",
+                "Önce stowage planına kargo ekleyin."
+            )
+            return
+        
+        # Confirm transfer
+        reply = QMessageBox.question(
+            self, "Plan Aktar",
+            "Bu işlem Ullage sekmesindeki mevcut parselleri değiştirecek.\n"
+            "Tank atamaları da uygulanacak.\n\nDevam edilsin mi?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        
+        # Clear existing parcels
+        self.voyage.parcels.clear()
+        
+        # Get colors from cargo legend (always correct)
+        cargo_colors = self.cargo_legend.get_cargo_colors() if hasattr(self, 'cargo_legend') else []
+        
+        # Create parcels from stowage cargos
+        cargo_to_parcel = {}  # Map cargo_id -> parcel_id
+        for i, cargo in enumerate(self.stowage_plan.cargo_requests):
+            parcel_id = str(i + 1)
+            # Get color from legend (index-based) or fallback
+            color = cargo_colors[i] if i < len(cargo_colors) else (cargo.custom_color or "#3B82F6")
+            # Create parcel from cargo
+            parcel = Parcel(
+                id=parcel_id,
+                name=cargo.cargo_type,
+                receiver=cargo.get_receiver_names(),
+                density_vac=cargo.density,
+                color=color
+            )
+            self.voyage.parcels.append(parcel)
+            cargo_to_parcel[cargo.unique_id] = parcel_id
+        
+        # Apply tank assignments
+        for tank_id, assignment in self.stowage_plan.assignments.items():
+            if tank_id in self.voyage.tank_readings:
+                parcel_id = cargo_to_parcel.get(assignment.cargo.unique_id)
+                if parcel_id:
+                    reading = self.voyage.tank_readings[tank_id]
+                    reading.parcel_id = parcel_id
+                    # Also set the VAC density from the cargo
+                    reading.density_vac = assignment.cargo.density
+
+        
+        # Switch to Ullage tab
+        self.tab_widget.setCurrentIndex(1)
+        
+        # Refresh grid
+        self._populate_grid()
+        
+        QMessageBox.information(
+            self, "Aktarım Tamamlandı",
+            f"{len(self.stowage_plan.cargo_requests)} parsel ve "
+            f"{len(self.stowage_plan.assignments)} tank ataması aktarıldı."
+        )
+    
+    def _save_stowage_plan(self):
+        """Save current stowage plan to JSON file."""
+        filename, _ = QFileDialog.getSaveFileName(
+            self, "Stowage Plan Kaydet",
+            "data/stowplans/STOWPLAN.json",
+            "JSON Files (*.json)"
+        )
+        if filename:
+            self.stowage_plan.save_to_json(filename)
+            self.status_bar.showMessage(f"Stowage plan saved: {filename}")
+    
+    def _load_stowage_plan(self):
+        """Load stowage plan from JSON file."""
+        from models import StowagePlan
+        
+        filename, _ = QFileDialog.getOpenFileName(
+            self, "Stowage Plan Yükle",
+            "data/stowplans",
+            "JSON Files (*.json)"
+        )
+        if filename:
+            self.stowage_plan = StowagePlan.load_from_json(filename)
+            
+            # Update cargo input widget (bottom left table)
+            if hasattr(self, 'cargo_input_widget'):
+                self.cargo_input_widget.set_cargo_list(self.stowage_plan.cargo_requests)
+            
+            # Update cargo legend (draggable cards)
+            self.cargo_legend.set_stowage_plan(self.stowage_plan)
+            
+            # Update ship schematic
+            self.ship_schematic.set_stowage_plan(self.stowage_plan)
+            
+            self._on_stowage_changed()
+            self.status_bar.showMessage(f"Stowage plan yüklendi: {filename}")
+
+    
+    def _create_ullage_tab(self) -> QWidget:
+        """Create the Ullage Calculation tab (existing functionality)."""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
         layout.setContentsMargins(10, 5, 10, 10)  # Reduced top margin
         layout.setSpacing(5)  # Tighter spacing between elements
         
@@ -228,6 +861,8 @@ class MainWindow(QMainWindow):
         # Footer section
         footer = self._create_footer()
         layout.addWidget(footer)
+        
+        return tab
     
     def _create_header(self) -> QWidget:
         """Create header section with voyage info."""
@@ -550,6 +1185,8 @@ class MainWindow(QMainWindow):
             # Load officer names from config
             self.chief_officer_edit.setText(self.ship_config.chief_officer)
             self.master_edit.setText(self.ship_config.master)
+            # Initialize stowage tab with ship config
+            self._init_stowage_with_ship_config()
         else:
             # No config or empty - show setup wizard
             self._show_first_time_setup()
@@ -574,6 +1211,8 @@ class MainWindow(QMainWindow):
                 # Load tank objects
                 self._load_tank_tables()
                 self.status_bar.showMessage(f"Ship configured: {self.ship_config.ship_name}")
+                # Initialize stowage tab with ship config
+                self._init_stowage_with_ship_config()
         else:
             # User cancelled - create empty config for now
             self.ship_config = ShipConfig.create_empty("New Ship")

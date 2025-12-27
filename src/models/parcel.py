@@ -44,3 +44,19 @@ class Parcel:
             density_vac=data.get('density_vac', 0.0),
             color=data.get('color', '#3B82F6'),
         )
+    
+    @classmethod
+    def from_stowage_cargo(cls, cargo, parcel_id: str) -> 'Parcel':
+        """Create Parcel from StowageCargo (Tab 1 -> Tab 2 transfer).
+        
+        Args:
+            cargo: StowageCargo instance from stowage plan
+            parcel_id: ID to assign to the new parcel
+        """
+        return cls(
+            id=parcel_id,
+            name=cargo.grade,
+            receiver=cargo.receiver,
+            density_vac=cargo.density_vac,
+            color=cargo.color,
+        )
