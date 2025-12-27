@@ -853,9 +853,6 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage(f"Tank {tank_id}: No reading or tank data")
             return
         
-        # DEBUG: Show state at entry
-        print(f"DEBUG _recalculate_tank ENTRY: tank_id={tank_id}, ullage={reading.ullage}, fill_percent={reading.fill_percent}", flush=True)
-        
         # Skip if no ullage table
         if not tank.has_ullage_table():
             self.status_bar.showMessage(f"Tank {tank_id}: No ullage table loaded. Go to Settings > Ship Configuration")
