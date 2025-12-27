@@ -17,7 +17,7 @@ from PyQt6.QtWidgets import (
     QAbstractItemView, QApplication, QInputDialog
 )
 from PyQt6.QtCore import Qt, QSize, QSettings
-from PyQt6.QtGui import QColor, QFont, QAction, QKeySequence, QKeyEvent
+from PyQt6.QtGui import QColor, QFont, QAction, QKeySequence, QKeyEvent, QBrush
 
 from i18n import t, set_language, get_current_language
 from models import ShipConfig, Tank, TankReading, Voyage, DraftReadings
@@ -40,6 +40,7 @@ from .styles import (
     COLOR_DANGER, COLOR_WARNING_HIGH, COLOR_WARNING_LOW, COLOR_WINDOW_BG
 )
 from .widgets.delegates import TankGridDelegate
+from .widgets.flow_layout import FlowLayout
 
 # Legacy naming for compatibility with existing logic
 COLOR_INPUT = COLOR_CELL_INPUT
@@ -76,6 +77,7 @@ class MainWindow(QMainWindow):
         ("mt_vac", "MT(VAC)", 90, False, True),       # MT(VAC) = GSV * VAC Dens
         ("density_air", "Air Dens", 80, False, True),
         ("mt_air", "MT (Air)", 90, False, True),
+        ("tank_id_end", "Tank", 60, False, False),    # Duplicate tank column for visibility
     ]
     
     def __init__(self):
@@ -228,7 +230,7 @@ class MainWindow(QMainWindow):
     
     def _create_header(self) -> QWidget:
         """Create header section with voyage info."""
-        group = QGroupBox("Voyage Information")
+        group = QGroupBox("")
         layout = QGridLayout(group)
         
         # Row 1
@@ -295,6 +297,7 @@ class MainWindow(QMainWindow):
         # Configure selection
         table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectItems)
+        table.itemSelectionChanged.connect(self._update_selection_stats)
         
         # Enable editing - but NOT on selection change (allows multiselect)
         table.setEditTriggers(
@@ -449,7 +452,7 @@ class MainWindow(QMainWindow):
     
     def _create_footer(self) -> QWidget:
         """Create footer section with totals."""
-        group = QGroupBox("Summary")
+        group = QGroupBox("")
         main_layout = QVBoxLayout(group)
         
         # Row 1: Grand totals and officers
@@ -485,11 +488,16 @@ class MainWindow(QMainWindow):
         
         main_layout.addLayout(top_row)
         
-        # Row 2: Parcel summary (MT AIR per parcel)
-        self.parcel_summary_layout = QHBoxLayout()
+        
+        # Row 2: Parcel summary (MT AIR per parcel) - Flow layout for wrapping
+        self.parcel_summary_container = QWidget()
+        self.parcel_summary_layout = FlowLayout(self.parcel_summary_container)
+        self.parcel_summary_layout.setContentsMargins(0, 5, 0, 0) # Top margin for spacing
+        
+        # Add label
         self.parcel_summary_layout.addWidget(QLabel("Parcel Totals (MT Air):"))
-        self.parcel_summary_layout.addStretch()
-        main_layout.addLayout(self.parcel_summary_layout)
+        
+        main_layout.addWidget(self.parcel_summary_container)
         
         # Store parcel labels for dynamic updates
         self.parcel_mt_labels = {}  # {parcel_id: QLabel}
@@ -497,9 +505,25 @@ class MainWindow(QMainWindow):
         return group
     
     def _create_status_bar(self):
-        """Create status bar."""
+        """Create status bar with selection stats."""
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
+        
+        # Add selection stats labels
+        stats_widget = QWidget()
+        stats_layout = QHBoxLayout(stats_widget)
+        stats_layout.setContentsMargins(0, 0, 20, 0)
+        
+        self.sel_total_label = QLabel("SELECTED TOTAL: 0.000")
+        self.sel_total_label.setStyleSheet("font-weight: bold; color: #38bdf8; margin-right: 15px;")
+        
+        self.sel_avg_label = QLabel("SELECTED AVERAGE: 0.000") 
+        self.sel_avg_label.setStyleSheet("font-weight: bold; color: #38bdf8;")
+        
+        stats_layout.addWidget(self.sel_total_label)
+        stats_layout.addWidget(self.sel_avg_label)
+        
+        self.status_bar.addPermanentWidget(stats_widget)
         self.status_bar.showMessage("Ready")
     
     def _init_default_data(self):
@@ -673,19 +697,57 @@ class MainWindow(QMainWindow):
                 # Set cell properties
                 item.setForeground(COLOR_TEXT)  # Set black text color
                 
+                # Get parcel-based background color
+                parcel_color = self._get_parcel_bg_color(reading.parcel_id, is_input and key != "parcel")
+                item.setData(Qt.ItemDataRole.BackgroundRole, QBrush(parcel_color))
+                
                 # Parcel column should be read-only to force context menu usage
-                if is_input and key != "parcel":
-                    item.setBackground(COLOR_INPUT)
-                else:
-                    item.setBackground(COLOR_CALCULATED)
+                if not (is_input and key != "parcel"):
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 
                 self.tank_table.setItem(row, col, item)
         
         self.tank_table.blockSignals(False)
     
+    def _get_parcel_bg_color(self, parcel_id: str, is_input_cell: bool) -> QColor:
+        """Get background color for a cell based on its parcel.
+        
+        Returns a tinted color based on the parcel's color.
+        Input cells get a lighter tint, calculated cells get a slightly stronger tint.
+        """
+        if not parcel_id:
+            # No parcel assigned - use default colors
+            return COLOR_INPUT if is_input_cell else COLOR_CALCULATED
+        
+        # Get parcel color
+        if parcel_id == "0":  # SLOP
+            base_color = QColor("#9CA3AF")  # Gray
+        else:
+            parcel = self._get_parcel(parcel_id)
+            if parcel and parcel.color:
+                base_color = QColor(parcel.color)
+            else:
+                return COLOR_INPUT if is_input_cell else COLOR_CALCULATED
+        
+        # Create tinted version (lighter for better readability)
+        # Input cells: lighter tint, Calculated cells: slightly stronger
+        if is_input_cell:
+            # Lighter tint for input cells (blend with white)
+            alpha = 0.40  # 40% parcel color, 60% white
+        else:
+            # Stronger tint for calculated cells
+            alpha = 0.50  # 50% parcel color, 50% white
+        
+        r = int(base_color.red() * alpha + 15 * (1 - alpha)) # Blend with #0f172a (approx 15, 23, 42)
+        g = int(base_color.green() * alpha + 23 * (1 - alpha))
+        b = int(base_color.blue() * alpha + 42 * (1 - alpha))
+        
+        return QColor(r, g, b)
+
     def _get_reading_value(self, reading: TankReading, key: str):
         """Get value from reading based on column key."""
+        if key == "tank_id_end":
+            return reading.tank_id
         # Get parcel for deriving grade/receiver
         parcel = None
         grade = ""
@@ -791,6 +853,9 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage(f"Tank {tank_id}: No reading or tank data")
             return
         
+        # DEBUG: Show state at entry
+        print(f"DEBUG _recalculate_tank ENTRY: tank_id={tank_id}, ullage={reading.ullage}, fill_percent={reading.fill_percent}", flush=True)
+        
         # Skip if no ullage table
         if not tank.has_ullage_table():
             self.status_bar.showMessage(f"Tank {tank_id}: No ullage table loaded. Go to Settings > Ship Configuration")
@@ -853,7 +918,14 @@ class MainWindow(QMainWindow):
                 # VCF and GSV - only calculate when we have fresh GOV
                 if reading.temp_celsius and reading.density_vac:
                     reading.vcf = calculate_vcf(reading.temp_celsius, reading.density_vac)
-                    reading.gsv = reading.gov * reading.vcf  # GSV = GOV * VCF
+                    
+                    # Rounding to match display and standard practice so GSV = GOV * VCF matches visual check
+                    # GOV -> 3 decimal places
+                    # VCF -> 5 decimal places
+                    gov_rounded = round(reading.gov, 3)
+                    vcf_rounded = round(reading.vcf, 5)
+                    
+                    reading.gsv = gov_rounded * vcf_rounded  # GSV = GOV * VCF
                     
                     # Air density = Vac Density - 0.0011 (for g/cm³) or - 1.1 (for kg/m³)
                     if reading.density_vac < 10:  # g/cm³ format
@@ -879,15 +951,21 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage(f"Tank {tank_id}: Calculation error - {e}")
     
     def _update_row(self, row: int, reading: TankReading):
-        """Update row with calculated values."""
-        self.tank_table.blockSignals(True)
+        """Update row with calculated values and apply parcel-based colors.
         
+        NOTE: Callers are responsible for blocking table signals if needed.
+        """
         for col, (key, _, _, is_input, is_numeric) in enumerate(self.COLUMNS):
-            if is_input and key not in ("ullage", "fill_percent", "parcel"):
-                continue
-            
             item = self.tank_table.item(row, col)
             if not item:
+                continue
+            
+            # Update background color based on parcel (for ALL cells)
+            parcel_color = self._get_parcel_bg_color(reading.parcel_id, is_input and key != "parcel")
+            item.setData(Qt.ItemDataRole.BackgroundRole, QBrush(parcel_color))
+            
+            # Only update text for non-input columns (except ullage, fill_percent, parcel)
+            if is_input and key not in ("ullage", "fill_percent", "parcel"):
                 continue
             
             value = self._get_reading_value(reading, key)
@@ -907,8 +985,6 @@ class MainWindow(QMainWindow):
                         item.setText(f"{value:.3f}")
                 else:
                     item.setText(str(value))
-        
-        self.tank_table.blockSignals(False)
     
     def _update_totals(self):
         """Update total GSV and MT, plus per-parcel MT AIR."""
@@ -944,9 +1020,10 @@ class MainWindow(QMainWindow):
             
             parcel_totals[pid]['mt_air'] += reading.mt_air or 0.0
         
-        # Clear existing parcel labels (except the header label)
-        while self.parcel_summary_layout.count() > 2:  # Keep first label and stretch
-            item = self.parcel_summary_layout.takeAt(2)
+        # Clear existing parcel labels (except the header label at index 0)
+        # Note: We now use layout.count() and takeAt() on the container's layout
+        while self.parcel_summary_layout.count() > 1:
+            item = self.parcel_summary_layout.takeAt(1)
             if item.widget():
                 item.widget().deleteLater()
         
@@ -960,8 +1037,27 @@ class MainWindow(QMainWindow):
                 label_text = f"{data['name']} ({data['receiver']}): {data['mt_air']:.3f} MT"
             else:
                 label_text = f"{data['name']}: {data['mt_air']:.3f} MT"
+            # Retrieve parcel object to get color
+            parcel_color = "#9CA3AF" # Default gray for Slop
+            text_color = "black"
+            
+            if pid != "0":
+                 for p in self.voyage.parcels:
+                    if p.id == pid:
+                        if p.color:
+                            parcel_color = p.color
+                        break
+            
             label = QLabel(label_text)
-            label.setStyleSheet("font-weight: bold; margin-left: 15px;")
+            # Styling: colored box with padding, rounded corners, and black text
+            label.setStyleSheet(f"""
+                background-color: {parcel_color}; 
+                color: black;
+                font-weight: bold; 
+                padding: 4px 8px; 
+                border-radius: 4px;
+                margin-left: 10px;
+            """)
             self.parcel_summary_layout.addWidget(label)
             self.parcel_mt_labels[pid] = label
     
@@ -1013,6 +1109,16 @@ class MainWindow(QMainWindow):
             self._update_last_dir(filepath)
             try:
                 self.voyage = Voyage.load_from_json(filepath)
+                
+                # Block signals to prevent premature recalculations during load
+                self.port_edit.blockSignals(True)
+                self.terminal_edit.blockSignals(True)
+                self.voyage_edit.blockSignals(True)
+                self.date_edit.blockSignals(True)
+                self.vef_spin.blockSignals(True)
+                self.draft_aft_spin.blockSignals(True)
+                self.draft_fwd_spin.blockSignals(True)
+                
                 self.port_edit.setText(self.voyage.port)
                 self.terminal_edit.setText(self.voyage.terminal)
                 self.voyage_edit.setText(self.voyage.voyage_number)
@@ -1020,6 +1126,16 @@ class MainWindow(QMainWindow):
                 self.vef_spin.setValue(self.voyage.vef)
                 self.draft_aft_spin.setValue(self.voyage.drafts.aft)
                 self.draft_fwd_spin.setValue(self.voyage.drafts.fwd)
+                
+                # Unblock signals after setting values
+                self.port_edit.blockSignals(False)
+                self.terminal_edit.blockSignals(False)
+                self.voyage_edit.blockSignals(False)
+                self.date_edit.blockSignals(False)
+                self.vef_spin.blockSignals(False)
+                self.draft_aft_spin.blockSignals(False)
+                self.draft_fwd_spin.blockSignals(False)
+                
                 self._populate_grid()
                 self.status_bar.showMessage(f"Voyage loaded: {filepath}")
             except Exception as e:
@@ -1402,6 +1518,30 @@ class MainWindow(QMainWindow):
         self._recalculate_tank(row, tank_id)
         self._update_row(row, reading)
     
+    def _update_selection_stats(self):
+        """Update status bar with sum/avg of selected numeric cells."""
+        selected_items = self.tank_table.selectedItems()
+        
+        total = 0.0
+        count = 0
+        
+        for item in selected_items:
+            try:
+                # Basic float parsing
+                val = float(item.text())
+                total += val
+                count += 1
+            except ValueError:
+                continue
+                
+        if count > 0:
+            avg = total / count
+            self.sel_total_label.setText(f"SELECTED TOTAL: {total:.3f}")
+            self.sel_avg_label.setText(f"SELECTED AVERAGE: {avg:.3f}")
+        else:
+            self.sel_total_label.setText("SELECTED TOTAL: 0.000")
+            self.sel_avg_label.setText("SELECTED AVERAGE: 0.000")
+
     def _show_about(self):
         """Show about dialog."""
         QMessageBox.about(

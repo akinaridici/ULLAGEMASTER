@@ -229,6 +229,7 @@ class TankReading:
     
     def to_dict(self) -> dict:
         """Convert reading to dictionary."""
+        print(f"DEBUG SAVE TankReading: tank_id={self.tank_id}, ullage={self.ullage}, fill_percent={self.fill_percent}", flush=True)
         return {
             'tank_id': self.tank_id,
             'parcel_id': self.parcel_id,
@@ -252,4 +253,6 @@ class TankReading:
     @classmethod
     def from_dict(cls, data: dict) -> 'TankReading':
         """Create reading from dictionary."""
-        return cls(**data)
+        reading = cls(**data)
+        print(f"DEBUG LOAD TankReading: tank_id={reading.tank_id}, ullage={reading.ullage}, fill_percent={reading.fill_percent}", flush=True)
+        return reading

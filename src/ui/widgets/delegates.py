@@ -16,6 +16,14 @@ class TankGridDelegate(QStyledItemDelegate):
     Draws a thick bottom border every 2 rows.
     """
     def paint(self, painter, option, index):
+        # Manually paint background if it exists in data
+        # This bypasses stylesheet overrides that prevent per-item background
+        bg_brush = index.data(Qt.ItemDataRole.BackgroundRole)
+        if bg_brush:
+            painter.save()
+            painter.fillRect(option.rect, bg_brush)
+            painter.restore()
+        
         super().paint(painter, option, index)
         
         # Draw thick bottom line every 2 rows (at index 1, 3, 5...)

@@ -60,9 +60,11 @@ class Voyage:
         return self.tank_readings.get(tank_id)
     
     def calculate_totals(self) -> None:
-        """Calculate total GSV and MT from all tank readings."""
-        self.total_gsv = sum(r.gsv for r in self.tank_readings.values())
-        self.total_mt = sum(r.mt_air for r in self.tank_readings.values())
+        """Calculate total GSV and MT from all tank readings (excluding SLOP)."""
+        # Exclude SLOP (pid "0") from totals
+        readings = [r for r in self.tank_readings.values() if r.parcel_id != "0"]
+        self.total_gsv = sum(r.gsv for r in readings)
+        self.total_mt = sum(r.mt_air for r in readings)
     
     def get_discrepancy_loading(self, shore_figure: float) -> float:
         """Calculate loading discrepancy percentage."""
