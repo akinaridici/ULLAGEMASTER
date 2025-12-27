@@ -60,20 +60,16 @@ class DataEntryGrid(QTableWidget):
         # Start with some empty rows
         self.setRowCount(20)
         
-        # Style
+        # Style - Removal of hardcoded background and light colors
+        # Most of these are now handled by the GLOBAL_STYLESHEET in styles.py
         self.setAlternatingRowColors(True)
         self.setStyleSheet("""
             QTableWidget {
-                gridline-color: #d0d0d0;
-                background-color: #ffffff;
-                alternate-background-color: #f5f5f5;
-            }
-            QTableWidget::item {
-                padding: 4px;
+                gridline-color: #334155;
             }
             QTableWidget::item:selected {
-                background-color: #cce5ff;
-                color: black;
+                background-color: #0c4a6e;
+                color: white;
             }
         """)
     

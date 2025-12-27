@@ -13,6 +13,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
 
 from models import Parcel
+from ui.styles import COLOR_TEXT_SECONDARY
 
 
 class ParcelSetupDialog(QDialog):
@@ -38,7 +39,7 @@ class ParcelSetupDialog(QDialog):
             "receiver, density, and display color."
         )
         info.setWordWrap(True)
-        info.setStyleSheet("color: #666; padding: 5px;")
+        info.setStyleSheet(f"color: {COLOR_TEXT_SECONDARY}; padding: 5px;")
         layout.addWidget(info)
         
         # Parcel table

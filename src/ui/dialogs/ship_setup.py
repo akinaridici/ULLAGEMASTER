@@ -1,6 +1,5 @@
 """
 Ship Setup Wizard - Configure ship tanks via direct data entry.
-Replaces the Excel template workflow with a UI-based copy-paste system.
 """
 
 from pathlib import Path
@@ -19,6 +18,7 @@ from PyQt6.QtGui import QColor, QFont
 from models import ShipConfig, TankConfig
 from i18n import t
 from ui.widgets import DataEntryGrid
+from ui.styles import COLOR_TEXT_SECONDARY, COLOR_PANEL_BG, COLOR_ACCENT
 
 
 class ShipSetupWizard(QWizard):
@@ -90,7 +90,7 @@ class ShipInfoPage(QWizardPage):
             "Enter trim values as a comma-separated list.\n"
             "Supports non-uniform steps, e.g.: -3, -2.5, -2, -1.5, -1, -0.75, -0.5, -0.25, 0, +0.25, +0.5, +0.75"
         )
-        trim_info.setStyleSheet("color: #666; font-style: italic;")
+        trim_info.setStyleSheet(f"color: {COLOR_TEXT_SECONDARY}; font-style: italic;")
         trim_layout.addWidget(trim_info)
         
         self.trim_values_edit = QLineEdit()
@@ -373,7 +373,7 @@ class UllageEntryPage(QWizardPage):
         info = QLabel(
             "💡 Tip: Select the first cell (Ullage column, first row) and press Ctrl+V to paste from Excel."
         )
-        info.setStyleSheet("color: #666; font-style: italic; padding: 5px;")
+        info.setStyleSheet(f"color: {COLOR_TEXT_SECONDARY}; font-style: italic; padding: 5px;")
         layout.addWidget(info)
         
         # Tab widget for tanks
@@ -476,7 +476,7 @@ class TrimEntryPage(QWizardPage):
         
         # Info
         self.info_label = QLabel()
-        self.info_label.setStyleSheet("color: #666; font-style: italic; padding: 5px;")
+        self.info_label.setStyleSheet(f"color: {COLOR_TEXT_SECONDARY}; font-style: italic; padding: 5px;")
         layout.addWidget(self.info_label)
         
         # Tab widget
@@ -626,7 +626,7 @@ class ThermalEntryPage(QWizardPage):
             "💡 If you don't have thermal correction data, leave this page empty.\n"
             "A default factor of 1.0 will be used for all temperatures."
         )
-        info.setStyleSheet("color: #666; font-style: italic; padding: 5px;")
+        info.setStyleSheet(f"color: {COLOR_TEXT_SECONDARY}; font-style: italic; padding: 5px;")
         layout.addWidget(info)
         
         # Tab widget
@@ -658,7 +658,7 @@ class ThermalEntryPage(QWizardPage):
                 "When disabled, a default factor of 1.0 is used for all tanks."
             )
             info_widget.setStyleSheet(
-                "padding: 20px; font-size: 14px; color: #666; background: #fff3cd; border-radius: 8px;"
+                f"padding: 20px; font-size: 14px; color: #fef3c7; background: #451a03; border: 1px solid #78350f; border-radius: 8px;"
             )
             info_widget.setWordWrap(True)
             self.tab_widget.addTab(info_widget, "Info")

@@ -15,6 +15,7 @@ from PyQt6.QtCore import Qt
 from models import ShipConfig, TankConfig
 from ui.widgets import DataEntryGrid
 from utils import save_config
+from ui.styles import COLOR_TEXT_SECONDARY, COLOR_PANEL_BG, COLOR_TEXT_PRIMARY
 
 
 class ConfigEditorDialog(QDialog):
@@ -89,11 +90,11 @@ class ConfigEditorDialog(QDialog):
             "Trim values cannot be changed after initial setup.\n"
             "To change trim values, create a new ship configuration."
         )
-        trim_info.setStyleSheet("color: #666; font-style: italic;")
+        trim_info.setStyleSheet(f"color: {COLOR_TEXT_SECONDARY}; font-style: italic;")
         trim_layout.addWidget(trim_info)
         
         self.trim_display = QLabel()
-        self.trim_display.setStyleSheet("font-family: monospace; padding: 5px; background: #f0f0f0;")
+        self.trim_display.setStyleSheet(f"font-family: monospace; padding: 5px; background: {COLOR_PANEL_BG}; color: {COLOR_TEXT_PRIMARY};")
         self.trim_display.setWordWrap(True)
         trim_layout.addWidget(self.trim_display)
         
@@ -111,7 +112,7 @@ class ConfigEditorDialog(QDialog):
         layout = QVBoxLayout(widget)
         
         info = QLabel("Overview of all tanks and their configurations.")
-        info.setStyleSheet("color: #666; padding: 5px;")
+        info.setStyleSheet(f"color: {COLOR_TEXT_SECONDARY}; padding: 5px;")
         layout.addWidget(info)
         
         self.overview_table = QTableWidget()
@@ -126,7 +127,7 @@ class ConfigEditorDialog(QDialog):
         
         # Help text
         help_label = QLabel("💡 Double-click the Capacity column to edit tank capacity values.")
-        help_label.setStyleSheet("color: #666; font-style: italic;")
+        help_label.setStyleSheet(f"color: {COLOR_TEXT_SECONDARY}; font-style: italic;")
         layout.addWidget(help_label)
         
         self.tabs.addTab(widget, "Tank Overview")
