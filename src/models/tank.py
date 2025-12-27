@@ -228,28 +228,32 @@ class TankReading:
     warning: str = "normal"
     
     def to_dict(self) -> dict:
-        """Convert reading to dictionary."""
+        """Convert reading to dictionary.
+        
+        NOTE: Only saves essential INPUT values. Calculated values (TOV, GSV, etc.)
+        are NOT saved. They will be recalculated on load from these inputs.
+        This ensures Ullage is ALWAYS the source of truth.
+        """
         return {
             'tank_id': self.tank_id,
             'parcel_id': self.parcel_id,
             'ullage': self.ullage,
             'temp_celsius': self.temp_celsius,
             'density_vac': self.density_vac,
-            'fill_percent': self.fill_percent,
-            'tov': self.tov,
-            'trim_correction': self.trim_correction,
-            'corrected_ullage': self.corrected_ullage,
-            'gov': self.gov,
-            'vcf': self.vcf,
-            'gsv': self.gsv,
-            'density_air': self.density_air,
-            'mt_air': self.mt_air,
-            'mt_vac': self.mt_vac,
-            'discrepancy': self.discrepancy,
-            'warning': self.warning,
         }
     
     @classmethod
     def from_dict(cls, data: dict) -> 'TankReading':
-        """Create reading from dictionary."""
-        return cls(**data)
+        """Create reading from dictionary.
+        
+        Robust against missing fields. Calculated values default to 0/None
+        and will be populated by the calculation engine on load.
+        """
+        return cls(
+            tank_id=data.get('tank_id', ''),
+            parcel_id=data.get('parcel_id', ''),
+            ullage=data.get('ullage'),
+            temp_celsius=data.get('temp_celsius'),
+            density_vac=data.get('density_vac'),
+            # All calculated fields use dataclass defaults
+        )

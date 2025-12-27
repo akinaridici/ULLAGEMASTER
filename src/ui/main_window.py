@@ -214,7 +214,8 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
         
         layout = QVBoxLayout(central)
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setContentsMargins(10, 5, 10, 10)  # Reduced top margin
+        layout.setSpacing(5)  # Tighter spacing between elements
         
         # Header section
         header = self._create_header()
@@ -232,6 +233,8 @@ class MainWindow(QMainWindow):
         """Create header section with voyage info."""
         group = QGroupBox("")
         layout = QGridLayout(group)
+        layout.setContentsMargins(5, 2, 5, 2)  # Tighter margins
+        layout.setVerticalSpacing(2)  # Minimal vertical spacing
         
         # Row 1
         layout.addWidget(QLabel(t("loading_port", "header")), 0, 0)
@@ -265,6 +268,7 @@ class MainWindow(QMainWindow):
         self.draft_aft_spin = QDoubleSpinBox()
         self.draft_aft_spin.setDecimals(2)
         self.draft_aft_spin.setRange(0, 30)
+        self.draft_aft_spin.setSingleStep(0.25)
         self.draft_aft_spin.valueChanged.connect(self._on_draft_changed)
         layout.addWidget(self.draft_aft_spin, 1, 3)
         
@@ -272,6 +276,7 @@ class MainWindow(QMainWindow):
         self.draft_fwd_spin = QDoubleSpinBox()
         self.draft_fwd_spin.setDecimals(2)
         self.draft_fwd_spin.setRange(0, 30)
+        self.draft_fwd_spin.setSingleStep(0.25)
         self.draft_fwd_spin.valueChanged.connect(self._on_draft_changed)
         layout.addWidget(self.draft_fwd_spin, 1, 5)
         
@@ -454,6 +459,8 @@ class MainWindow(QMainWindow):
         """Create footer section with totals."""
         group = QGroupBox("")
         main_layout = QVBoxLayout(group)
+        main_layout.setContentsMargins(5, 2, 5, 2)  # Tighter margins
+        main_layout.setSpacing(2)  # Minimal spacing
         
         # Row 1: Grand totals and officers
         top_row = QHBoxLayout()
@@ -488,11 +495,16 @@ class MainWindow(QMainWindow):
         
         main_layout.addLayout(top_row)
         
+        # Separator between officers and parcel summary
+        separator = QFrame()
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setStyleSheet("background-color: #475569; max-height: 1px;")
+        main_layout.addWidget(separator)
         
         # Row 2: Parcel summary (MT AIR per parcel) - Flow layout for wrapping
         self.parcel_summary_container = QWidget()
         self.parcel_summary_layout = FlowLayout(self.parcel_summary_container)
-        self.parcel_summary_layout.setContentsMargins(0, 5, 0, 0) # Top margin for spacing
+        self.parcel_summary_layout.setContentsMargins(0, 2, 0, 0)  # Small top margin after separator
         
         # Add label
         self.parcel_summary_layout.addWidget(QLabel("Parcel Totals (MT Air):"))
@@ -951,7 +963,11 @@ class MainWindow(QMainWindow):
         """Update row with calculated values and apply parcel-based colors.
         
         NOTE: Signals are blocked to prevent recursion loops (update -> signal -> recalc -> update).
+        We preserve the original blocking state to avoid interfering with callers who may have
+        already blocked signals (e.g., _populate_grid).
         """
+        # Preserve original blocking state
+        was_blocked = self.tank_table.signalsBlocked()
         self.tank_table.blockSignals(True)
         try:
             for col, (key, _, _, is_input, is_numeric) in enumerate(self.COLUMNS):
@@ -985,7 +1001,9 @@ class MainWindow(QMainWindow):
                     else:
                         item.setText(str(value))
         finally:
-            self.tank_table.blockSignals(False)
+            # Restore original blocking state, not unconditionally unblock
+            self.tank_table.blockSignals(was_blocked)
+
     
     def _update_totals(self):
         """Update total GSV and MT, plus per-parcel MT AIR."""

@@ -130,6 +130,19 @@ QTableWidget::item:selected {
     background-color: #0c4a6e;
     color: white;
 }
+QTableWidget::item:focus {
+    border: 1px solid #38bdf8;
+    outline: none;
+}
+
+/* Cell Editor - thin border for better text visibility */
+QTableWidget QLineEdit {
+    border: 1px solid #38bdf8;
+    background-color: #1e293b;
+    color: #38bdf8;
+    padding: 1px 2px;
+    font-size: 11px;
+}
 
 /* Table Header */
 QHeaderView::section {
