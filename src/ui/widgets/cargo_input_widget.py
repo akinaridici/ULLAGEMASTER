@@ -41,7 +41,8 @@ class CargoInputWidget(QWidget):
         self.cargo_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
         self.cargo_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
         self.cargo_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)
-        self.cargo_table.setColumnWidth(5, 80)  # Fixed width for edit button
+        self.cargo_table.setColumnWidth(5, 60)  # Fixed width for edit button
+        self.cargo_table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.cargo_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         layout.addWidget(self.cargo_table, 1)
         
@@ -154,6 +155,7 @@ class CargoInputWidget(QWidget):
         
         # Edit button
         edit_btn = QPushButton("Edit")
+        edit_btn.setStyleSheet("padding: 2px; font-size: 8pt; max-height: 20px;")
         edit_btn.clicked.connect(self._on_edit_clicked)
         self.cargo_table.setCellWidget(row, 5, edit_btn)
         
@@ -256,6 +258,7 @@ class CargoInputWidget(QWidget):
             self.cargo_table.item(row, 0).setData(Qt.ItemDataRole.UserRole, cargo)
             
             edit_btn = QPushButton("Edit")
+            edit_btn.setStyleSheet("padding: 2px; font-size: 8pt; max-height: 20px;")
             edit_btn.clicked.connect(self._on_edit_clicked)
             self.cargo_table.setCellWidget(row, 5, edit_btn)
 

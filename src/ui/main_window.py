@@ -288,7 +288,7 @@ class MainWindow(QMainWindow):
         # === TOP PANEL: Control Panel ===
         top_panel = QGroupBox("Kontrol Paneli")
         top_layout = QVBoxLayout(top_panel)
-        top_layout.setContentsMargins(5, 5, 5, 5)
+        top_layout.setContentsMargins(2, 2, 2, 2)
         top_layout.setSpacing(5)
         
         # Cargo legend row with buttons
@@ -343,7 +343,7 @@ class MainWindow(QMainWindow):
         # Left: Cargo Input (Yükleme Talepleri)
         left_panel = QGroupBox("Yükleme Talepleri")
         left_layout = QVBoxLayout(left_panel)
-        left_layout.setContentsMargins(5, 5, 5, 5)
+        left_layout.setContentsMargins(2, 2, 2, 2)
         
         self.cargo_input_widget = CargoInputWidget()
         self.cargo_input_widget.cargo_list_changed.connect(self._on_cargo_input_changed)
@@ -354,7 +354,7 @@ class MainWindow(QMainWindow):
         # Right: Plan Viewer (Yükleme Planı)
         right_panel = QGroupBox("Yükleme Planı")
         right_layout = QVBoxLayout(right_panel)
-        right_layout.setContentsMargins(5, 5, 5, 5)
+        right_layout.setContentsMargins(2, 2, 2, 2)
         
         self.plan_viewer_widget = PlanViewerWidget()
         right_layout.addWidget(self.plan_viewer_widget)

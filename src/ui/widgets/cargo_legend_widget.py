@@ -39,19 +39,32 @@ class DraggableCargoCard(QFrame):
         super().__init__(parent)
         self.cargo = cargo
         self.legend_widget = legend_widget
-        self.color = color
+        self.color = self._apply_tint(color)
         self.loaded_qty = loaded_qty
         
         self.setMinimumSize(120, 70)
         self.setMaximumSize(160, 90)
         self.setFrameStyle(QFrame.Shape.Box | QFrame.Shadow.Raised)
         self.setLineWidth(2)
-        self.setStyleSheet(f"background-color: {color}; border: 2px solid #333; border-radius: 5px;")
+        self.setStyleSheet(f"background-color: {self.color}; border: 2px solid #333; border-radius: 5px;")
         self.setAcceptDrops(False)
         self.setCursor(Qt.CursorShape.OpenHandCursor)
         self.setMouseTracking(True)
         
         self._init_ui()
+
+    def _apply_tint(self, hex_color: str) -> str:
+        """Apply 50% blend with dark background to match Ullage Table."""
+        if not hex_color or hex_color.upper() == "#E0E0E0":
+            return hex_color
+        
+        c = QColor(hex_color)
+        # Blend with #0f172a (15, 23, 42) with 50% alpha
+        r = int(c.red() * 0.50 + 15 * 0.50)
+        g = int(c.green() * 0.50 + 23 * 0.50)
+        b = int(c.blue() * 0.50 + 42 * 0.50)
+        
+        return QColor(r, g, b).name()
     
     def _init_ui(self):
         layout = QVBoxLayout(self)
