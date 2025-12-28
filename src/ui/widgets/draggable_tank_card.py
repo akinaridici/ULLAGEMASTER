@@ -81,7 +81,7 @@ class DraggableTankCard(QGroupBox):
         progress.setMinimum(0)
         progress.setMaximum(100)
         progress.setValue(int(self.utilization))
-        progress.setFormat(f"{self.utilization:.0f}%")
+        progress.setFormat(f"{self.utilization:.1f}%")
         progress.setStyleSheet(
             f"QProgressBar::chunk {{ background-color: {self.color}; }}"
         )

@@ -172,7 +172,7 @@ class CargoInputWidget(QWidget):
             return
         
         for row in range(self.cargo_table.rowCount()):
-            if self.cargo_table.cellWidget(row, 6) == button:
+            if self.cargo_table.cellWidget(row, 5) == button:
                 self._edit_cargo(row)
                 return
     

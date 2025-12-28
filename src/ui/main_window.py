@@ -141,43 +141,6 @@ class MainWindow(QMainWindow):
         
         file_menu.addSeparator()
         
-        parcels_action = QAction("Edit Parcels...", self)
-        parcels_action.triggered.connect(self._edit_parcels)
-        file_menu.addAction(parcels_action)
-        
-        file_menu.addSeparator()
-        
-        # Export submenu
-        export_menu = file_menu.addMenu(t("export", "menu"))
-        
-        excel_action = QAction(t("export_excel", "menu"), self)
-        excel_action.triggered.connect(lambda: self._export("excel"))
-        export_menu.addAction(excel_action)
-        
-        pdf_action = QAction(t("export_pdf", "menu"), self)
-        pdf_action.triggered.connect(lambda: self._export("pdf"))
-        export_menu.addAction(pdf_action)
-        
-        ascii_action = QAction(t("export_ascii", "menu"), self)
-        ascii_action.triggered.connect(lambda: self._export("ascii"))
-        export_menu.addAction(ascii_action)
-        
-        json_action = QAction(t("export_json", "menu"), self)
-        json_action.triggered.connect(lambda: self._export("json"))
-        export_menu.addAction(json_action)
-        
-        visual_action = QAction("Visual Stowage Plan (PDF)", self)
-        visual_action.triggered.connect(lambda: self._export("visual"))
-        export_menu.addAction(visual_action)
-        
-        export_menu.addSeparator()
-        
-        template_action = QAction("Template Report (XLSM)", self)
-        template_action.triggered.connect(self._export_template_report)
-        export_menu.addAction(template_action)
-        
-        file_menu.addSeparator()
-        
         exit_action = QAction(t("exit", "menu"), self)
         exit_action.setShortcut(QKeySequence.StandardKey.Quit)
         exit_action.triggered.connect(self.close)
@@ -232,6 +195,51 @@ class MainWindow(QMainWindow):
         transfer_action.setShortcut("Ctrl+Shift+T")
         transfer_action.triggered.connect(self._transfer_stowage_to_ullage)
         stowage_menu.addAction(transfer_action)
+        
+        # Ullage Table menu (new)
+        ullage_menu = menubar.addMenu("Ullage Table")
+        
+        parcels_action = QAction("Edit Parcels...", self)
+        parcels_action.triggered.connect(self._edit_parcels)
+        ullage_menu.addAction(parcels_action)
+        
+        ullage_menu.addSeparator()
+        
+        # Export submenu
+        export_menu = ullage_menu.addMenu(t("export", "menu"))
+        
+        excel_action = QAction(t("export_excel", "menu"), self)
+        excel_action.triggered.connect(lambda: self._export("excel"))
+        export_menu.addAction(excel_action)
+        
+        pdf_action = QAction(t("export_pdf", "menu"), self)
+        pdf_action.triggered.connect(lambda: self._export("pdf"))
+        export_menu.addAction(pdf_action)
+        
+        ascii_action = QAction(t("export_ascii", "menu"), self)
+        ascii_action.triggered.connect(lambda: self._export("ascii"))
+        export_menu.addAction(ascii_action)
+        
+        json_action = QAction(t("export_json", "menu"), self)
+        json_action.triggered.connect(lambda: self._export("json"))
+        export_menu.addAction(json_action)
+        
+        visual_action = QAction("Visual Stowage Plan (PDF)", self)
+        visual_action.triggered.connect(lambda: self._export("visual"))
+        export_menu.addAction(visual_action)
+        
+        export_menu.addSeparator()
+        
+        template_action = QAction("Template Report (XLSM)", self)
+        template_action.triggered.connect(self._export_template_report)
+        export_menu.addAction(template_action)
+        
+        ullage_menu.addSeparator()
+        
+        transfer_to_stowage_action = QAction("⬅️ Stowage'a Aktar", self)
+        transfer_to_stowage_action.setShortcut("Ctrl+Shift+U")
+        transfer_to_stowage_action.triggered.connect(self._transfer_ullage_to_stowage)
+        ullage_menu.addAction(transfer_to_stowage_action)
         
         # Help menu
         help_menu = menubar.addMenu(t("help", "menu"))
@@ -804,6 +812,131 @@ class MainWindow(QMainWindow):
             self, "Aktarım Tamamlandı",
             f"{len(self.stowage_plan.cargo_requests)} parsel ve "
             f"{len(self.stowage_plan.assignments)} tank ataması aktarıldı."
+        )
+    
+    def _transfer_ullage_to_stowage(self):
+        """Transfer ullage data to stowage plan (reverse transfer).
+        
+        Transfers:
+        - Parcels -> StowageCargo (with GOV totals as quantity)
+        - Tank assignments based on parcel_id
+        - Colors from parcels
+        - SLOP as separate cargo
+        """
+        from models.stowage_plan import StowageCargo, TankAssignment, Receiver
+        
+        # Validate: Check if there are any parcels
+        if not self.voyage or not self.voyage.parcels:
+            QMessageBox.warning(
+                self, "Parsel Yok",
+                "Önce Ullage sekmesinde parsel tanımlayın."
+            )
+            return
+        
+        # Check if any tanks have parcel assignments
+        assigned_tanks = [r for r in self.voyage.tank_readings.values() if r.parcel_id]
+        if not assigned_tanks:
+            QMessageBox.warning(
+                self, "Tank Ataması Yok",
+                "Hiçbir tank bir parsele atanmamış.\n"
+                "Önce Ullage sekmesinde tankları parsellere atayın."
+            )
+            return
+        
+        # Confirm transfer
+        reply = QMessageBox.question(
+            self, "⬅️ Stowage'a Aktar",
+            "Bu işlem Stowage Plan sekmesindeki mevcut verileri silecek ve\n"
+            "Ullage verilerinden yeni bir plan oluşturacak.\n\n"
+            "Devam edilsin mi?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        
+        # Clear existing stowage plan
+        self.stowage_plan.clear()
+        
+        # Group tank readings by parcel_id and calculate totals
+        parcel_tanks = {}  # {parcel_id: [tank_readings]}
+        parcel_totals = {}  # {parcel_id: total_gov}
+        
+        for tank_id, reading in self.voyage.tank_readings.items():
+            if reading.parcel_id:
+                pid = reading.parcel_id
+                if pid not in parcel_tanks:
+                    parcel_tanks[pid] = []
+                    parcel_totals[pid] = 0.0
+                parcel_tanks[pid].append(reading)
+                parcel_totals[pid] += reading.gov if reading.gov else 0.0
+        
+        # Create StowageCargo for each parcel that has tank assignments
+        parcel_to_cargo = {}  # {parcel_id: StowageCargo}
+        
+        # Handle regular parcels
+        for parcel in self.voyage.parcels:
+            if parcel.id in parcel_tanks:
+                # Create receivers list
+                receivers = []
+                if parcel.receiver:
+                    receivers = [Receiver(name=parcel.receiver)]
+                
+                cargo = StowageCargo(
+                    cargo_type=parcel.name or f"Parcel {parcel.id}",
+                    quantity=parcel_totals.get(parcel.id, 0.0),
+                    receivers=receivers,
+                    density=parcel.density_vac or 0.85,
+                    custom_color=parcel.color or "#3B82F6"
+                )
+                self.stowage_plan.add_cargo(cargo)
+                parcel_to_cargo[parcel.id] = cargo
+        
+        # Handle SLOP (parcel_id = "0") if any tanks are assigned
+        if "0" in parcel_tanks:
+            slop_cargo = StowageCargo(
+                cargo_type="SLOP",
+                quantity=parcel_totals.get("0", 0.0),
+                receivers=[],
+                density=0.85,
+                custom_color="#9CA3AF"  # Gray for SLOP
+            )
+            self.stowage_plan.add_cargo(slop_cargo)
+            parcel_to_cargo["0"] = slop_cargo
+        
+        # Create TankAssignments
+        assignment_count = 0
+        for tank_id, reading in self.voyage.tank_readings.items():
+            if reading.parcel_id and reading.parcel_id in parcel_to_cargo:
+                cargo = parcel_to_cargo[reading.parcel_id]
+                assignment = TankAssignment(
+                    tank_id=tank_id,
+                    cargo=cargo,
+                    quantity_loaded=reading.gov if reading.gov else 0.0
+                )
+                self.stowage_plan.add_assignment(tank_id, assignment)
+                assignment_count += 1
+        
+        # Update Stowage Plan UI components
+        if hasattr(self, 'cargo_input_widget'):
+            self.cargo_input_widget.set_cargo_list(self.stowage_plan.cargo_requests)
+        
+        if hasattr(self, 'cargo_legend'):
+            self.cargo_legend.set_stowage_plan(self.stowage_plan)
+        
+        if hasattr(self, 'ship_schematic'):
+            self.ship_schematic.set_stowage_plan(self.stowage_plan)
+        
+        # Refresh stowage display
+        self._on_stowage_changed()
+        
+        # Switch to Stowage Plan tab
+        self.tab_widget.setCurrentIndex(0)
+        
+        QMessageBox.information(
+            self, "Aktarım Tamamlandı",
+            f"{len(self.stowage_plan.cargo_requests)} kargo ve "
+            f"{assignment_count} tank ataması Stowage Plan'a aktarıldı."
         )
     
     def _save_stowage_plan(self):
