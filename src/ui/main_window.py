@@ -1888,6 +1888,33 @@ class MainWindow(QMainWindow):
     # Menu actions
     def _new_voyage(self):
         """Create new voyage."""
+        # Check if there's existing data
+        has_voyage_data = (
+            self.voyage and 
+            (self.voyage.parcels or 
+             any(r.ullage for r in self.voyage.tank_readings.values()))
+        )
+        has_stowage_data = (
+            self.stowage_plan and 
+            (self.stowage_plan.cargo_requests or self.stowage_plan.assignments)
+        )
+        
+        if has_voyage_data or has_stowage_data:
+            reply = QMessageBox.question(
+                self, "Yeni Sefer",
+                "Mevcut veriler silinecek.\n"
+                "Yeni sefer oluşturmak istediğinizden emin misiniz?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+        
+        # Clear stowage plan
+        if self.stowage_plan:
+            self.stowage_plan.clear()
+            self._on_stowage_changed()
+        
+        # Create new voyage
         self.voyage = Voyage.create_new("", "", "")
         self.port_edit.clear()
         self.terminal_edit.clear()
