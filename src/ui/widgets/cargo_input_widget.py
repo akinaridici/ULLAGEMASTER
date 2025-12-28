@@ -40,7 +40,8 @@ class CargoInputWidget(QWidget):
         self.cargo_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         self.cargo_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
         self.cargo_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
-        self.cargo_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)
+        self.cargo_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)
+        self.cargo_table.setColumnWidth(5, 80)  # Fixed width for edit button
         self.cargo_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         layout.addWidget(self.cargo_table, 1)
         
@@ -79,11 +80,11 @@ class CargoInputWidget(QWidget):
         
 
         
-        add_btn = QPushButton("Ekle")
+        add_btn = QPushButton("Add")
         add_btn.clicked.connect(self.add_cargo)
         input_group.addWidget(add_btn)
         
-        remove_btn = QPushButton("Seçiliyi Sil")
+        remove_btn = QPushButton("Delete")
         remove_btn.clicked.connect(self.remove_selected_cargo)
         input_group.addWidget(remove_btn)
         
@@ -152,7 +153,7 @@ class CargoInputWidget(QWidget):
         self.cargo_table.item(row, 0).setData(Qt.ItemDataRole.UserRole, cargo)
         
         # Edit button
-        edit_btn = QPushButton("Düzenle")
+        edit_btn = QPushButton("Edit")
         edit_btn.clicked.connect(self._on_edit_clicked)
         self.cargo_table.setCellWidget(row, 5, edit_btn)
         
@@ -254,7 +255,7 @@ class CargoInputWidget(QWidget):
             
             self.cargo_table.item(row, 0).setData(Qt.ItemDataRole.UserRole, cargo)
             
-            edit_btn = QPushButton("Düzenle")
+            edit_btn = QPushButton("Edit")
             edit_btn.clicked.connect(self._on_edit_clicked)
             self.cargo_table.setCellWidget(row, 5, edit_btn)
 

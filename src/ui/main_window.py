@@ -172,18 +172,6 @@ class MainWindow(QMainWindow):
         # Stowage Plan menu
         stowage_menu = menubar.addMenu("Stowage Plan")
         
-        save_plan_action = QAction("💾 Plan Kaydet", self)
-        save_plan_action.setShortcut("Ctrl+Shift+S")
-        save_plan_action.triggered.connect(self._save_stowage_plan)
-        stowage_menu.addAction(save_plan_action)
-        
-        load_plan_action = QAction("📂 Plan Yükle", self)
-        load_plan_action.setShortcut("Ctrl+Shift+O")
-        load_plan_action.triggered.connect(self._load_stowage_plan)
-        stowage_menu.addAction(load_plan_action)
-        
-        stowage_menu.addSeparator()
-        
         clear_all_action = QAction("Tüm Tankları Boşalt", self)
         clear_all_action.setShortcut("Ctrl+E")
         clear_all_action.triggered.connect(self._clear_all_tanks)
@@ -1924,14 +1912,36 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage("New voyage created")
     
     def _open_voyage(self):
-        """Open existing voyage."""
+        """Open existing voyage from unified .voyage file."""
         filepath, _ = QFileDialog.getOpenFileName(
-            self, "Open Voyage", self.last_dir, "JSON Files (*.json)"
+            self, "Open Voyage", self.last_dir, "Voyage Files (*.voyage)"
         )
         if filepath:
             self._update_last_dir(filepath)
             try:
-                self.voyage = Voyage.load_from_json(filepath)
+                import json
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                
+                # Load voyage data
+                if 'voyage' in data:
+                    self.voyage = Voyage.from_dict(data['voyage'])
+                else:
+                    raise ValueError("Invalid voyage file format")
+                
+                # Load stowage plan if present
+                if data.get('stowage_plan'):
+                    from models.stowage_plan import StowagePlan
+                    self.stowage_plan = StowagePlan.from_dict(data['stowage_plan'])
+                    
+                    # Update Stowage UI
+                    if hasattr(self, 'cargo_input_widget'):
+                        self.cargo_input_widget.set_cargo_list(self.stowage_plan.cargo_requests)
+                    if hasattr(self, 'cargo_legend'):
+                        self.cargo_legend.set_stowage_plan(self.stowage_plan)
+                    if hasattr(self, 'ship_schematic'):
+                        self.ship_schematic.set_stowage_plan(self.stowage_plan)
+                    self._on_stowage_changed()
                 
                 # Block signals to prevent premature recalculations during load
                 self.port_edit.blockSignals(True)
@@ -1950,6 +1960,12 @@ class MainWindow(QMainWindow):
                 self.draft_aft_spin.setValue(self.voyage.drafts.aft)
                 self.draft_fwd_spin.setValue(self.voyage.drafts.fwd)
                 
+                # Load officer info if present
+                if hasattr(self, 'chief_officer_edit'):
+                    self.chief_officer_edit.setText(self.voyage.chief_officer)
+                if hasattr(self, 'master_edit'):
+                    self.master_edit.setText(self.voyage.master)
+                
                 # Unblock signals after setting values
                 self.port_edit.blockSignals(False)
                 self.terminal_edit.blockSignals(False)
@@ -1965,7 +1981,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "Error", f"Failed to load voyage: {e}")
     
     def _save_voyage(self):
-        """Save current voyage."""
+        """Save current voyage with stowage plan to unified .voyage file."""
         if not self.voyage:
             return
         
@@ -1980,13 +1996,32 @@ class MainWindow(QMainWindow):
         self.voyage.chief_officer = self.chief_officer_edit.text()
         self.voyage.master = self.master_edit.text()
         
+        # Create unified save structure
+        save_data = {
+            "version": "2.0",
+            "voyage": self.voyage.to_dict(),
+            "stowage_plan": self.stowage_plan.to_dict() if self.stowage_plan else None
+        }
+        
+        # Suggest filename based on voyage number
+        suggested_name = self.voyage.voyage_number or "voyage"
+        suggested_name = suggested_name.replace("/", "-").replace("\\", "-")
+        
         filepath, _ = QFileDialog.getSaveFileName(
-            self, "Save Voyage", self.last_dir, "JSON Files (*.json)"
+            self, "Save Voyage", 
+            f"{self.last_dir}/{suggested_name}.voyage", 
+            "Voyage Files (*.voyage)"
         )
         if filepath:
+            # Ensure .voyage extension
+            if not filepath.endswith('.voyage'):
+                filepath += '.voyage'
+            
             self._update_last_dir(filepath)
             try:
-                self.voyage.save_to_json(filepath)
+                import json
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    json.dump(save_data, f, indent=2, ensure_ascii=False)
                 self.status_bar.showMessage(f"Voyage saved: {filepath}")
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to save voyage: {e}")
