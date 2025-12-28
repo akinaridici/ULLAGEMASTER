@@ -42,6 +42,7 @@ from .styles import (
 from .widgets.delegates import TankGridDelegate
 from .widgets.flow_layout import FlowLayout
 from .widgets.voyage_explorer import VoyageExplorerWidget
+from .widgets.report_functions_widget import ReportFunctionsWidget
 from ui.dialogs.notes_dialog import NotesDialog
 
 # Legacy naming for compatibility with existing logic
@@ -306,6 +307,18 @@ class MainWindow(QMainWindow):
         self.ullage_tab = self._create_ullage_tab()
         self.tab_widget.addTab(self.ullage_tab, "📊 Ullage Calculation")
         
+        # Tab 4: Report Functions
+        self.report_tab = ReportFunctionsWidget()
+        self.tab_widget.addTab(self.report_tab, "📑 Report Functions")
+        
+        # Connect draft changes to report tab
+        if hasattr(self, 'draft_fwd_spin') and hasattr(self, 'draft_aft_spin'):
+            self.draft_fwd_spin.valueChanged.connect(self._sync_drafts_to_report)
+            self.draft_aft_spin.valueChanged.connect(self._sync_drafts_to_report)
+            
+        # Connect generation signal
+        self.report_tab.request_generate_total.connect(self._generate_total_ullage_report)
+            
         # Restore last active tab
         last_tab = self.settings.value("last_tab", 0, type=int)  # Default to Explorer tab
         if last_tab >= self.tab_widget.count():
@@ -315,9 +328,24 @@ class MainWindow(QMainWindow):
         # Save tab on change
         self.tab_widget.currentChanged.connect(self._on_tab_changed)
     
+    def _sync_drafts_to_report(self):
+        """Sync draft values to report tab."""
+        if hasattr(self, 'report_tab') and hasattr(self, 'draft_fwd_spin') and hasattr(self, 'draft_aft_spin'):
+            self.report_tab.update_drafts(
+                self.draft_fwd_spin.value(),
+                self.draft_aft_spin.value()
+            )
+
     def _on_tab_changed(self, index: int):
         """Save last active tab to settings."""
         self.settings.setValue("last_tab", index)
+
+        # Update Report Functions tab if selected (Index 3)
+        if index == 3 and hasattr(self, 'report_tab'):
+            # Read directly from UI components to get latest values (UI state)
+            fwd = self.draft_fwd_spin.value() if hasattr(self, 'draft_fwd_spin') else 0.0
+            aft = self.draft_aft_spin.value() if hasattr(self, 'draft_aft_spin') else 0.0
+            self.report_tab.update_drafts(fwd, aft)
     
     def _create_stowage_tab(self) -> QWidget:
         """Create the Stowage Planning tab with STOWAGEMASTER-style layout.
@@ -1932,6 +1960,8 @@ class MainWindow(QMainWindow):
         trim = self.draft_fwd_spin.value() - self.draft_aft_spin.value()
         self.trim_label.setText(f"{trim:+.2f} m")
         self._recalculate_all()
+        # Sync to Report Functions tab
+        self._sync_drafts_to_report()
     
     def _recalculate_all(self):
         """Recalculate all tanks."""
@@ -1941,6 +1971,159 @@ class MainWindow(QMainWindow):
                 self._recalculate_tank(row, tank_id_item.text())
     
     def _save_officer_names(self):
+        """Save officer names to ship config whenever they change."""
+        if not self.ship_config:
+            return
+        
+        chief_officer = self.chief_officer_edit.text().strip()
+        master = self.master_edit.text().strip()
+        
+        # Only save if changed
+        if self.ship_config.chief_officer != chief_officer or self.ship_config.master != master:
+            self.ship_config.chief_officer = chief_officer
+            self.ship_config.master = master
+            from core.config import save_config
+            save_config(self.ship_config)
+
+    def _generate_total_ullage_report(self):
+        """Generate the PDF report using manual header data and current voyage readings."""
+        if not self.ship_config or not self.voyage:
+            QMessageBox.warning(self, "Hata", "Gemi ve Sefer bilgisi bulunamadı.")
+            return
+
+        from reporting.pdf_engine import UllagePDFReport
+        
+        # 1. Collect Data from UI
+        ui_data = self.report_tab.get_report_data()
+        
+        # 2. Vessel Data
+        vessel_data = {
+            'name': self.ship_config.ship_name
+        }
+        
+        # 3. Voyage Data
+        voyage_data = {
+            'voyage': self.voyage.voyage_number,
+            'port': ui_data['port'],
+            'port_to': ui_data['terminal'], 
+            'receiver': ui_data['receiver'],
+            'date': self.voyage.date,
+            'draft_fwd': ui_data['draft_fwd'],
+            'draft_aft': ui_data['draft_aft']
+        }
+        
+        # 4. Tank Data
+        tank_data = []
+        
+        # Map parcel IDs to Names for filtering
+        parcel_map = {p.id: p.name.upper().strip() for p in self.voyage.parcels}
+        
+        for tank in self.ship_config.tanks:
+            reading = self.voyage.get_reading(tank.id)
+            if not reading:
+                continue
+                
+            # Identify Parcel Name
+            parcel_name = parcel_map.get(reading.parcel_id, "")
+            
+            # Filter: Exclude if Parcel ID is "0" OR Parcel Name is "SLOP"
+            if reading.parcel_id == "0" or parcel_name == "SLOP":
+                continue
+                
+            # Format Tank Name
+            # User Request: "COT NO 1 STARBOARD" -> "COT 1S"
+            raw = tank.name.upper()
+            # 1. Standardize Sides
+            raw = raw.replace("STARBOARD", "S").replace("PORT", "P").replace("CENTER", "C")
+            
+            if "SLOP" in raw:
+                # Cleaning for SLOP
+                # User wants "SLOP P" or "SLOP S"
+                # Check for side char
+                if "S" in raw.replace("SLOP", ""): 
+                    display_name = "SLOP S"
+                elif "P" in raw.replace("SLOP", ""): 
+                    display_name = "SLOP P"
+                else:
+                    display_name = "SLOP"
+            else:
+                # Cleaning for COT
+                # Remove "COT", "TANK", "NO", ".", " " (whitespace)
+                cleaned = raw.replace("COT", "").replace("TANK", "").replace("NO", "").replace(".", "").replace(" ", "")
+                # Result should be "1S", "2P", etc.
+                display_name = f"COT {cleaned}"
+
+            # Format Data
+            # Helper to format float or empty
+            fmt = lambda v, p: f"{v:.{p}f}" if v is not None else ""
+            
+            row = {
+                'name': display_name,
+                'ullage_actual': fmt(reading.ullage, 0),
+                'ullage_corr': fmt(reading.corrected_ullage, 0),
+                'tov': fmt(reading.tov, 3),
+                'fw_actual': "0.00", # Placeholder for FW if not in model
+                'fw_corr': "0.00",
+                'gov': fmt(reading.gov, 3),
+                'temp': fmt(reading.temp_celsius, 1),
+                'vcf': fmt(reading.vcf, 4),
+                'gsv': fmt(reading.gsv, 3),
+                'density': fmt(reading.density_vac, 4),
+                'w_vac': fmt(reading.mt_vac, 3),
+                'w_air': fmt(reading.mt_air, 3)
+            }
+            tank_data.append(row)
+            
+        # 5. Overview Data
+        # We need to calculate totals for the summary table if PDF engine doesn't do it for summary block.
+        # But PDF engine's _build_main_table calculates its own totals.
+        # _build_summary_table uses 'overview_data'.
+        
+        # Calculate totals for summary block
+        total_tov = sum(float(r['tov'] or 0) for r in tank_data)
+        total_gov = sum(float(r['gov'] or 0) for r in tank_data)
+        total_gsv = sum(float(r['gsv'] or 0) for r in tank_data)
+        total_mt_vac = sum(float(r['w_vac'] or 0) for r in tank_data)
+        total_mt_air = sum(float(r['w_air'] or 0) for r in tank_data)
+        
+        # Weighted avg VCF and Density?
+        # VCF = GSV / GOV
+        avg_vcf = (total_gsv / total_gov) if total_gov > 0 else 0
+        # Density usually from one parcel or weighted.
+        # For 'Total' report, showing one density is ambiguous if multi-grade. 
+        # But usually 'Total Report' assumes one main cargo or just totals.
+        # Let's pick the density from UI or first tank.
+        first_dens = next((r['density'] for r in tank_data if r['density']), "0.0000")
+        
+        overview_data = {
+            'remarks': ui_data['remarks'],
+            'mmc_no': ui_data['mmc_no'],
+            'product': ui_data['cargo'],
+            'density': first_dens,
+            'tov': f"{total_tov:.3f}",
+            'gov': f"{total_gov:.3f}",
+            'average_vcf': f"{avg_vcf:.4f}",
+            'gsv': f"{total_gsv:.3f}",
+            'mt_vac': f"{total_mt_vac:.3f}",
+            'mt_air': f"{total_mt_air:.3f}"
+        }
+        
+        # Generate
+        filename = f"UllageReport_{self.voyage.voyage_number}.pdf"
+        # Sanitize filename
+        filename = "".join(c for c in filename if c.isalnum() or c in (' ', '.', '_', '-')).strip()
+        output_path = os.path.join(self.last_dir or os.getcwd(), filename)
+        
+        try:
+            report = UllagePDFReport(output_path, vessel_data, voyage_data, tank_data, overview_data)
+            report.generate()
+            
+            # Open
+            os.startfile(output_path)
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Hata", f"Rapor oluşturulurken hata oluştu:\n{str(e)}")
+
         """Save officer names to ship config whenever they change."""
         if not self.ship_config:
             return

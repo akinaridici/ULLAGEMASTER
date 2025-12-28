@@ -8,8 +8,8 @@
     "vef": 1.0,
     "drafts": {
       "aft": 9.0,
-      "fwd": 9.0,
-      "trim": 0.0
+      "fwd": 8.75,
+      "trim": 0.25
     },
     "chief_officer": "Harun Kurtuluş",
     "master": "Akın Arıdıcı",
@@ -186,10 +186,10 @@
       },
       "SlopP": {
         "tank_id": "SlopP",
-        "parcel_id": "",
-        "ullage": null,
+        "parcel_id": "0",
+        "ullage": 893.7623762376237,
         "temp_celsius": 24.0,
-        "density_vac": null
+        "density_vac": 0.9
       },
       "SlopS": {
         "tank_id": "SlopS",
@@ -200,9 +200,10 @@
       }
     },
     "totals": {
-      "gsv": 20956.55311692,
-      "mt": 15871.156977656028
-    }
+      "gsv": 20958.91845124,
+      "mt": 15872.958718561957
+    },
+    "notes": ""
   },
   "stowage_plan": {
     "id": "ffc08e05-96bd-4d42-8fb2-821399ee6137",

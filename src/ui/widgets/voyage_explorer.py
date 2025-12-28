@@ -7,7 +7,7 @@ import json
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
     QLabel, QSplitter, QTextBrowser, QPushButton, QFrame, QMessageBox,
-    QScrollArea
+    QScrollArea, QSizePolicy
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer, QRect, QSettings
 from PyQt6.QtGui import QColor, QPainter, QBrush, QPen, QFont
@@ -58,7 +58,7 @@ class PreviewShipSchematic(QWidget):
         self.setMinimumHeight(200)
         self.setSizePolicy(
             self.sizePolicy().horizontalPolicy(), 
-            self.sizePolicy().verticalPolicy().Expanding
+            QSizePolicy.Policy.Expanding
         )
         
     def set_data(self, ship_config: ShipConfig, plan: StowagePlan):
