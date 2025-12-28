@@ -1,162 +1,162 @@
 {
-  "voyage_number": "STOW25",
+  "voyage_number": "2030",
   "date": "28-12-2025",
   "port": "ALİAĞA",
   "terminal": "TÜPRAŞ",
   "vef": 1.0,
   "drafts": {
     "aft": 9.0,
-    "fwd": 8.0,
-    "trim": 1.0
+    "fwd": 8.7,
+    "trim": 0.3000000000000007
   },
   "chief_officer": "Harun Kurtuluş",
   "master": "Akın Arıdıcı",
   "parcels": [
     {
       "id": "1",
-      "name": "MOTORIN",
+      "name": "KBZ",
       "receiver": "ANTALYA SHELL",
-      "density_vac": 0.85,
+      "density_vac": 0.74,
       "color": "#FF6B6B"
     },
     {
       "id": "2",
-      "name": "BENZİN",
-      "receiver": "MERSİN SHELL",
-      "density_vac": 0.74,
+      "name": "MOTORIN",
+      "receiver": "MERSIN SHELL",
+      "density_vac": 0.8223,
       "color": "#4ECDC4"
     }
   ],
   "tank_readings": {
     "1P": {
       "tank_id": "1P",
-      "parcel_id": "1",
+      "parcel_id": "2",
       "ullage": 105.22654155495977,
-      "temp_celsius": 25.0,
-      "density_vac": 0.85
+      "temp_celsius": 22.0,
+      "density_vac": 0.8223
     },
     "1S": {
       "tank_id": "1S",
-      "parcel_id": "1",
+      "parcel_id": "2",
       "ullage": 105.77611940298515,
-      "temp_celsius": 25.0,
-      "density_vac": 0.85
+      "temp_celsius": 22.0,
+      "density_vac": 0.8223
     },
     "2P": {
       "tank_id": "2P",
-      "parcel_id": "2",
+      "parcel_id": "1",
       "ullage": 112.58908450704214,
-      "temp_celsius": 25.0,
+      "temp_celsius": 22.0,
       "density_vac": 0.74
     },
     "2S": {
       "tank_id": "2S",
-      "parcel_id": "2",
+      "parcel_id": "1",
       "ullage": 111.50282685512377,
-      "temp_celsius": 25.0,
+      "temp_celsius": 22.0,
       "density_vac": 0.74
     },
     "3P": {
       "tank_id": "3P",
-      "parcel_id": "1",
+      "parcel_id": "2",
       "ullage": 113.07305336832911,
-      "temp_celsius": 25.0,
-      "density_vac": 0.85
+      "temp_celsius": 22.0,
+      "density_vac": 0.8223
     },
     "3S": {
       "tank_id": "3S",
-      "parcel_id": "1",
+      "parcel_id": "2",
       "ullage": 112.02539404553396,
-      "temp_celsius": 25.0,
-      "density_vac": 0.85
+      "temp_celsius": 22.0,
+      "density_vac": 0.8223
     },
     "4P": {
       "tank_id": "4P",
-      "parcel_id": "2",
+      "parcel_id": "1",
       "ullage": 112.39141856392291,
-      "temp_celsius": 25.0,
+      "temp_celsius": 22.0,
       "density_vac": 0.74
     },
     "4S": {
       "tank_id": "4S",
-      "parcel_id": "2",
+      "parcel_id": "1",
       "ullage": 111.03198948290986,
-      "temp_celsius": 25.0,
+      "temp_celsius": 22.0,
       "density_vac": 0.74
     },
     "5P": {
       "tank_id": "5P",
-      "parcel_id": "1",
+      "parcel_id": "2",
       "ullage": 112.84355828220862,
-      "temp_celsius": 25.0,
-      "density_vac": 0.85
+      "temp_celsius": 22.0,
+      "density_vac": 0.8223
     },
     "5S": {
       "tank_id": "5S",
-      "parcel_id": "1",
+      "parcel_id": "2",
       "ullage": 113.17894736842099,
-      "temp_celsius": 25.0,
-      "density_vac": 0.85
+      "temp_celsius": 22.0,
+      "density_vac": 0.8223
     },
     "6P": {
       "tank_id": "6P",
-      "parcel_id": "2",
+      "parcel_id": "1",
       "ullage": 112.29424943988064,
-      "temp_celsius": 25.0,
+      "temp_celsius": 22.0,
       "density_vac": 0.74
     },
     "6S": {
       "tank_id": "6S",
-      "parcel_id": "2",
+      "parcel_id": "1",
       "ullage": 112.69288224956064,
-      "temp_celsius": 25.0,
+      "temp_celsius": 22.0,
       "density_vac": 0.74
     },
     "7P": {
       "tank_id": "7P",
-      "parcel_id": "1",
+      "parcel_id": "2",
       "ullage": 113.27192982456138,
-      "temp_celsius": 25.0,
-      "density_vac": 0.85
+      "temp_celsius": 22.0,
+      "density_vac": 0.8223
     },
     "7S": {
       "tank_id": "7S",
-      "parcel_id": "1",
+      "parcel_id": "2",
       "ullage": 113.39709762532975,
-      "temp_celsius": 25.0,
-      "density_vac": 0.85
+      "temp_celsius": 22.0,
+      "density_vac": 0.8223
     },
     "8P": {
       "tank_id": "8P",
-      "parcel_id": "2",
+      "parcel_id": "1",
       "ullage": 110.31255487269551,
-      "temp_celsius": 25.0,
+      "temp_celsius": 22.0,
       "density_vac": 0.74
     },
     "8S": {
       "tank_id": "8S",
-      "parcel_id": "2",
+      "parcel_id": "1",
       "ullage": 112.11829375549684,
-      "temp_celsius": 25.0,
+      "temp_celsius": 22.0,
       "density_vac": 0.74
     },
     "SlopP": {
       "tank_id": "SlopP",
       "parcel_id": "",
       "ullage": null,
-      "temp_celsius": 25.0,
+      "temp_celsius": null,
       "density_vac": null
     },
     "SlopS": {
       "tank_id": "SlopS",
-      "parcel_id": "1",
+      "parcel_id": "2",
       "ullage": 183.61282051282046,
-      "temp_celsius": 25.0,
-      "density_vac": 0.85
+      "temp_celsius": 22.0,
+      "density_vac": 0.8223
     }
   },
   "totals": {
-    "gsv": 20894.22079727,
-    "mt": 16528.512199274504
+    "gsv": 20949.01679745,
+    "mt": 16296.162142790039
   }
 }

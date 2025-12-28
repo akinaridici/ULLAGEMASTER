@@ -78,7 +78,16 @@ class DraggableCargoCard(QFrame):
         
         # Remaining quantity or "Tamamlandı"
         remaining = self.cargo.quantity - self.loaded_qty
-        if remaining <= 0.5:
+        if remaining < -0.5:
+             # Over-planned (Excess)
+            excess = abs(remaining)
+            qty_text = f"{excess:.0f} m³ fazla"
+            qty_style = (
+                "color: #fff; font-size: 9pt; font-weight: bold; "
+                "background-color: #f59e0b; padding: 2px 4px; "  # Amber-500
+                "border-radius: 3px;"
+            )
+        elif remaining <= 0.5:
             qty_text = "✓ Tamamlandı"
             qty_style = (
                 "color: #fff; font-size: 9pt; font-weight: bold; "

@@ -924,7 +924,8 @@ class MainWindow(QMainWindow):
     
     def _create_tank_grid(self) -> QTableWidget:
         """Create the main tank data grid."""
-        table = QTableWidget()
+        from .widgets.excel_table import ExcelTableWidget
+        table = ExcelTableWidget()
         
         # Configure table
         table.setColumnCount(len(self.COLUMNS))
@@ -1468,7 +1469,11 @@ class MainWindow(QMainWindow):
             if is_numeric and value:
                 value = float(value)
             self._update_reading(reading, key, value)
-            self._recalculate_tank(row, tank_id)
+            
+            # Defer recalculation to allow editor to close cleanly
+            # This prevents "QAbstractItemView::commitData" errors
+            from PyQt6.QtCore import QTimer
+            QTimer.singleShot(0, lambda: self._recalculate_tank(row, tank_id))
         except ValueError:
             pass
     
