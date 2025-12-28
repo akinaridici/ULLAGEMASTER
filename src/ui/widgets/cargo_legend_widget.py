@@ -39,7 +39,7 @@ class DraggableCargoCard(QFrame):
         super().__init__(parent)
         self.cargo = cargo
         self.legend_widget = legend_widget
-        self.color = self._apply_tint(color)
+        self.color = color
         self.loaded_qty = loaded_qty
         
         self.setMinimumSize(120, 70)
@@ -123,25 +123,8 @@ class DraggableCargoCard(QFrame):
     
     def _get_contrast_color(self, hex_color: str) -> str:
         """Get contrasting text color based on background brightness"""
-        hex_color = hex_color.lstrip('#')
-        if len(hex_color) == 3:
-            hex_color = ''.join([c*2 for c in hex_color])
-        
-        try:
-            r = int(hex_color[0:2], 16)
-            g = int(hex_color[2:4], 16)
-            b = int(hex_color[4:6], 16)
-        except (ValueError, IndexError):
-            return "#000000"
-        
-        def normalize(val):
-            val = val / 255.0
-            if val <= 0.03928:
-                return val / 12.92
-            return ((val + 0.055) / 1.055) ** 2.4
-        
-        luminance = 0.2126 * normalize(r) + 0.7152 * normalize(g) + 0.0722 * normalize(b)
-        return "#FFFFFF" if luminance < 0.4 else "#000000"
+        c = QColor(hex_color)
+        return "#000000" if c.lightness() > 140 else "#ffffff"
     
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:

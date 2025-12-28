@@ -29,7 +29,7 @@ class DraggableTankCard(QGroupBox):
         self.tank = tank
         self.assignment = assignment
         self.utilization = utilization
-        self.color = self._apply_tint(color)
+        self.color = color
         self.is_excluded = is_excluded
         self.is_fixed = is_fixed
         
@@ -39,18 +39,15 @@ class DraggableTankCard(QGroupBox):
         
         self._init_ui()
     
-    def _apply_tint(self, hex_color: str) -> str:
-        """Apply 50% blend with dark background to match Ullage Table."""
-        if not hex_color or hex_color.upper() == "#E0E0E0":
-            return hex_color
-        
+    def _contrast_color(self, hex_color: str) -> str:
+        """Get contrasting text color (black or white) based on background brightness."""
+        if not hex_color:
+            return "#000000"
+            
         c = QColor(hex_color)
-        # Blend with #0f172a (15, 23, 42) with 50% alpha
-        r = int(c.red() * 0.50 + 15 * 0.50)
-        g = int(c.green() * 0.50 + 23 * 0.50)
-        b = int(c.blue() * 0.50 + 42 * 0.50)
-        
-        return QColor(r, g, b).name()
+        # Simple lightness check (0-255). > 160 means bright background -> Black text
+        # Using 160 threshold to ensure yellow/light-colors get black text
+        return "#000000" if c.lightness() > 140 else "#ffffff"
     
     def _init_ui(self):
         """Initialize UI"""
@@ -71,8 +68,9 @@ class DraggableTankCard(QGroupBox):
             cargo_text += f"\n({receiver_names})"
             
             cargo_label = QLabel(cargo_text)
+            text_color = self._contrast_color(self.color)
             cargo_label.setStyleSheet(
-                f"background-color: {self.color}; padding: 3px; "
+                f"background-color: {self.color}; color: {text_color}; padding: 3px; "
                 f"border-radius: 2px; font-weight: bold;"
             )
             cargo_label.setWordWrap(True)
@@ -95,7 +93,10 @@ class DraggableTankCard(QGroupBox):
         progress.setMaximum(100)
         progress.setValue(int(self.utilization))
         progress.setFormat(f"{self.utilization:.1f}%")
+        # Calculate text contrast for progress bar too
+        text_color = self._contrast_color(self.color)
         progress.setStyleSheet(
+            f"QProgressBar {{ color: {text_color}; font-weight: bold; border: 1px solid #555; border-radius: 2px; text-align: center; }} "
             f"QProgressBar::chunk {{ background-color: {self.color}; }}"
         )
         progress.setMaximumHeight(20)

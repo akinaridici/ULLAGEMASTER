@@ -41,6 +41,9 @@ class Voyage:
     chief_officer: str = ""
     master: str = ""
     
+    # Notes (plain text, max 1000 chars)
+    notes: str = ""
+    
     # Parcels defined for this voyage
     parcels: List[Parcel] = field(default_factory=list)
     
@@ -95,7 +98,8 @@ class Voyage:
             'totals': {
                 'gsv': self.total_gsv,
                 'mt': self.total_mt
-            }
+            },
+            'notes': self.notes
         }
     
     def save_to_json(self, filepath: str) -> None:
@@ -115,6 +119,11 @@ class Voyage:
             chief_officer=data.get('chief_officer', ''),
             master=data.get('master', '')
         )
+        
+        # Load notes
+        voyage.notes = data.get('notes', "")
+        if len(voyage.notes) > 1000:
+            voyage.notes = voyage.notes[:1000]
         
         # Load drafts
         if 'drafts' in data:

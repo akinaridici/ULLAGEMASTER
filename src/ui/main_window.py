@@ -41,6 +41,8 @@ from .styles import (
 )
 from .widgets.delegates import TankGridDelegate
 from .widgets.flow_layout import FlowLayout
+from .widgets.voyage_explorer import VoyageExplorerWidget
+from ui.dialogs.notes_dialog import NotesDialog
 
 # Legacy naming for compatibility with existing logic
 COLOR_INPUT = COLOR_CELL_INPUT
@@ -140,6 +142,12 @@ class MainWindow(QMainWindow):
         file_menu.addAction(save_action)
         
         file_menu.addSeparator()
+
+        notes_action = QAction("Sefer Notları...", self)
+        notes_action.triggered.connect(self._edit_notes)
+        file_menu.addAction(notes_action)
+        
+        file_menu.addSeparator()
         
         exit_action = QAction(t("exit", "menu"), self)
         exit_action.setShortcut(QKeySequence.StandardKey.Quit)
@@ -235,6 +243,47 @@ class MainWindow(QMainWindow):
         about_action = QAction(t("about", "menu"), self)
         about_action.triggered.connect(self._show_about)
         help_menu.addAction(about_action)
+
+    def closeEvent(self, event):
+        """Handle close event."""
+        # Save explorer state
+        if hasattr(self, 'explorer_tab'):
+            self.explorer_tab.save_state()
+            
+        super().closeEvent(event)
+    
+    def _calculate_column_min_widths(self):
+        """Calculate minimum column widths based on content."""
+        if not hasattr(self, 'tank_table'):
+            return
+        
+        # Use Qt's built-in content sizing
+        self.tank_table.resizeColumnsToContents()
+        
+        # Also consider header text width
+        header = self.tank_table.horizontalHeader()
+        for i in range(self.tank_table.columnCount()):
+            # Get content-based width
+            content_width = self.tank_table.columnWidth(i)
+            # Get header text width (with some padding)
+            header_text = self.COLUMNS[i][1] if i < len(self.COLUMNS) else ""
+            header_width = header.fontMetrics().horizontalAdvance(header_text) + 20
+            # Store the maximum as minimum
+            self._column_min_widths[i] = max(content_width, header_width, 40)
+    
+    def _on_column_resized(self, index: int, old_size: int, new_size: int):
+        """Enforce minimum column width when user resizes."""
+        if not hasattr(self, '_column_min_widths'):
+            return
+        
+        if index < len(self._column_min_widths):
+            min_width = self._column_min_widths[index]
+            if new_size < min_width:
+                # Reset to minimum - block signals to prevent recursion
+                self.tank_table.horizontalHeader().blockSignals(True)
+                self.tank_table.setColumnWidth(index, min_width)
+                self.tank_table.horizontalHeader().blockSignals(False)
+
     
     def _create_central_widget(self):
         """Create main content area with tabs."""
@@ -242,16 +291,23 @@ class MainWindow(QMainWindow):
         self.tab_widget = QTabWidget()
         self.setCentralWidget(self.tab_widget)
         
-        # Tab 1: Stowage Planning (placeholder for now)
+        # Tab 1: Voyage Explorer
+        self.explorer_tab = VoyageExplorerWidget(self.ship_config)
+        self.explorer_tab.voyage_loaded.connect(self._load_voyage_from_file_and_switch)
+        self.tab_widget.addTab(self.explorer_tab, "📂 Voyages")
+
+        # Tab 2: Stowage Planning
         self.stowage_tab = self._create_stowage_tab()
         self.tab_widget.addTab(self.stowage_tab, "📋 Stowage Plan")
         
-        # Tab 2: Ullage Calculation (existing functionality)
+        # Tab 3: Ullage Calculation
         self.ullage_tab = self._create_ullage_tab()
         self.tab_widget.addTab(self.ullage_tab, "📊 Ullage Calculation")
         
         # Restore last active tab
-        last_tab = self.settings.value("last_tab", 1, type=int)  # Default to Ullage tab
+        last_tab = self.settings.value("last_tab", 0, type=int)  # Default to Explorer tab
+        if last_tab >= self.tab_widget.count():
+            last_tab = 0
         self.tab_widget.setCurrentIndex(last_tab)
         
         # Save tab on change
@@ -428,8 +484,14 @@ class MainWindow(QMainWindow):
     
     def _init_stowage_with_ship_config(self):
         """Initialize stowage tab with current ship config."""
-        if hasattr(self, 'ship_schematic') and self.ship_config:
+        if not self.ship_config:
+            return
+            
+        if self.ship_schematic:
             self.ship_schematic.set_ship_config(self.ship_config)
+            
+        if hasattr(self, 'explorer_tab'):
+            self.explorer_tab.set_ship_config(self.ship_config)
             if hasattr(self, 'stowage_plan'):
                 self.stowage_plan.ship_name = self.ship_config.ship_name
     
@@ -791,7 +853,7 @@ class MainWindow(QMainWindow):
 
         
         # Switch to Ullage tab
-        self.tab_widget.setCurrentIndex(1)
+        self.tab_widget.setCurrentIndex(2)
         
         # Refresh grid
         self._populate_grid()
@@ -919,7 +981,7 @@ class MainWindow(QMainWindow):
         self._on_stowage_changed()
         
         # Switch to Stowage Plan tab
-        self.tab_widget.setCurrentIndex(0)
+        self.tab_widget.setCurrentIndex(1)
         
         QMessageBox.information(
             self, "Aktarım Tamamlandı",
@@ -1052,9 +1114,23 @@ class MainWindow(QMainWindow):
         table.setColumnCount(len(self.COLUMNS))
         table.setHorizontalHeaderLabels([col[1] for col in self.COLUMNS])
         
-        # Set column widths
+        # Set initial column widths
         for i, (_, _, width, _, _) in enumerate(self.COLUMNS):
             table.setColumnWidth(i, width)
+        
+        # Use Interactive mode - allows manual resizing
+        # Content-based minimums will be enforced via sectionResized signal
+        header = table.horizontalHeader()
+        header.setStretchLastSection(False)
+        for i in range(len(self.COLUMNS)):
+            header.setSectionResizeMode(i, QHeaderView.ResizeMode.Interactive)
+        
+        # Allow horizontal scroll if content exceeds width
+        table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        
+        # Initialize minimum widths storage and connect resize signal
+        self._column_min_widths = [40] * len(self.COLUMNS)
+        header.sectionResized.connect(self._on_column_resized)
         
         # Configure selection
         table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
@@ -1076,7 +1152,7 @@ class MainWindow(QMainWindow):
         header.setStyleSheet(
             "QHeaderView::section { background-color: #4472C4; color: white; font-weight: bold; }"
         )
-        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        # Note: ResizeMode already set to Interactive above - do not override here
         header.setMinimumSectionSize(50) # Ensure columns don't get too small to click
         
         # Install event filter for bulk input
@@ -1468,11 +1544,13 @@ class MainWindow(QMainWindow):
                         item.setText(str(value))
                 
                 # Set cell properties
-                item.setForeground(COLOR_TEXT)  # Set black text color
-                
                 # Get parcel-based background color
                 parcel_color = self._get_parcel_bg_color(reading.parcel_id, is_input and key != "parcel")
                 item.setData(Qt.ItemDataRole.BackgroundRole, QBrush(parcel_color))
+                
+                # Set text color based on background contrast
+                text_color = self._contrast_color(parcel_color)
+                item.setForeground(QColor(text_color))
                 
                 # Parcel column should be read-only to force context menu usage
                 if not (is_input and key != "parcel"):
@@ -1481,6 +1559,9 @@ class MainWindow(QMainWindow):
                 self.tank_table.setItem(row, col, item)
         
         self.tank_table.blockSignals(False)
+        
+        # Calculate minimum widths based on content
+        self._calculate_column_min_widths()
     
     def _get_parcel_bg_color(self, parcel_id: str, is_input_cell: bool) -> QColor:
         """Get background color for a cell based on its parcel.
@@ -1504,18 +1585,15 @@ class MainWindow(QMainWindow):
         
         # Create tinted version (lighter for better readability)
         # Input cells: lighter tint, Calculated cells: slightly stronger
-        if is_input_cell:
-            # Lighter tint for input cells (blend with white)
-            alpha = 0.40  # 40% parcel color, 60% white
-        else:
-            # Stronger tint for calculated cells
-            alpha = 0.50  # 50% parcel color, 50% white
-        
-        r = int(base_color.red() * alpha + 15 * (1 - alpha)) # Blend with #0f172a (approx 15, 23, 42)
-        g = int(base_color.green() * alpha + 23 * (1 - alpha))
-        b = int(base_color.blue() * alpha + 42 * (1 - alpha))
-        
-        return QColor(r, g, b)
+        # Return vibrant color without blending/fading
+        return base_color
+
+    def _contrast_color(self, bg_color: QColor) -> str:
+        """Get contrasting text color (black or white) based on background brightness."""
+        # Calculate relative luminance
+        # Formula: 0.2126 * R + 0.7152 * G + 0.0722 * B
+        lum = 0.2126 * bg_color.redF() + 0.7152 * bg_color.greenF() + 0.0722 * bg_color.blueF()
+        return "#000000" if lum > 0.5 else "#ffffff"
 
     def _get_reading_value(self, reading: TankReading, key: str):
         """Get value from reading based on column key."""
@@ -1823,7 +1901,6 @@ class MainWindow(QMainWindow):
                 label_text = f"{data['name']}: {data['mt_air']:.3f} MT"
             # Retrieve parcel object to get color
             parcel_color = "#9CA3AF" # Default gray for Slop
-            text_color = "black"
             
             if pid != "0":
                  for p in self.voyage.parcels:
@@ -1832,11 +1909,14 @@ class MainWindow(QMainWindow):
                             parcel_color = p.color
                         break
             
+            # Determine text color
+            text_color = self._contrast_color(QColor(parcel_color))
+            
             label = QLabel(label_text)
             # Styling: colored box with padding, rounded corners, and black text
             label.setStyleSheet(f"""
                 background-color: {parcel_color}; 
-                color: black;
+                color: {text_color};
                 font-weight: bold; 
                 padding: 4px 8px; 
                 border-radius: 4px;
@@ -1917,68 +1997,89 @@ class MainWindow(QMainWindow):
             self, "Open Voyage", self.last_dir, "Voyage Files (*.voyage)"
         )
         if filepath:
-            self._update_last_dir(filepath)
-            try:
-                import json
-                with open(filepath, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
+            self._load_voyage_from_file(filepath)
+
+    def _load_voyage_from_file_and_switch(self, filepath: str):
+        """Load voyage and switch to Stowage Plan tab."""
+        if self._load_voyage_from_file(filepath):
+            self.tab_widget.setCurrentIndex(1) # Switch to Stowage Plan
+
+    def _load_voyage_from_file(self, filepath: str) -> bool:
+        """Load voyage data from file."""
+        self._update_last_dir(filepath)
+        try:
+            import json
+            with open(filepath, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # Load voyage data
+            if 'voyage' in data:
+                self.voyage = Voyage.from_dict(data['voyage'])
+            else:
+                raise ValueError("Invalid voyage file format")
+            
+            # Load stowage plan if present
+            if data.get('stowage_plan'):
+                from models.stowage_plan import StowagePlan
+                self.stowage_plan = StowagePlan.from_dict(data['stowage_plan'])
                 
-                # Load voyage data
-                if 'voyage' in data:
-                    self.voyage = Voyage.from_dict(data['voyage'])
-                else:
-                    raise ValueError("Invalid voyage file format")
-                
-                # Load stowage plan if present
-                if data.get('stowage_plan'):
-                    from models.stowage_plan import StowagePlan
-                    self.stowage_plan = StowagePlan.from_dict(data['stowage_plan'])
-                    
-                    # Update Stowage UI
-                    if hasattr(self, 'cargo_input_widget'):
-                        self.cargo_input_widget.set_cargo_list(self.stowage_plan.cargo_requests)
-                    if hasattr(self, 'cargo_legend'):
-                        self.cargo_legend.set_stowage_plan(self.stowage_plan)
-                    if hasattr(self, 'ship_schematic'):
-                        self.ship_schematic.set_stowage_plan(self.stowage_plan)
-                    self._on_stowage_changed()
-                
-                # Block signals to prevent premature recalculations during load
-                self.port_edit.blockSignals(True)
-                self.terminal_edit.blockSignals(True)
-                self.voyage_edit.blockSignals(True)
-                self.date_edit.blockSignals(True)
-                self.vef_spin.blockSignals(True)
-                self.draft_aft_spin.blockSignals(True)
-                self.draft_fwd_spin.blockSignals(True)
-                
-                self.port_edit.setText(self.voyage.port)
-                self.terminal_edit.setText(self.voyage.terminal)
-                self.voyage_edit.setText(self.voyage.voyage_number)
-                self.date_edit.setText(self.voyage.date)
-                self.vef_spin.setValue(self.voyage.vef)
-                self.draft_aft_spin.setValue(self.voyage.drafts.aft)
-                self.draft_fwd_spin.setValue(self.voyage.drafts.fwd)
-                
-                # Load officer info if present
-                if hasattr(self, 'chief_officer_edit'):
-                    self.chief_officer_edit.setText(self.voyage.chief_officer)
-                if hasattr(self, 'master_edit'):
-                    self.master_edit.setText(self.voyage.master)
-                
-                # Unblock signals after setting values
-                self.port_edit.blockSignals(False)
-                self.terminal_edit.blockSignals(False)
-                self.voyage_edit.blockSignals(False)
-                self.date_edit.blockSignals(False)
-                self.vef_spin.blockSignals(False)
-                self.draft_aft_spin.blockSignals(False)
-                self.draft_fwd_spin.blockSignals(False)
-                
-                self._populate_grid()
-                self.status_bar.showMessage(f"Voyage loaded: {filepath}")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to load voyage: {e}")
+                # Update Stowage UI
+                if hasattr(self, 'cargo_input_widget'):
+                    self.cargo_input_widget.set_cargo_list(self.stowage_plan.cargo_requests)
+                if hasattr(self, 'cargo_legend'):
+                    self.cargo_legend.set_stowage_plan(self.stowage_plan)
+                if hasattr(self, 'ship_schematic'):
+                    self.ship_schematic.set_stowage_plan(self.stowage_plan)
+                self._on_stowage_changed()
+            
+            # Block signals to prevent premature recalculations during load
+            self.port_edit.blockSignals(True)
+            self.terminal_edit.blockSignals(True)
+            self.voyage_edit.blockSignals(True)
+            self.date_edit.blockSignals(True)
+            self.vef_spin.blockSignals(True)
+            self.draft_aft_spin.blockSignals(True)
+            self.draft_fwd_spin.blockSignals(True)
+            
+            self.port_edit.setText(self.voyage.port)
+            self.terminal_edit.setText(self.voyage.terminal)
+            self.voyage_edit.setText(self.voyage.voyage_number)
+            self.date_edit.setText(self.voyage.date)
+            self.vef_spin.setValue(self.voyage.vef)
+            self.draft_aft_spin.setValue(self.voyage.drafts.aft)
+            self.draft_fwd_spin.setValue(self.voyage.drafts.fwd)
+            
+            # Load officer info if present
+            if hasattr(self, 'chief_officer_edit'):
+                self.chief_officer_edit.setText(self.voyage.chief_officer)
+            if hasattr(self, 'master_edit'):
+                self.master_edit.setText(self.voyage.master)
+            
+            # Unblock signals after setting values
+            self.port_edit.blockSignals(False)
+            self.terminal_edit.blockSignals(False)
+            self.voyage_edit.blockSignals(False)
+            self.date_edit.blockSignals(False)
+            self.vef_spin.blockSignals(False)
+            self.draft_aft_spin.blockSignals(False)
+            self.draft_fwd_spin.blockSignals(False)
+            
+            self._populate_grid()
+            self.status_bar.showMessage(f"Voyage loaded: {filepath}")
+            return True
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load voyage: {e}")
+            return False
+
+    def _edit_notes(self):
+        """Open dialog to edit voyage notes."""
+        if not self.voyage:
+            return
+            
+        dialog = NotesDialog(self.voyage.notes, self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            self.voyage.notes = dialog.get_notes()
+            self.status_bar.showMessage("Sefer notları güncellendi.")
     
     def _save_voyage(self):
         """Save current voyage with stowage plan to unified .voyage file."""
@@ -2229,6 +2330,21 @@ class MainWindow(QMainWindow):
             QMessageBox.StandardButton.No
         )
         if reply == QMessageBox.StandardButton.Yes:
+            # Ask for Admin Password
+            password, ok = QInputDialog.getText(
+                self, "Admin Password",
+                "Attention! Do you really want to reset all ullages, trim corrections?\n"
+                "Ask for permission of the Chief Officer and please enter Admin password!",
+                QLineEdit.EchoMode.Password
+            )
+            
+            if not ok:
+                return
+                
+            if password != "19771977":
+                QMessageBox.critical(self, "Access Denied", "Incorrect password.")
+                return
+
             from utils import delete_config
             if delete_config():
                 # Clear current data
