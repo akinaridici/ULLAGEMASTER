@@ -57,11 +57,13 @@ COLOR_WARNING_LOW = QColor(249, 115, 22)   # Orange 500
 class MainWindow(QMainWindow):
     """Main application window."""
     
-    # Column definitions: (key, header, width, is_input, is_numeric)
-    # Only Ullage, Temp, and Parcel are user-editable
+    # Column definitions for the main grid: (key, header, width, is_input, is_numeric)
+    # This configuration drives the DataEntryGrid and its delegates.
+    # is_input=True means the cell is editable by the user.
+    # is_numeric=True triggers number formatting (decimal places).
     COLUMNS = [
         ("tank_id", "Tank", 60, False, False),
-        ("parcel", "Parcel", 70, True, False),        # Dropdown
+        ("parcel", "Parcel", 70, True, False),        # Dropdown selection for cargo parcel
         ("grade", "Grade", 100, False, False),        # Auto from parcel
         ("receiver", "Receiver", 100, False, False),  # Auto from parcel
         ("receiver_tank", "Tank No", 60, False, False),

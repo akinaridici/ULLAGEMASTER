@@ -59,15 +59,19 @@ def generate_ship_template(
             del wb['Sheet']
         
         # Create Instructions sheet
+        # This sheet provides guidance to the user on how to fill the template correctly
         _create_instructions_sheet(wb, ship_name, tank_ids, include_thermal)
         
         # Create Ullage Tables sheet
+        # This is where the main calibration data (ullage vs volume) goes
         _create_ullage_sheet(wb, tank_ids)
         
         # Create Trim Correction sheet
+        # Matrix of corrections: Ullage vs Trim
         _create_trim_sheet(wb, tank_ids)
         
         # Create Thermal Correction sheet (optional)
+        # Table of Temperature vs Correction Factor
         if include_thermal:
             _create_thermal_sheet(wb, tank_ids)
         
@@ -160,12 +164,13 @@ def _create_ullage_sheet(wb: Workbook, tank_ids: List[str]):
         cell.alignment = Alignment(horizontal='center')
         ws.column_dimensions[get_column_letter(col+1)].width = 15
         
-        # Pre-fill some sample ullage values (row 2 onwards)
+        # Pre-fill some sample ullage values (row 2 onwards) to guide the user
+        # We provide a range of standard ullages (0-15m) so the user just fills volume
         sample_ullages = [0, 100, 200, 300, 400, 500, 1000, 1500, 2000, 3000, 4000, 5000, 
                          6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000, 14000, 15000]
         for row_idx, ullage in enumerate(sample_ullages, 2):
             cell = ws.cell(row=row_idx, column=col, value=ullage)
-            cell.fill = INPUT_FILL
+            cell.fill = INPUT_FILL  # Light blue background indicating input area
             cell.border = THIN_BORDER
             cell.number_format = '0'
             

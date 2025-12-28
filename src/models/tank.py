@@ -34,6 +34,7 @@ class Tank:
                 df['ullage_cm'] = df['ullage_mm'] / 10.0
             
             if 'ullage_cm' in df.columns:
+                # Always keep tables sorted by ullage for faster lookup
                 df = df.sort_values('ullage_cm').reset_index(drop=True)
                 self.ullage_table = df
         except Exception as e:
@@ -79,14 +80,15 @@ class Tank:
             if not match.empty:
                 return float(match.iloc[0]['corr_factor'])
             
-            # Linear interpolation
-            # Sort just in case
+            # Linear interpolation for thermal factor
+            # Sort just in case the table is unordered
             df = df.sort_values('temp_c')
             
-            # Find neighbors
+            # Find closest temperature points below and above current temp
             lower = df[df['temp_c'] < temp_c]
             upper = df[df['temp_c'] > temp_c]
             
+            # Handle edge cases (extrapolation not supported, clamp values)
             if lower.empty:
                 return float(df.iloc[0]['corr_factor'])
             if upper.empty:
@@ -97,6 +99,7 @@ class Tank:
             x2 = float(upper.iloc[0]['temp_c'])
             y2 = float(upper.iloc[0]['corr_factor'])
             
+            # Linear interpolation formula:
             # y = y1 + (x - x1) * (y2 - y1) / (x2 - x1)
             factor = y1 + (temp_c - x1) * (y2 - y1) / (x2 - x1)
             return factor
@@ -246,8 +249,11 @@ class TankReading:
     def from_dict(cls, data: dict) -> 'TankReading':
         """Create reading from dictionary.
         
-        Robust against missing fields. Calculated values default to 0/None
-        and will be populated by the calculation engine on load.
+        This method is designed to be robust against missing fields.
+        Calculated values (TOV, GSV, etc.) are NOT restored from the dictionary,
+        but are instead initialized to default/zero values. They will be
+        re-calculated by the engine using the restored INPUT values (ullage, temp, etc.)
+        when the voyage is loaded.
         """
         return cls(
             tank_id=data.get('tank_id', ''),

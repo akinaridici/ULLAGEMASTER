@@ -116,6 +116,7 @@ def export_to_excel(voyage: 'Voyage', filepath: str) -> bool:
                 cell.border = thin_border
                 
                 # Apply warning colors
+                # These match the UI's traffic light system for safety
                 if col == 6:  # Fill percent column
                     if reading.warning == "high_high":
                         cell.fill = WARNING_CRITICAL_FILL
@@ -125,6 +126,7 @@ def export_to_excel(voyage: 'Voyage', filepath: str) -> bool:
                         cell.fill = WARNING_LOW_FILL
                 
                 # Input cells styling
+                # Highlight USER-editable fields for clarity
                 if col in [5, 6, 10, 13]:  # Ullage, Fill%, Temp, Dens VAC
                     if reading.warning == "normal":
                         cell.fill = INPUT_FILL

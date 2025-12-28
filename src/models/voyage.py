@@ -63,14 +63,29 @@ class Voyage:
         return self.tank_readings.get(tank_id)
     
     def calculate_totals(self) -> None:
-        """Calculate total GSV and MT from all tank readings (excluding SLOP)."""
+        """
+        Calculate total GSV and MT from all tank readings.
+        
+        Important: SLOP tanks (parcel_id "0") are EXCLUDED from the voyage totals,
+        as they typically contain tank washings or residues not part of the distinct cargo.
+        """
         # Exclude SLOP (pid "0") from totals
         readings = [r for r in self.tank_readings.values() if r.parcel_id != "0"]
         self.total_gsv = sum(r.gsv for r in readings)
         self.total_mt = sum(r.mt_air for r in readings)
     
     def get_discrepancy_loading(self, shore_figure: float) -> float:
-        """Calculate loading discrepancy percentage."""
+        """
+        Calculate loading discrepancy percentage between ship and shore figures.
+        
+        Formula: ((Ship_MT - Shore_MT) / Shore_MT) * 100
+        
+        Args:
+            shore_figure: Shore figure in Metric Tons (MT)
+            
+        Returns:
+            Discrepancy percentage (positive = ship > shore)
+        """
         if shore_figure == 0:
             return 0.0
         return ((self.total_mt - shore_figure) / shore_figure) * 100

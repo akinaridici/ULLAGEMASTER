@@ -5,9 +5,10 @@ Handles conversion between vacuum density and air density.
 
 
 # Buoyancy correction factor (kg/m³)
+# Standards assume density in vacuum for physics but commercial trade uses "weight in air"
 BUOYANCY_CORRECTION_KGM3 = 1.1
-
-# Same correction in g/cm³
+ 
+# Same correction in g/cm³ (1.1 / 1000)
 BUOYANCY_CORRECTION_GCM3 = 0.0011
 
 

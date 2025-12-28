@@ -52,7 +52,18 @@ class ShipConfig:
         return [tank.id for tank in self.tanks]
     
     def has_complete_config(self) -> bool:
-        """Check if all tanks have required table data."""
+        """
+        Check if the configuration is complete and ready for use.
+        
+        Verifies that:
+        1. At least one tank is defined.
+        2. All tanks have ullage tables loaded.
+        3. All tanks have trim correction tables loaded.
+        4. If thermal correction is enabled, all tanks have thermal tables.
+        
+        Returns:
+            True if all requirements are met, False otherwise.
+        """
         if not self.tanks:
             return False
         for tank in self.tanks:
@@ -94,22 +105,24 @@ class ShipConfig:
             data = json.load(f)
         
         # Handle backward compatibility: generate trim_values from min/max/step if not present
+        # Old config files only had trim_min, trim_max, and trim_step
         if 'trim_values' in data:
             trim_values = data['trim_values']
         else:
-            # Legacy: generate from min/max/step
+            # Legacy migration: generate list of trim values from range parameters
             trim_min = data.get('trim_min', -2.0)
             trim_max = data.get('trim_max', 2.0)
             trim_step = data.get('trim_step', 0.5)
             trim_values = []
             current = trim_min
+            # Use small epsilon for float comparison safety
             while current <= trim_max + 0.0001:
                 trim_values.append(round(current, 2))
                 current += trim_step
         
         config = cls(
             ship_name=data['ship_name'],
-            tank_count=data.get('tank_count', data.get('tank_pairs', 6) * 2),  # Backward compat
+            tank_count=data.get('tank_count', data.get('tank_pairs', 6) * 2),  # Backward compat: pairs -> count
             has_thermal_correction=data.get('has_thermal_correction', False),
             default_vef=data.get('default_vef', 1.0),
             slop_density=data.get('slop_density', 0.85),

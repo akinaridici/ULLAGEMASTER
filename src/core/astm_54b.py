@@ -14,14 +14,17 @@ import math
 from typing import Tuple
 
 # ASTM 54B Coefficients based on density at 15°C
+# These coefficients (K0, K1) are empirical constants derived from ASTM standards
+# for different density ranges of petroleum products.
+# Format: (min_density, max_density): (K0, K1)
 COEFFICIENTS = {
-    # (min_density, max_density): (K0, K1)
-    (0, 770): (346.42278, 0.43884),
-    (778, 839): (594.5418, 0.0),
-    (839, 9999): (186.9696, 0.48618),
+    (0, 770): (346.42278, 0.43884),   # Light products (gasolines)
+    (778, 839): (594.5418, 0.0),      # Kerosene/Jet fuel range
+    (839, 9999): (186.9696, 0.48618), # Heavy products (fuel oils)
 }
 
-# Transition zone (770-778 kg/m³) uses special formula
+# Transition zone (770-778 kg/m³) uses a special polynomial formula
+# to smooth the transition between light and medium density products.
 TRANSITION_A = -0.0033612
 TRANSITION_B = 2680.32
 
@@ -37,17 +40,19 @@ def get_alpha(density_15: float) -> float:
         Thermal expansion coefficient
     """
     # Transition zone (770-778 kg/m³)
+    # In this narrow range, a special formula is used to avoid discontinuities.
     if 770 < density_15 < 778:
         alpha = TRANSITION_A + TRANSITION_B / (density_15 ** 2)
         return alpha
     
-    # Find appropriate coefficients
+    # Iterate through standard ranges to find appropriate coefficients
     for (min_d, max_d), (k0, k1) in COEFFICIENTS.items():
         if min_d <= density_15 <= max_d:
+            # Alpha formula: (K0 + K1 * density) / density^2
             alpha = (k0 + k1 * density_15) / (density_15 ** 2)
             return alpha
     
-    # Default to heavy products if out of range
+    # Default to heavy products if out of range (fallback safety)
     k0, k1 = COEFFICIENTS[(839, 9999)]
     alpha = (k0 + k1 * density_15) / (density_15 ** 2)
     return alpha
@@ -77,11 +82,14 @@ def calculate_vcf(temp_celsius: float, density_15: float) -> float:
     # Calculate temperature difference from 15°C
     delta_t = temp_celsius - 15.0
     
-    # Get thermal expansion coefficient
+    # Determine alpha (thermal expansion coefficient) based on product density
     alpha = get_alpha(density_15)
     
-    # ASTM 54B formula
+    # Calculate the exponent for the VCF formula
+    # The formula corrects for the non-linear expansion of petroleum products
     exponent = -alpha * delta_t * (1 + 0.8 * alpha * delta_t)
+    
+    # VCF is the exponential of the calculated factor
     vcf = math.exp(exponent)
     
     return vcf

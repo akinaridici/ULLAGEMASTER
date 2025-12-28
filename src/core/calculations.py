@@ -74,15 +74,20 @@ def calculate_ullage_from_percent(percent: float, capacity: float, ullage_table:
     """
     Calculate ullage from fill percentage.
     
+    This function first converts the percentage to a target volume in m³,
+    and then performs a reverse table lookup to find the corresponding ullage.
+    
     Args:
         percent: Fill percentage (0-100)
         capacity: Tank capacity in m³
-        ullage_table: Ullage lookup table
+        ullage_table: Ullage lookup table (DataFrame)
         
     Returns:
-        Ullage in cm
+        Ullage in cm corresponding to the fill percentage
     """
+    # Convert percentage to volume
     target_volume = (percent / 100.0) * capacity
+    # Find the ullage that corresponds to this volume
     return calculate_ullage_from_volume(target_volume, ullage_table)
 
 
@@ -93,22 +98,30 @@ def apply_trim_correction(
     trim_table: pd.DataFrame
 ) -> Tuple[float, float]:
     """
-    Apply trim correction to volume.
+    Apply trim correction to the observed volume.
+    
+    Uses bilinear interpolation to find the correction factor based on 
+    current ullage and ship's trim.
     
     Args:
-        tov: Total Observed Volume in m³
+        tov: Total Observed Volume in m³ (uncorrected)
         ullage: Ullage reading in cm
-        trim: Ship trim in meters (positive = stern down)
-        trim_table: Trim correction table with 'ullage_cm', 'trim_m', 'correction_m3'
+        trim: Ship trim in meters (positive = stern down, negative = stern up)
+        trim_table: Trim correction table with columns 'ullage_cm', 'trim_m', 'correction_m3'
         
     Returns:
-        Tuple of (corrected_volume, trim_correction)
+        Tuple containing:
+            - corrected_volume (float): TOV + correction
+            - correction (float): The applied correction value in m³
     """
+    # Interpolate correction from the table
     correction = bilinear_interpolate(
         trim_table,
         'ullage_cm', 'trim_m', 'correction_m3',
         ullage, trim
     )
+    
+    # Apply correction to the volume
     corrected_volume = tov + correction
     return corrected_volume, correction
 
@@ -261,29 +274,36 @@ def calculate_tank_full(
     Returns:
         Dictionary with all calculated values
     """
-    # Step 1: Ullage → TOV
+    # Step 1: Look up TOV (Total Observed Volume) from ullage table
     tov = calculate_tov(ullage, ullage_table)
     
-    # Step 2: Apply trim correction
+    # Step 2: Calculate and apply trim correction
+    # Adjusts for the ship's angle in the water (trim)
     gov, trim_correction = apply_trim_correction(tov, ullage, trim, trim_table)
     
-    # Step 3: Calculate VCF
+    # Step 3: Calculate VCF (Volume Correction Factor)
+    # Corrects for temperature expansion/contraction (ASTM 54B)
     vcf = calculate_vcf(temp_celsius, density_vac)
     
-    # Step 4: Calculate GSV = GOV * VCF
+    # Step 4: Calculate GSV (Gross Standard Volume)
+    # GSV = GOV * VCF (Volume at 15°C)
     gsv = calculate_gsv(gov, vcf)
     
-    # Step 5: Convert density
+    # Step 5: Convert density from Vacuum to Air for weight calculation
+    # Commercial weight is usually "in air"
     density_air = vac_to_air(density_vac)
     
-    # Step 6: Calculate mass
+    # Step 6: Calculate Mass (Metric Tons)
+    # Calculate both in-air (commercial) and in-vacuum (physics) mass
     mt_air = calculate_mass(gsv, density_air)
     mt_vac = calculate_mass(gsv, density_vac)
     
-    # Step 7: Fill percentage and warnings
+    # Step 7: Calculate fill percentage and check for warnings
+    # Based on the tank's maximum capacity
     fill_percent = calculate_fill_percent(tov, capacity)
     warning = get_level_warning(fill_percent)
     
+    # Return all calculated values in a dictionary
     return {
         'ullage': ullage,
         'tov': tov,

@@ -107,6 +107,7 @@ def _parse_ullage_sheet(ws, result: TemplateParseResult):
             if ullage_data:
                 df = pd.DataFrame(ullage_data)
                 # Convert mm to cm for compatibility (divide by 10)
+                # The system uses CM internally for many calculations, but templates use MM
                 df['ullage_cm'] = df['ullage_mm'] / 10.0
                 df = df.sort_values('ullage_cm').reset_index(drop=True)
                 result.ullage_tables[tank_id] = df
@@ -136,6 +137,7 @@ def _parse_trim_sheet(ws, result: TemplateParseResult):
                     if header_val is not None:
                         try:
                             # Try to extract number from string like "-2.0m" or "+0.5m" or just "-2.0"
+                            # We normalize the string by removing 'm' and '+' and then converting to float
                             header_str = str(header_val).lower().replace('m', '').replace('+', '').strip()
                             trim_val = float(header_str)
                             trim_headers.append((col_idx, trim_val))
@@ -143,6 +145,7 @@ def _parse_trim_sheet(ws, result: TemplateParseResult):
                             continue
                 
                 # Read all data rows below until empty
+                # We expect rows of: Ullage | Correction1 | Correction2 | ...
                 trim_data = []
                 data_row = row + 1
                 while data_row <= ws.max_row:

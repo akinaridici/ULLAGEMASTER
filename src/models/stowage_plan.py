@@ -38,7 +38,10 @@ class StowageCargo:
     custom_color: Optional[str] = None  # Custom hex color
     
     def get_receiver_names(self) -> str:
-        """Get comma-separated receiver names"""
+        """
+        Get a comma-separated string of all receiver names.
+        Returns "Genel" (General) if no receivers are defined.
+        """
         if not self.receivers:
             return "Genel"
         return ", ".join([r.name for r in self.receivers])
@@ -144,7 +147,16 @@ class StowagePlan:
             del self.assignments[tank_id]
     
     def get_cargo_total_loaded(self, cargo_unique_id: str) -> float:
-        """Get total loaded quantity for a specific cargo"""
+        """
+        Calculate the total quantity loaded for a specific cargo across all tanks.
+        Iterates through all assignments and sums up quantity_loaded.
+        
+        Args:
+            cargo_unique_id: Unique ID of the cargo to check
+            
+        Returns:
+            Total volume loaded in m³
+        """
         total = 0.0
         for assignment in self.assignments.values():
             if assignment.cargo.unique_id == cargo_unique_id:

@@ -35,9 +35,11 @@ def main():
     app.setStyleSheet(GLOBAL_STYLESHEET)
     
     # Create and show main window
+    # The MainWindow class acts as the central controller for the application
     window = MainWindow()
     window.show()
     
+    # Start the event loop
     sys.exit(app.exec())
 
 

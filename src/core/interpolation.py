@@ -27,7 +27,7 @@ def linear_interpolate(table: pd.DataFrame, x_col: str, y_col: str, x_value: flo
     x_arr = table[x_col].values
     y_arr = table[y_col].values
     
-    # Sort by x_arr to ensure search logic (np.where) works correctly
+    # Sort by x_arr to ensure binary search logic (np.where/searchsorted) works correctly
     # This handles descending data (e.g. Reverse lookup: Volume -> Ullage)
     if len(x_arr) > 1 and x_arr[0] > x_arr[-1]:
         # If strictly descending, simple reversal is faster than full sort
@@ -36,12 +36,12 @@ def linear_interpolate(table: pd.DataFrame, x_col: str, y_col: str, x_value: flo
         x_arr = x_arr[idx]
         y_arr = y_arr[idx]
     elif len(x_arr) > 1 and x_arr.min() < x_arr[0]: 
-        # Detect unsorted data generally
+        # Detect unsorted data generally and sort it
         idx = np.argsort(x_arr)
         x_arr = x_arr[idx]
         y_arr = y_arr[idx]
     
-    # Check bounds
+    # Check bounds - Extrapolation is NOT supported for safety
     if x_value < x_arr.min() or x_value > x_arr.max():
         raise ValueError(f"Value {x_value} is outside table range [{x_arr.min()}, {x_arr.max()}]")
     
@@ -50,7 +50,7 @@ def linear_interpolate(table: pd.DataFrame, x_col: str, y_col: str, x_value: flo
         idx = np.where(x_arr == x_value)[0][0]
         return float(y_arr[idx])
     
-    # Find surrounding values
+    # Find surrounding values (lower and upper bounds)
     lower_idx = np.where(x_arr <= x_value)[0][-1]
     upper_idx = np.where(x_arr >= x_value)[0][0]
     
@@ -58,9 +58,11 @@ def linear_interpolate(table: pd.DataFrame, x_col: str, y_col: str, x_value: flo
     y0, y1 = y_arr[lower_idx], y_arr[upper_idx]
     
     # Linear interpolation formula: y = y0 + (x - x0) * (y1 - y0) / (x1 - x0)
+    # Avoid division by zero
     if x1 == x0:
         return float(y0)
     
+    # Calculate interpolated value
     y_value = y0 + (x_value - x0) * (y1 - y0) / (x1 - x0)
     return float(y_value)
 

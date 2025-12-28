@@ -37,6 +37,7 @@ def register_fonts():
         if font_bold_path.exists():
             pdfmetrics.registerFont(TTFont('Arial-Bold', str(font_bold_path)))
     except Exception as e:
+        # Fallback if fonts are missing (will use ReportLab defaults)
         print(f"Warning: Could not register Arial fonts: {e}")
 
 
@@ -101,12 +102,13 @@ def export_to_pdf(voyage: 'Voyage', filepath: str) -> bool:
             ["Port:", voyage.port, "Terminal:", voyage.terminal],
             ["V.E.F.:", f"{voyage.vef:.5f}", "Trim:", f"{voyage.drafts.trim:+.2f} m"],
         ]
+        # Create and style the info table
         info_table = Table(info_data, colWidths=[3*cm, 5*cm, 3*cm, 5*cm])
         info_table.setStyle(TableStyle([
-            ('FONTNAME', (0, 0), (-1, -1), font_normal),
+            ('FONTNAME', (0, 0), (-1, -1), font_normal), # Default font for all
             ('FONTSIZE', (0, 0), (-1, -1), 10),
-            ('FONTNAME', (0, 0), (0, -1), font_bold),
-            ('FONTNAME', (2, 0), (2, -1), font_bold),
+            ('FONTNAME', (0, 0), (0, -1), font_bold),    # Bold first column (labels)
+            ('FONTNAME', (2, 0), (2, -1), font_bold),    # Bold third column (labels)
         ]))
         elements.append(info_table)
         elements.append(Spacer(1, 0.5*cm))

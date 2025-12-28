@@ -82,6 +82,8 @@ class ShipSchematicWidget(QWidget):
         
         # Add tanks to grid (no column headers - tank IDs shown on cards)
         # Add tanks to grid
+        # We iterate through rows and place Port tanks on top (row 1) and Starboard on bottom (row 2)
+        # Column order is determined by tank_to_col (Bow is usually rightmost)
         for tank_number in tank_numbers_sorted:
             col_pos = tank_to_col[tank_number]
             
@@ -100,7 +102,17 @@ class ShipSchematicWidget(QWidget):
                 self.tank_cards[tank.id] = card
     
     def _group_tanks_by_row(self) -> Dict[int, Dict[str, TankConfig]]:
-        """Group tanks by row number and side (port/starboard)"""
+        """
+        Group tanks by row number and side (port/starboard).
+        
+        Assumes standard tank numbering layout:
+        - Tanks are ordered 1P, 1S, 2P, 2S, etc.
+        - Pair indices (0,1) -> Row 1, (2,3) -> Row 2, etc.
+        - Even index = Port, Odd index = Starboard
+        
+        Returns:
+            Dictionary mapping row number to side map {side: TankConfig}
+        """
         groups = {}
         for idx, tank in enumerate(self.ship_config.tanks):
             row_number = (idx // 2) + 1
