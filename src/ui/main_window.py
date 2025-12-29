@@ -2108,21 +2108,69 @@ class MainWindow(QMainWindow):
             'mt_air': f"{total_mt_air:.3f}"
         }
         
-        # Generate
-        filename = f"UllageReport_{self.voyage.voyage_number}.pdf"
-        # Sanitize filename
-        filename = "".join(c for c in filename if c.isalnum() or c in (' ', '.', '_', '-')).strip()
-        output_path = os.path.join(self.last_dir or os.getcwd(), filename)
+        # Generate with Save Dialog and Retry Logic
+        default_name = f"{self.voyage.voyage_number} TotalUllage.pdf"
+        # Sanitize
+        default_name = "".join(c for c in default_name if c.isalnum() or c in (' ', '.', '_', '-')).strip()
         
-        try:
-            report = UllagePDFReport(output_path, vessel_data, voyage_data, tank_data, overview_data)
-            report.generate()
+        output_dir = self.last_dir or os.getcwd()
+        initial_path = os.path.join(output_dir, default_name)
+        
+        from PyQt6.QtWidgets import QFileDialog, QInputDialog, QLineEdit
+        
+        # prompt user for location/name
+        selected_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Toplam Ullage Raporunu Kaydet",
+            initial_path,
+            "PDF Files (*.pdf)"
+        )
+        
+        if not selected_path:
+            return # User cancelled
             
-            # Open
-            os.startfile(output_path)
+        # Save last dir
+        self.last_dir = os.path.dirname(selected_path)
+        
+        current_path = selected_path
+        
+        while True:
+            try:
+                # Check write permission explicitly to catch lock before PDF generation
+                if os.path.exists(current_path):
+                    try:
+                        with open(current_path, 'ab'): pass
+                    except PermissionError:
+                        raise PermissionError(f"Dosya kilitli: {current_path}")
+
+                report = UllagePDFReport(current_path, vessel_data, voyage_data, tank_data, overview_data)
+                report.generate()
+                
+                # Open
+                os.startfile(current_path)
+                break
+                
+            except PermissionError:
+                filename_only = os.path.basename(current_path)
+                new_name, ok = QInputDialog.getText(
+                    self, 
+                    "Dosya Erişim Hatası", 
+                    f"'{filename_only}' dosyası şu an açık veya yazma izni yok.\n\nLütfen yeni bir dosya adı giriniz:",
+                    QLineEdit.EchoMode.Normal,
+                    filename_only
+                )
+                if ok and new_name:
+                    new_name = new_name.strip()
+                    if not new_name.lower().endswith('.pdf'):
+                        new_name += ".pdf"
+                    current_path = os.path.join(os.path.dirname(current_path), new_name)
+                    continue
+                else:
+                    break # User cancelled
             
-        except Exception as e:
-            QMessageBox.critical(self, "Hata", f"Rapor oluşturulurken hata oluştu:\n{str(e)}")
+            except Exception as e:
+                QMessageBox.critical(self, "Hata", f"Rapor oluşturulurken hata oluştu:\n{str(e)}")
+                break
 
         """Save officer names to ship config whenever they change."""
         if not self.ship_config:

@@ -1,0 +1,160 @@
+{
+  "version": "2.0",
+  "voyage": {
+    "voyage_number": "",
+    "date": "29-12-2025",
+    "port": "",
+    "terminal": "",
+    "vef": 1.0,
+    "drafts": {
+      "aft": 0.0,
+      "fwd": 0.0,
+      "trim": 0.0
+    },
+    "chief_officer": "Harun Kurtuluş",
+    "master": "Akın Arıdıcı",
+    "parcels": [],
+    "tank_readings": {
+      "1P": {
+        "tank_id": "1P",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "1S": {
+        "tank_id": "1S",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "2P": {
+        "tank_id": "2P",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "2S": {
+        "tank_id": "2S",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "3P": {
+        "tank_id": "3P",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "3S": {
+        "tank_id": "3S",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "4P": {
+        "tank_id": "4P",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "4S": {
+        "tank_id": "4S",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "5P": {
+        "tank_id": "5P",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "5S": {
+        "tank_id": "5S",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "6P": {
+        "tank_id": "6P",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "6S": {
+        "tank_id": "6S",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "7P": {
+        "tank_id": "7P",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "7S": {
+        "tank_id": "7S",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "8P": {
+        "tank_id": "8P",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "8S": {
+        "tank_id": "8S",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "SlopP": {
+        "tank_id": "SlopP",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "SlopS": {
+        "tank_id": "SlopS",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      }
+    },
+    "totals": {
+      "gsv": 0.0,
+      "mt": 0.0
+    },
+    "notes": ""
+  },
+  "stowage_plan": {
+    "id": "291a859f-3abd-4a71-903f-fab8eac49d15",
+    "plan_name": "Plan_20251229_200152",
+    "ship_name": "MT KUZEY EKİM",
+    "created_date": "2025-12-29T20:01:52.448309",
+    "cargo_requests": [],
+    "assignments": {},
+    "excluded_tanks": []
+  }
+}
