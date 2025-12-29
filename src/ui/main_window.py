@@ -2009,7 +2009,9 @@ class MainWindow(QMainWindow):
             'receiver': ui_data['receiver'],
             'date': self.voyage.date,
             'draft_fwd': ui_data['draft_fwd'],
-            'draft_aft': ui_data['draft_aft']
+            'draft_aft': ui_data['draft_aft'],
+            'cargo': ui_data['cargo'],
+            'report_type': ui_data['report_type']
         }
         
         # 4. Tank Data
@@ -2136,13 +2138,7 @@ class MainWindow(QMainWindow):
         
         while True:
             try:
-                # Check write permission explicitly to catch lock before PDF generation
-                if os.path.exists(current_path):
-                    try:
-                        with open(current_path, 'ab'): pass
-                    except PermissionError:
-                        raise PermissionError(f"Dosya kilitli: {current_path}")
-
+                # Generate PDF (if file is locked, PermissionError will be raised here)
                 report = UllagePDFReport(current_path, vessel_data, voyage_data, tank_data, overview_data)
                 report.generate()
                 

@@ -105,7 +105,8 @@ class UllagePDFReport:
         self.elements.append(Spacer(1, 1*mm))
 
     def _build_voyage_info(self):
-        title_row = [Paragraph("ULLAGE REPORT - AFTER LOADING", self.style_bold_center)]
+        rpt_type = self.voyage_data.get('report_type', '')
+        title_row = [Paragraph(f"ULLAGE REPORT - {rpt_type}", self.style_bold_center)]
         t_title = Table([title_row], colWidths=[275*mm])
         t_title.setStyle(TableStyle([
             ('GRID', (0,0), (-1,-1), 1, colors.black), 
@@ -132,9 +133,9 @@ class UllagePDFReport:
         row2 = [
             "From", Paragraph(y.get('port',''), self.style_center),
             "Port", Paragraph(y.get('port_to',''), self.style_center),
-            "Cargo", Paragraph("Gasoline", self.style_center),
-            "Draft Fwd", "9.00",
-            "Draft Aft", "9.50"
+            "Cargo", Paragraph(y.get('cargo',''), self.style_center),
+            "Draft Aft", y.get('draft_aft', ''),
+            "Draft Fwd", y.get('draft_fwd', '')
         ]
         
         t_info = Table([row1, row2], colWidths=cw)
