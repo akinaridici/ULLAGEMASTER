@@ -92,7 +92,13 @@ class CargoInputWidget(QWidget):
         layout.addLayout(input_group, 0)
     
     def _calculate_volume(self):
-        """Calculate volume from ton and density."""
+        """
+        Calculate volume from ton and density.
+        
+        Triggered when Ton or Density input values change.
+        Updates the volume label automatically.
+        Formula: Volume = Ton / Density
+        """
         ton = self.ton_input.value()
         density = self.density_input.value()
         

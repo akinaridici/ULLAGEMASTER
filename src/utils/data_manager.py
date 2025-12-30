@@ -36,7 +36,16 @@ def config_exists() -> bool:
 
 
 def load_config() -> Optional[ShipConfig]:
-    """Load the ship configuration from the default path."""
+    """
+    Load the ship configuration from the default path.
+    
+    Returns:
+        ShipConfig object if file exists and is valid.
+        None if file does not exist or loading fails.
+        
+    Raises:
+        Exceptions are caught internally and printed to stdout.
+    """
     config_path = get_config_path()
     if not config_path.exists():
         return None
@@ -49,7 +58,15 @@ def load_config() -> Optional[ShipConfig]:
 
 
 def save_config(config: ShipConfig) -> bool:
-    """Save the ship configuration to the default path."""
+    """
+    Save the ship configuration to the default path.
+    
+    Args:
+        config: The ShipConfig object to persist.
+        
+    Returns:
+        True if save was successful, False otherwise.
+    """
     try:
         config_path = get_config_path()
         config.save_to_json(str(config_path))

@@ -109,7 +109,13 @@ def bilinear_interpolate(
         y_value: Second interpolation value
         
     Returns:
-        Interpolated z value
+        Interpolated z value.
+    
+    Note:
+        Performs clamping for outlier values:
+        - If x_value is outside the table range, it uses the nearest boundary x.
+        - If y_value is outside the table range, it uses the nearest boundary y.
+        This ensures the function always returns a safe approximation rather than raising an error.
     """
     x_arr = table[x_col].unique()
     y_arr = table[y_col].unique()

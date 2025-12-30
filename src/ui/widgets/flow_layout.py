@@ -3,6 +3,12 @@ from PyQt6.QtWidgets import QLayout
 from PyQt6.QtCore import Qt, QRect, QSize, QPoint
 
 class FlowLayout(QLayout):
+    """
+    Standard Qt FlowLayout implementation.
+    
+    Arranges widgets from left to right, wrapping to the next line
+    when they run out of space.
+    """
     def __init__(self, parent=None, margin=0, spacing=-1):
         super(FlowLayout, self).__init__(parent)
         if parent is not None:

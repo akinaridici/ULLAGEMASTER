@@ -11,7 +11,17 @@ from dataclasses import dataclass, field, asdict
 
 @dataclass
 class TankConfig:
-    """Configuration for a single tank."""
+    """
+    Configuration for a single tank.
+    
+    Attributes:
+        id (str): Unique identifier for the tank (e.g., "1P", "1S").
+        name (str): Friendly display name (e.g., "No.1 Port").
+        capacity_m3 (float): Total capacity in cubic meters.
+        ullage_table (List[Dict]): Raw calibration data for Ullage -> Volume.
+        trim_table (List[Dict]): Raw calibration data for Trim corrections.
+        thermal_table (List[Dict]): Raw calibration data for Thermal corrections.
+    """
     id: str                     # e.g., "1P", "1S", "SlopP"
     name: str                   # e.g., "No.1 Port"
     capacity_m3: float = 0.0    # Tank capacity in m³
@@ -131,6 +141,8 @@ class ShipConfig:
             trim_values=trim_values
         )
         
+        # Iterate directly over the 'tanks' list from JSON
+        # Each tank_data dictionary is converted into a TankConfig object
         for tank_data in data.get('tanks', []):
             tank = TankConfig(
                 id=tank_data['id'],

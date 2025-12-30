@@ -66,8 +66,14 @@ class Voyage:
         """
         Calculate total GSV and MT from all tank readings.
         
-        Important: SLOP tanks (parcel_id "0") are EXCLUDED from the voyage totals,
-        as they typically contain tank washings or residues not part of the distinct cargo.
+        Logic:
+            1. Iterates through all tank readings.
+            2. Skips SLOP tanks (parcel_id = "0") as they are not part of cargo totals.
+            3. Sums up GSV (Gross Standard Volume) and MT (Metric Tons in Air).
+            
+        Updates:
+            self.total_gsv
+            self.total_mt
         """
         # Exclude SLOP (pid "0") from totals
         readings = [r for r in self.tank_readings.values() if r.parcel_id != "0"]

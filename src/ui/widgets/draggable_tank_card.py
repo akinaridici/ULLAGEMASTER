@@ -150,7 +150,14 @@ class DraggableTankCard(QGroupBox):
             """)
     
     def mousePressEvent(self, event):
-        """Handle mouse press for drag start"""
+        """
+        Handle mouse press for drag start.
+        
+        Initiates drag-start position tracking if:
+        1. Left click
+        2. Tank has an assignment (cargo)
+        3. Tank is not fixed/locked
+        """
         try:
             if not self or not hasattr(self, 'assignment'):
                 return
@@ -254,15 +261,23 @@ class DraggableTankCard(QGroupBox):
         except RuntimeError:
             event.ignore()
     
-    def dropEvent(self, event):
-        """Handle drop event"""
+    def dropEvent(self, drop_event):
+        """
+        Handle drop event.
+        
+        Supports two types of drops:
+        1. Tank Swap (application/x-tank-assignment): Swaps contents with another tank.
+        2. New Assignment (application/x-cargo-id): Assigns a new cargo from the legend.
+        
+        Rejects drop if tank is excluded or fixed.
+        """
         try:
             if not self or not hasattr(self, 'tank'):
-                event.ignore()
+                drop_event.ignore()
                 return
             
             if self.is_excluded or self.is_fixed:
-                event.ignore()
+                drop_event.ignore()
                 return
             
             mime = event.mimeData()

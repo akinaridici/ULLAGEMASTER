@@ -63,7 +63,16 @@ class ShipSchematicWidget(QWidget):
         self._cargo_colors = colors
     
     def display_tanks(self):
-        """Display tanks in grid layout"""
+        """
+        Display tanks in grid layout.
+        
+        Algorithm:
+        1. Group tanks by Row (1, 2, 3...) and Side (Port/Starboard).
+        2. Calculate grid position:
+           - Rows vary by tank number (High numbers = Stern = Left, Low numbers = Bow = Right).
+           - Row 1 = Port, Row 2 = Starboard.
+        3. Create and place DraggableTankCard widgets.
+        """
         self._clear_tanks()
         
         if not self.ship_config or not self.ship_config.tanks:
@@ -138,7 +147,7 @@ class ShipSchematicWidget(QWidget):
         
         # Determine color and utilization
         utilization = 0.0
-        color = "#E0E0E0"
+        color = "#E0E0E0"  # Default gray
         
         if assignment:
             capacity = getattr(tank, 'capacity_m3', 0)

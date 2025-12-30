@@ -23,7 +23,12 @@ if TYPE_CHECKING:
 
 
 def register_fonts():
-    """Register Unicode-compatible fonts for ReportLab."""
+    """
+    Register Unicode-compatible fonts for ReportLab.
+    
+    ReportLab's default fonts do not support all UTF-8 characters (like Turkish 'ğ', 'ş').
+    We attempt to register Arial from the Windows system fonts.
+    """
     if not REPORTLAB_AVAILABLE:
         return
 

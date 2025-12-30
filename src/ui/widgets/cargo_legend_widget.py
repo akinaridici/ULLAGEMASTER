@@ -133,6 +133,12 @@ class DraggableCargoCard(QFrame):
         super().mousePressEvent(event)
     
     def mouseMoveEvent(self, event):
+        """
+        Handle mouse move to initiate drag operation.
+        
+        Checks if the mouse has moved far enough to be considered a drag
+        rather than a click.
+        """
         if not (event.buttons() & Qt.MouseButton.LeftButton):
             super().mouseMoveEvent(event)
             return

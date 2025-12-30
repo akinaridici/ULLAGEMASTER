@@ -19,7 +19,16 @@ from .cargo_legend_widget import CARGO_COLORS
 from .flow_layout import FlowLayout
 
 class ParcelSummaryCard(QLabel):
-    """Visual card for parcel details in totals view (Chip style)."""
+    """
+    Visual card for parcel details in totals view (Chip style).
+    
+    Displays:
+    - Cargo Name
+    - Receiver (in parentheses)
+    - Quantity (MT)
+    - Background color matching the cargo
+    - Auto-contrasted text color (black/white)
+    """
     def __init__(self, name, qty, receiver, color, parent=None):
         super().__init__(parent)
         
@@ -47,7 +56,12 @@ class ParcelSummaryCard(QLabel):
 
 
 class PreviewShipSchematic(QWidget):
-    """Lightweight read-only ship schematic for preview."""
+    """
+    Lightweight read-only ship schematic for preview.
+    
+    Draws a simplified grid of tanks to show the cargo distribution
+    without the full interactivity of the main Stowage Planner.
+    """
     
     def __init__(self, parent=None):
         super().__init__(parent)

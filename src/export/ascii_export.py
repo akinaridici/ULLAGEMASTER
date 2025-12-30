@@ -19,6 +19,13 @@ def export_ascii_report(voyage: 'Voyage', filepath: str) -> bool:
         
     Returns:
         True if successful
+        
+    Format:
+        - Fixed-width columns for alignment
+        - Header with Voyage/Port info
+        - Draft/Trim section
+        - Tank table with Warning indicators
+        - Totals and Officer Signatures
     """
     try:
         lines = []
@@ -57,8 +64,8 @@ def export_ascii_report(voyage: 'Voyage', filepath: str) -> bool:
             
             row = (
                 f"{tank_id:<6} "
-                f"{reading.grade[:12]:<12} "
-                f"{reading.receiver[:12]:<12} "
+                f"{reading.grade[:12]:<12} "        # Truncate Grade to 12 chars
+                f"{reading.receiver[:12]:<12} "     # Truncate Receiver to 12 chars
                 f"{ullage_str:>8} "
                 f"{fill_str:>6} "
                 f"{reading.tov:>10.3f} "

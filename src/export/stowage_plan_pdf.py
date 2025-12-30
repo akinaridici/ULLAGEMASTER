@@ -97,6 +97,13 @@ def _draw_ship_hull(
         hull_height: Height of the hull
         bow_length: Length of the bow section
         stern_length: Length of the stern section
+        
+    Drawing Steps:
+        1. Stern curve (left side)
+        2. Top edge (straight line)
+        3. Bow curves (pointed tip on right)
+        4. Bottom edge (straight line back to stern)
+        5. Center line (dashed deck marking)
     """
     body_width = hull_width - bow_length - stern_length
     
@@ -322,6 +329,14 @@ def generate_stowage_plan_pdf(
     
     Returns:
         True if successful, False otherwise
+        
+    Layout Overview:
+        - Landscape A4
+        - Top Left: Parcel Summary Table (Legend)
+        - Top Center/Right: Ship Title and Voyage Info
+        - Top Right: Final Drafts Box
+        - Center/Bottom: Ship Hull Diagram containing Tank Grid
+        - Hull Layout: Stern (Left) -> Tanks (8..1) -> Bow (Right)
     """
     try:
         c = canvas.Canvas(filepath, pagesize=landscape(A4))

@@ -13,7 +13,14 @@ from i18n import t, set_language, get_available_languages, get_current_language
 
 
 class PreferencesDialog(QDialog):
-    """Dialog for application preferences."""
+    """
+    Dialog for application-wide preferences.
+    
+    Settings:
+    - Language (English/Turkish).
+    - Unit System (Metric/Imperial) - Metric default.
+    - Default Values for new calculations (VEF, Temp, Density).
+    """
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -110,7 +117,12 @@ class PreferencesDialog(QDialog):
         self.metric_radio.setChecked(True)
     
     def _save_and_close(self):
-        """Save settings and close dialog."""
+        """
+        Apply and save settings.
+        
+        - Updates Language immediately (requires restart for full text update).
+        - Persists other settings to config (ToDo).
+        """
         # Apply language change
         new_lang = self.lang_combo.currentData()
         if new_lang:

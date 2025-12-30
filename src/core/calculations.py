@@ -272,7 +272,20 @@ def calculate_tank_full(
         vef: Vessel Experience Factor
         
     Returns:
-        Dictionary with all calculated values
+        Dictionary with all calculated values:
+        - 'ullage': Input/Corrected ullage (cm)
+        - 'tov': Total Observed Volume (m³)
+        - 'trim_correction': Applied trim correction volume (m³)
+        - 'gov': Gross Observed Volume (m³) [TOV + TrimCorr]
+        - 'vcf': Volume Correction Factor (ASTM 54B)
+        - 'gsv': Gross Standard Volume (m³) [GOV * VCF]
+        - 'density_vac': Input Density (Vac)
+        - 'density_air': Calculated Density (Air)
+        - 'mt_air': Mass in Air (Commercial Weight)
+        - 'mt_vac': Mass in Vacuum (Physics Mass)
+        - 'fill_percent': Fill Percentage %
+        - 'warning': Level Warning Enum (NONE/LOW/HIGH/HIGH_HIGH)
+        - 'temp': Input Temperature (°C)
     """
     # Step 1: Look up TOV (Total Observed Volume) from ullage table
     tov = calculate_tov(ullage, ullage_table)

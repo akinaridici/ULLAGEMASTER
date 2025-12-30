@@ -66,6 +66,10 @@ class PlanViewerWidget(QWidget):
             plan: StowagePlan to display
             cargo_colors: List of hex colors matching cargo_requests order
             total_capacity: Total ship capacity in m³
+            
+        Updates:
+            - Comparison table (Requested vs Loaded)
+            - Summary labels (Capacity, Fulfillment %)
         """
         self.current_plan = plan
         self.cargo_colors = cargo_colors or []

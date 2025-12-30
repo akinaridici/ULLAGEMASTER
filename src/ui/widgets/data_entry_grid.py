@@ -93,6 +93,7 @@ class DataEntryGrid(QTableWidget):
             return
         
         # Parse clipboard data (tab-separated, newline for rows)
+        # Standard Excel copy format
         lines = text.strip().split('\n')
         if not lines:
             return

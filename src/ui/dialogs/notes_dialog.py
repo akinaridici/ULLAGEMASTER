@@ -5,6 +5,14 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 
 class NotesDialog(QDialog):
+    """
+    Simple dialog for editing voyage notes.
+    
+    Features:
+    - Text area for free-form notes.
+    - Character limit enforcement (max 1000 chars).
+    - Live character count display.
+    """
     def __init__(self, notes="", parent=None):
         super().__init__(parent)
         self.setWindowTitle("Sefer Notları")
@@ -35,6 +43,13 @@ class NotesDialog(QDialog):
         layout.addWidget(buttons)
         
     def _check_limit(self):
+        """
+        Enforce character limit on text change.
+        
+        If text exceeds 1000 characters, it acts as a hard limit:
+        truncates the text and restores the cursor position.
+        Updates the counter label.
+        """
         text = self.text_edit.toPlainText()
         if len(text) > 1000:
             text = text[:1000]

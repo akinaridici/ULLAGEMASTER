@@ -63,11 +63,15 @@ def calculate_vcf(temp_celsius: float, density_15: float) -> float:
     Calculate the Volume Correction Factor (VCF) using ASTM Table 54B.
     
     Args:
-        temp_celsius: Observed temperature in Celsius
-        density_15: Density at 15°C in kg/m³ (or g/cm³ - auto-converted)
+        temp_celsius: Observed temperature in Celsius.
+        density_15: Density at 15°C in kg/m³ (or g/cm³ - auto-converted).
         
     Returns:
-        Volume Correction Factor (VCF)
+        Volume Correction Factor (VCF).
+        
+    Note:
+        This implementation follows the VCF formula for generalized petroleum products.
+        It assumes standard pressure conditions.
         
     Example:
         >>> vcf = calculate_vcf(25.0, 800.0)  # 25°C, 800 kg/m³

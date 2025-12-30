@@ -583,6 +583,8 @@ class ReportFunctionsWidget(QWidget):
             # Format: "Grade Receiver (Tank1-Tank2-Tank3)"
             grade = parcel.name or ""
             receiver = parcel.receiver or ""
+            
+            # Format tank list for display (e.g., "1P-3S" instead of "NO.1 PORT COT-NO.3 STARBOARD COT")
             tank_list = parcel_tanks.get(parcel.id, [])
             tank_str = "-".join(tank_list) if tank_list else ""
             

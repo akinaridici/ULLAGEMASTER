@@ -22,7 +22,19 @@ from ui.styles import COLOR_TEXT_SECONDARY, COLOR_PANEL_BG, COLOR_ACCENT
 
 
 class ShipSetupWizard(QWizard):
-    """Wizard for ship configuration - direct data entry without Excel."""
+    """
+    Wizard for ship configuration - direct data entry without Excel.
+    
+    This wizard guides the user through the process of setting up a new ship configuration:
+    1. Ship Info: Basic details and trim/slop settings.
+    2. Tank Setup: Defining tank names and IDs.
+    3. Ullage Tables: Entering/Pasting calibration data.
+    4. Trim Tables: Entering trim corrections.
+    5. Thermal Tables: Optional thermal expansion factors.
+    6. Summary: Review and save.
+    
+    It serves as an alternative to the Excel template import workflow.
+    """
     
     def __init__(self, parent=None, existing_config: Optional[ShipConfig] = None):
         super().__init__(parent)
@@ -56,7 +68,16 @@ class ShipSetupWizard(QWizard):
 
 
 class ShipInfoPage(QWizardPage):
-    """Page 1: Basic ship information."""
+    """
+    Page 1: Basic ship information.
+    
+    Collects:
+    - Ship Name
+    - Default VEF (Vessel Experience Factor)
+    - Trim Values definition (comma-separated list of trims used in tables)
+    - Thermal Correction toggle
+    - Slop Tank Density default
+    """
     
     def __init__(self, wizard: ShipSetupWizard):
         super().__init__()
@@ -184,7 +205,14 @@ class ShipInfoPage(QWizardPage):
 
 
 class TankSetupPage(QWizardPage):
-    """Page 2: Define tank IDs."""
+    """
+    Page 2: Define tank IDs.
+    
+    Features:
+    - Quick Generator: Auto-creates P/S pairs (e.g., 1P, 1S, 2P, 2S).
+    - Manual Add/Remove: Fine retrieval of tank list.
+    - Capacity Entry: Optional manual capacity override (otherwise calculated from ullage table).
+    """
     
     def __init__(self, wizard: ShipSetupWizard):
         super().__init__()
@@ -354,7 +382,14 @@ class TankSetupPage(QWizardPage):
 
 
 class UllageEntryPage(QWizardPage):
-    """Page 3: Enter ullage tables for each tank."""
+    """
+    Page 3: Enter ullage tables for each tank.
+    
+    - Provides a DataEntryGrid for each tank.
+    - Supports Copy/Paste from Excel.
+    - 'Copy First to All' utility for sibling ships or symmetric tanks.
+    - Validates data points (Ullage vs Volume).
+    """
     
     def __init__(self, wizard: ShipSetupWizard):
         super().__init__()
@@ -539,8 +574,8 @@ class TrimEntryPage(QWizardPage):
                     
                     # Add correction for each column (trim value)
                     for trim_val in trim_values:
-                        # Find closest trim match if float precision issue?
-                        # Using loose comparison or direct key
+                        # Find closest trim match to handle potential float precision issues
+                        # We try exact match first, then formatted string match, then rough tolerance
                         val = corrections.get(trim_val)
                         if val is None:
                             # Try searching with tolerance?
@@ -606,7 +641,13 @@ class TrimEntryPage(QWizardPage):
 
 
 class ThermalEntryPage(QWizardPage):
-    """Page 5: Enter thermal correction tables (optional)."""
+    """
+    Page 5: Enter thermal correction tables (optional).
+    
+    - Only shown/enabled if 'My ship has Thermal Correction tables' was checked on Page 1.
+    - Defines Thermal Correction Factor (VCF) vs Temperature.
+    - If disabled, system assumes Factor 1.0.
+    """
     
     def __init__(self, wizard: ShipSetupWizard):
         super().__init__()

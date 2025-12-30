@@ -47,11 +47,17 @@ class Parcel:
     
     @classmethod
     def from_stowage_cargo(cls, cargo, parcel_id: str) -> 'Parcel':
-        """Create Parcel from StowageCargo (Tab 1 -> Tab 2 transfer).
+        """
+        Create Parcel from StowageCargo (converts Stowage Plan data to Ullage Parcel).
+        
+        Used when transferring data from "Stowage Plan" tab to "Ullage Calculation" tab.
         
         Args:
-            cargo: StowageCargo instance from stowage plan
-            parcel_id: ID to assign to the new parcel
+            cargo: StowageCargo instance containing grade, receiver, and density info.
+            parcel_id: ID to assign to the new parcel (e.g., "1", "2").
+            
+        Returns:
+            New Parcel instance populated with stowage cargo data.
         """
         return cls(
             id=parcel_id,

@@ -44,6 +44,8 @@ from .widgets.flow_layout import FlowLayout
 from .widgets.voyage_explorer import VoyageExplorerWidget
 from .widgets.report_functions_widget import ReportFunctionsWidget
 from ui.dialogs.notes_dialog import NotesDialog
+from ui.dialogs.manual_dialog import ManualDialog
+
 
 # Legacy naming for compatibility with existing logic
 COLOR_INPUT = COLOR_CELL_INPUT
@@ -56,7 +58,15 @@ COLOR_WARNING_LOW = QColor(249, 115, 22)   # Orange 500
 
 
 class MainWindow(QMainWindow):
-    """Main application window."""
+    """
+    Main application window for UllageMaster.
+    
+    This class orchestrates the entire application workflow:
+    - Manages tabs: Voyage Explorer, Stowage Plan, Ullage Calculation, Reports.
+    - Handles data persistence (Save/Load/Import).
+    - Coordinates data flow between Ullage and Stowage modules.
+    - Provides the main calculation engine interface via the Grid (_recalculate_tank).
+    """
     
     # Column definitions for the main grid: (key, header, width, is_input, is_numeric)
     # This configuration drives the DataEntryGrid and its delegates.
@@ -242,6 +252,13 @@ class MainWindow(QMainWindow):
         
         # Help menu
         help_menu = menubar.addMenu(t("help", "menu"))
+
+        manual_action = QAction("User Manual / Kullanım Kılavuzu", self)
+        manual_action.setShortcut("F1")
+        manual_action.triggered.connect(self._show_manual)
+        help_menu.addAction(manual_action)
+        
+        help_menu.addSeparator()
         
         about_action = QAction(t("about", "menu"), self)
         about_action.triggered.connect(self._show_about)
@@ -829,7 +846,15 @@ class MainWindow(QMainWindow):
         return sorted_groups
     
     def _transfer_stowage_to_ullage(self):
-        """Transfer stowage plan to ullage tab as parcels."""
+        """
+        Transfer stowage plan to ullage tab as parcels.
+        
+        Action:
+        1. Clears existing Parcels in Ullage tab.
+        2. Creates new Parcels from Stowage Cargos.
+        3. Updates Tank Readings with new Parcel IDs and Densities.
+        4. Switches view to Ullage Tab.
+        """
         from models import Parcel
         
         if not self.stowage_plan or not self.stowage_plan.cargo_requests:
@@ -897,13 +922,14 @@ class MainWindow(QMainWindow):
         )
     
     def _transfer_ullage_to_stowage(self):
-        """Transfer ullage data to stowage plan (reverse transfer).
+        """
+        Transfer ullage data to stowage plan (Reverse Transfer).
         
-        Transfers:
-        - Parcels -> StowageCargo (with GOV totals as quantity)
-        - Tank assignments based on parcel_id
-        - Colors from parcels
-        - SLOP as separate cargo
+        Action:
+        1. Aggregates GOV totals per Parcel from Ullage tab.
+        2. Creates Stowage Cargos from Parcels.
+        3. Create Tank Assignments based on Parcel IDs.
+        4. Specific handling for 'SLOP' (Parcel ID 0).
         """
         from models.stowage_plan import StowageCargo, TankAssignment, Receiver
         
@@ -1029,8 +1055,11 @@ class MainWindow(QMainWindow):
             "JSON Files (*.json)"
         )
         if filename:
-            self.stowage_plan.save_to_json(filename)
-            self.status_bar.showMessage(f"Stowage plan saved: {filename}")
+            try:
+                self.stowage_plan.save_to_json(filename)
+                self.status_bar.showMessage(f"Stowage plan saved: {filename}")
+            except Exception as e:
+                QMessageBox.critical(self, "Hata", f"Plan kaydedilemedi:\n{e}")
     
     def _load_stowage_plan(self):
         """Load stowage plan from JSON file."""
@@ -1042,20 +1071,23 @@ class MainWindow(QMainWindow):
             "JSON Files (*.json)"
         )
         if filename:
-            self.stowage_plan = StowagePlan.load_from_json(filename)
-            
-            # Update cargo input widget (bottom left table)
-            if hasattr(self, 'cargo_input_widget'):
-                self.cargo_input_widget.set_cargo_list(self.stowage_plan.cargo_requests)
-            
-            # Update cargo legend (draggable cards)
-            self.cargo_legend.set_stowage_plan(self.stowage_plan)
-            
-            # Update ship schematic
-            self.ship_schematic.set_stowage_plan(self.stowage_plan)
-            
-            self._on_stowage_changed()
-            self.status_bar.showMessage(f"Stowage plan yüklendi: {filename}")
+            try:
+                self.stowage_plan = StowagePlan.load_from_json(filename)
+                
+                # Update cargo input widget (bottom left table)
+                if hasattr(self, 'cargo_input_widget'):
+                    self.cargo_input_widget.set_cargo_list(self.stowage_plan.cargo_requests)
+                
+                # Update cargo legend (draggable cards)
+                self.cargo_legend.set_stowage_plan(self.stowage_plan)
+                
+                # Update ship schematic
+                self.ship_schematic.set_stowage_plan(self.stowage_plan)
+                
+                self._on_stowage_changed()
+                self.status_bar.showMessage(f"Stowage plan yüklendi: {filename}")
+            except Exception as e:
+                QMessageBox.critical(self, "Hata", f"Plan yüklenemedi:\n{e}")
 
     
     def _create_ullage_tab(self) -> QWidget:
@@ -1262,7 +1294,15 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage(f"Copied {cell_count} cells to clipboard")
     
     def _handle_bulk_input(self, selected_items, initial_char=""):
-        """Handle bulk input for multiple selected cells."""
+        """
+        Handle bulk input for multiple selected cells.
+        
+        Triggered when user types while multiple cells in the SAME column are selected.
+        - Numeric Columns: Validates input as number.
+        - Text Columns: Accepts any text.
+        
+        Applies the entered value to ALL selected cells and triggers recalculation.
+        """
         # Check if all selected cells are in the same column
         columns = set(item.column() for item in selected_items)
         if len(columns) != 1:
@@ -1505,11 +1545,23 @@ class MainWindow(QMainWindow):
     def _save_ship_config(self):
         """Save ship config to file."""
         config_path = self._get_config_path()
-        self.ship_config.save_to_json(str(config_path))
-        self.status_bar.showMessage(f"Ship config saved: {config_path.name}")
+        try:
+            self.ship_config.save_to_json(str(config_path))
+            self.status_bar.showMessage(f"Ship config saved: {config_path.name}")
+        except Exception as e:
+            QMessageBox.critical(self, "Hata", f"Gemi ayarları kaydedilemedi:\n{e}")
     
     def _populate_grid(self):
-        """Populate the tank grid with ship configuration."""
+        """
+        Populate the tank grid with ship configuration.
+        
+        Process:
+        1. Sets row count based on ship config tanks.
+        2. Creates or updates Tank objects.
+        3. Initializes TankReading objects for the voyage if missing.
+        4. Calculates initial values for each tank.
+        5. Fills grid cells with values and applies styling (colors/read-only flags).
+        """
         if not self.ship_config:
             return
         
@@ -1734,7 +1786,24 @@ class MainWindow(QMainWindow):
             reading.density_vac = float(value) if value else None
     
     def _recalculate_tank(self, row: int, tank_id: str):
-        """Recalculate values for a single tank."""
+        """
+        Recalculate values for a single tank based on current reading.
+        
+        Core Calculation Logic:
+        1. Determine Input: Uses Ullage (if entered) or Fill % (if entered).
+            - Note: User inputs cm, system converts to mm for table lookup.
+        2. Trim Correction: Applies trim correction from table if available.
+        3. TOV Calculation: Interpolates Volume from Ullage table.
+        4. Temperature Correction: Applies Thermal Factor (VCF) if temp provided.
+        5. GOV Calculation: TOV * Thermal Factor.
+        6. VCF Calculation: Uses ASTM 54B based on Density and Temp.
+        7. GSV Calculation: GOV * VCF.
+        8. Mass Calculation: GSV * Density (Vac/Air).
+        
+        Args:
+            row: Grid row index for visual updates.
+            tank_id: ID of the tank to recalculate.
+        """
         reading = self.voyage.get_reading(tank_id)
         tank = self.tanks.get(tank_id)
         
@@ -1990,7 +2059,17 @@ class MainWindow(QMainWindow):
             save_config(self.ship_config)
 
     def _generate_total_ullage_report(self):
-        """Generate the PDF report using manual header data and current voyage readings."""
+        """
+        Generate the Total Ullage PDF report.
+        
+        Process:
+        1. Collects Header Data from ReportFunctionsWidget.
+        2. Aggregates data for ALL tanks (except SLOP/Excluded).
+        3. Formats tank names (e.g., "COT 1P").
+        4. Calculates overview totals (TOV, GOV, GSV, MT VAC/AIR).
+        5. Prompts user for save location.
+        6. Uses UllagePDFReport engine to generate the file.
+        """
         if not self.ship_config or not self.voyage:
             QMessageBox.warning(self, "Hata", "Gemi ve Sefer bilgisi bulunamadı.")
             return
@@ -2173,7 +2252,14 @@ class MainWindow(QMainWindow):
                 break
 
     def _generate_selected_parcels_report(self):
-        """Generate the PDF report for selected parcels only."""
+        """
+        Generate PDF report for Selected Parcels only.
+        
+        Differs from Total Report:
+        - Only includes tanks assigned to selected parcels.
+        - Density column is left empty (for manual entry if needed).
+        - Totals are calculated only for the filtered subset.
+        """
         if not self.ship_config or not self.voyage:
             QMessageBox.warning(self, "Hata", "Gemi ve Sefer bilgisi bulunamadı.")
             return
@@ -3014,3 +3100,9 @@ class MainWindow(QMainWindow):
             "• Multi-format export\n"
             "• English/Turkish UI"
         )
+    
+    def _show_manual(self):
+        """Show the user manual dialog."""
+        dialog = ManualDialog(self)
+        dialog.exec()
+

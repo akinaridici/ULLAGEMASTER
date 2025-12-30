@@ -19,7 +19,17 @@ from ui.styles import COLOR_TEXT_SECONDARY, COLOR_PANEL_BG, COLOR_TEXT_PRIMARY
 
 
 class ConfigEditorDialog(QDialog):
-    """Dialog for viewing and editing an existing ship configuration."""
+    """
+    Dialog for viewing and editing an existing ship configuration.
+    
+    Provides tabs to edit:
+    1. Ship Information (Name, VEF).
+    2. Tank Overview (Capacities).
+    3. Ullage Tables (DataEntryGrid).
+    4. Trim Tables (DataEntryGrid).
+    
+    Note: Trim columns (values) are fixed on creation and cannot be modified here.
+    """
     
     def __init__(self, config: ShipConfig, parent=None):
         super().__init__(parent)
@@ -165,7 +175,14 @@ class ConfigEditorDialog(QDialog):
         self.tabs.addTab(widget, "Trim Data")
     
     def _load_data(self):
-        """Load data from config into UI."""
+        """
+        Load data from the config object into the UI elements.
+        
+        - Populates Ship Info.
+        - Fills Tank Overview table (ID, Name are read-only; Capacity editable).
+        - Loads Ullage Tables into grids.
+        - Transforms Trim Tables from list-of-dicts to grid columns.
+        """
         # Ship info
         self.ship_name_edit.setText(self.config.ship_name)
         self.vef_spin.setValue(self.config.default_vef)
@@ -262,7 +279,16 @@ class ConfigEditorDialog(QDialog):
                     grid.set_data(grid_data)
     
     def _save_changes(self):
-        """Save changes back to config."""
+        """
+        Save all changes back to the ShipConfig object and persist to disk.
+        
+        Steps:
+        1. Updates Ship Name/VEF.
+        2. Rebuilds Ullage Tables from grids.
+        3. Updates Tank Capacities (from overview or max ullage).
+        4. Rebuilds Trim Tables from grids (mapping columns back to trim values).
+        5. Calls utils.save_config() to write JSON.
+        """
         # Update ship info
         self.config.ship_name = self.ship_name_edit.text().strip()
         self.config.default_vef = self.vef_spin.value()

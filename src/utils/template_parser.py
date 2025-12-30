@@ -82,19 +82,20 @@ def _parse_ullage_sheet(ws, result: TemplateParseResult):
         col_num, header = headers[col_idx]
         
         if "_ULLAGE_mm" in header:
-            # Extract tank ID
+            # Extract tank ID from header (e.g., "1P_ULLAGE_mm" -> "1P")
             tank_id = header.replace("_ULLAGE_mm", "")
             result.tank_ids.append(tank_id)
             
-            # Find corresponding volume column
+            # Find corresponding volume column (always next to ullage)
             volume_col = col_num + 1
             
-            # Read data rows
+            # Read data rows starting from row 2
             ullage_data = []
             for row in range(2, ws.max_row + 1):
                 ullage_val = ws.cell(row=row, column=col_num).value
                 volume_val = ws.cell(row=row, column=volume_col).value
                 
+                # Only add row if both values are present
                 if ullage_val is not None and volume_val is not None:
                     try:
                         ullage_data.append({

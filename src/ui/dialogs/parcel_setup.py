@@ -17,7 +17,15 @@ from ui.styles import COLOR_TEXT_SECONDARY
 
 
 class ParcelSetupDialog(QDialog):
-    """Dialog for setting up voyage parcels."""
+    """
+    Dialog for configuring voyage parcels.
+    
+    Allows user to:
+    - Add/Remove parcels.
+    - Define Parcel ID, Name/Grade, Receiver.
+    - Set Parcel Density (Vac).
+    - Assign a color for visual identification in the grid and reports.
+    """
     
     def __init__(self, parcels: List[Parcel] = None, parent=None):
         super().__init__(parent)
@@ -145,7 +153,15 @@ class ParcelSetupDialog(QDialog):
             btn.setProperty("color", hex_color)
     
     def _save_and_close(self):
-        """Validate and save parcels."""
+        """
+        Validate and save the parcel configuration.
+        
+        Validation Checks:
+        - Parcel ID must be present and unique.
+        - Density defaults to 0.0 if invalid.
+        
+        Updates the internal parcel list and accepts the dialog.
+        """
         parcels = []
         ids_seen = set()
         

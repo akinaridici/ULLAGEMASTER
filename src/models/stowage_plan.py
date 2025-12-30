@@ -119,7 +119,17 @@ class StowagePlan:
         self.cargo_requests.append(cargo)
     
     def remove_cargo(self, cargo_id: str):
-        """Remove a cargo and all its assignments"""
+        """
+        Remove a cargo and all its associated tank assignments.
+        
+        Args:
+            cargo_id: Unique identifier for the cargo to remove.
+            
+        Logic:
+            1. Filters out the cargo from cargo_requests list.
+            2. Identifies all tank assignments linked to this cargo ID.
+            3. Deletes identified assignments from the assignments dictionary.
+        """
         self.cargo_requests = [c for c in self.cargo_requests if c.unique_id != cargo_id]
         # Remove assignments for this cargo
         to_remove = [tid for tid, a in self.assignments.items() if a.cargo.unique_id == cargo_id]

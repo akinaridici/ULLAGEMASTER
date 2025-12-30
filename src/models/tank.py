@@ -34,7 +34,8 @@ class Tank:
                 df['ullage_cm'] = df['ullage_mm'] / 10.0
             
             if 'ullage_cm' in df.columns:
-                # Always keep tables sorted by ullage for faster lookup
+                # Always keep tables sorted by ullage for faster lookup during calculation
+                # Reset index ensures clean DataFrame state
                 df = df.sort_values('ullage_cm').reset_index(drop=True)
                 self.ullage_table = df
         except Exception as e:
@@ -101,6 +102,10 @@ class Tank:
             
             # Linear interpolation formula:
             # y = y1 + (x - x1) * (y2 - y1) / (x2 - x1)
+            # where:
+            #   x = temp_c (target temperature)
+            #   x1, y1 = lower bound point
+            #   x2, y2 = upper bound point
             factor = y1 + (temp_c - x1) * (y2 - y1) / (x2 - x1)
             return factor
             
