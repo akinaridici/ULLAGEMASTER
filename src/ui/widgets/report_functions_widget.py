@@ -1,8 +1,9 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, 
-    QGroupBox, QLineEdit, QTextEdit, QFrame, QCheckBox, QPushButton
+    QGroupBox, QLineEdit, QTextEdit, QFrame, QCheckBox, QPushButton, QDateEdit
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QDate
+from datetime import datetime
 
 class ReportFunctionsWidget(QWidget):
     """
@@ -64,12 +65,21 @@ class ReportFunctionsWidget(QWidget):
         info_layout.addWidget(QLabel("Draft Fwd (m):"), 3, 2)
         info_layout.addWidget(self.draft_fwd_edit, 3, 3)
         
-        # Row 4: Remarks
+        # Row 4: Date
+        self.date_edit = QDateEdit()
+        self.date_edit.setCalendarPopup(True)
+        self.date_edit.setDisplayFormat("dd-MM-yyyy")
+        self.date_edit.setDate(QDate.currentDate())  # Default to today
+        
+        info_layout.addWidget(QLabel("Date:"), 4, 0)
+        info_layout.addWidget(self.date_edit, 4, 1)
+        
+        # Row 5: Remarks
         self.remarks_edit = QTextEdit()
         self.remarks_edit.setMaximumHeight(80)
         
-        info_layout.addWidget(QLabel("Remarks:"), 4, 0)
-        info_layout.addWidget(self.remarks_edit, 4, 1, 1, 3) # Span 3 cols
+        info_layout.addWidget(QLabel("Remarks:"), 5, 0)
+        info_layout.addWidget(self.remarks_edit, 5, 1, 1, 3) # Span 3 cols
         
         layout.addWidget(info_group)
         
@@ -124,6 +134,7 @@ class ReportFunctionsWidget(QWidget):
             'receiver': self.receiver_edit.text(),
             'draft_fwd': self.draft_fwd_edit.text(),
             'draft_aft': self.draft_aft_edit.text(),
+            'date': self.date_edit.date().toString("dd-MM-yyyy"),
             'remarks': self.remarks_edit.toPlainText()
         }
 

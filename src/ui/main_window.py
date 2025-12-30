@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
     QTableWidget, QTableWidgetItem, QHeaderView, QLabel, QLineEdit,
     QDoubleSpinBox, QComboBox, QPushButton, QMenuBar, QMenu,
     QStatusBar, QMessageBox, QFileDialog, QGroupBox, QFrame,
-    QAbstractItemView, QApplication, QInputDialog, QTabWidget
+    QAbstractItemView, QApplication, QInputDialog, QTabWidget, QDateEdit
 )
 from PyQt6.QtCore import Qt, QSize, QSettings
 from PyQt6.QtGui import QColor, QFont, QAction, QKeySequence, QKeyEvent, QBrush
@@ -1098,8 +1098,10 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.voyage_edit, 0, 5)
         
         layout.addWidget(QLabel(t("date", "header")), 0, 6)
-        self.date_edit = QLineEdit()
-        self.date_edit.setText(datetime.now().strftime("%d-%m-%Y"))
+        self.date_edit = QDateEdit()
+        self.date_edit.setCalendarPopup(True)  # Enable dropdown calendar
+        self.date_edit.setDisplayFormat("dd-MM-yyyy")
+        self.date_edit.setDate(datetime.now())
         layout.addWidget(self.date_edit, 0, 7)
         
         # Row 2
@@ -2007,7 +2009,7 @@ class MainWindow(QMainWindow):
             'port': ui_data['port'],
             'port_to': ui_data['terminal'], 
             'receiver': ui_data['receiver'],
-            'date': self.voyage.date,
+            'date': ui_data['date'],
             'draft_fwd': ui_data['draft_fwd'],
             'draft_aft': ui_data['draft_aft'],
             'cargo': ui_data['cargo'],
@@ -2216,7 +2218,7 @@ class MainWindow(QMainWindow):
         self.port_edit.clear()
         self.terminal_edit.clear()
         self.voyage_edit.clear()
-        self.date_edit.setText(datetime.now().strftime("%d-%m-%Y"))
+        self.date_edit.setDate(datetime.now())
         self._populate_grid()
         self.status_bar.showMessage("New voyage created")
     
@@ -2273,7 +2275,17 @@ class MainWindow(QMainWindow):
             self.port_edit.setText(self.voyage.port)
             self.terminal_edit.setText(self.voyage.terminal)
             self.voyage_edit.setText(self.voyage.voyage_number)
-            self.date_edit.setText(self.voyage.date)
+            from PyQt6.QtCore import QDate
+            # Parse date string to QDate
+            try:
+                date_str = self.voyage.date
+                if '-' in date_str:
+                    d, m, y = date_str.split('-')
+                    self.date_edit.setDate(QDate(int(y), int(m), int(d)))
+                else:
+                    self.date_edit.setDate(datetime.now())
+            except:
+                self.date_edit.setDate(datetime.now())
             self.vef_spin.setValue(self.voyage.vef)
             self.draft_aft_spin.setValue(self.voyage.drafts.aft)
             self.draft_fwd_spin.setValue(self.voyage.drafts.fwd)
@@ -2319,7 +2331,7 @@ class MainWindow(QMainWindow):
         self.voyage.port = self.port_edit.text()
         self.voyage.terminal = self.terminal_edit.text()
         self.voyage.voyage_number = self.voyage_edit.text()
-        self.voyage.date = self.date_edit.text()
+        self.voyage.date = self.date_edit.date().toString("dd-MM-yyyy")
         self.voyage.vef = self.vef_spin.value()
         self.voyage.drafts.aft = self.draft_aft_spin.value()
         self.voyage.drafts.fwd = self.draft_fwd_spin.value()
@@ -2468,7 +2480,7 @@ class MainWindow(QMainWindow):
         self.voyage.port = self.port_edit.text()
         self.voyage.terminal = self.terminal_edit.text()
         self.voyage.voyage_number = self.voyage_edit.text()
-        self.voyage.date = self.date_edit.text()
+        self.voyage.date = self.date_edit.date().toString("dd-MM-yyyy")
         self.voyage.vef = self.vef_spin.value()
         self.voyage.drafts.aft = self.draft_aft_spin.value()
         self.voyage.drafts.fwd = self.draft_fwd_spin.value()
