@@ -316,8 +316,9 @@ class MainWindow(QMainWindow):
             self.draft_fwd_spin.valueChanged.connect(self._sync_drafts_to_report)
             self.draft_aft_spin.valueChanged.connect(self._sync_drafts_to_report)
             
-        # Connect generation signal
+        # Connect generation signals
         self.report_tab.request_generate_total.connect(self._generate_total_ullage_report)
+        self.report_tab.request_generate_selected.connect(self._generate_selected_parcels_report)
             
         # Restore last active tab
         last_tab = self.settings.value("last_tab", 0, type=int)  # Default to Explorer tab
@@ -2170,7 +2171,179 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "Hata", f"Rapor oluşturulurken hata oluştu:\n{str(e)}")
                 break
 
-        """Save officer names to ship config whenever they change."""
+    def _generate_selected_parcels_report(self):
+        """Generate the PDF report for selected parcels only."""
+        if not self.ship_config or not self.voyage:
+            QMessageBox.warning(self, "Hata", "Gemi ve Sefer bilgisi bulunamadı.")
+            return
+
+        # Get selected parcel IDs
+        selected_ids = self.report_tab.get_selected_parcel_ids()
+        if not selected_ids:
+            QMessageBox.warning(self, "Uyarı", "Lütfen en az bir parsel seçiniz.")
+            return
+
+        from reporting.pdf_engine import UllagePDFReport
+        
+        # 1. Collect Data from UI
+        ui_data = self.report_tab.get_report_data()
+        
+        # 2. Vessel Data
+        vessel_data = {
+            'name': self.ship_config.ship_name
+        }
+        
+        # 3. Voyage Data
+        voyage_data = {
+            'voyage': self.voyage.voyage_number,
+            'port': ui_data['port'],
+            'port_to': ui_data['terminal'], 
+            'receiver': ui_data['receiver'],
+            'date': ui_data['date'],
+            'draft_fwd': ui_data['draft_fwd'],
+            'draft_aft': ui_data['draft_aft'],
+            'cargo': ui_data['cargo'],
+            'report_type': ui_data['report_type']
+        }
+        
+        # 4. Tank Data - Filter by selected parcels
+        tank_data = []
+        
+        for tank in self.ship_config.tanks:
+            reading = self.voyage.get_reading(tank.id)
+            if not reading:
+                continue
+            
+            # Filter: Only include selected parcels
+            if reading.parcel_id not in selected_ids:
+                continue
+                
+            # Format Tank Name
+            raw = tank.name.upper()
+            raw = raw.replace("STARBOARD", "S").replace("PORT", "P").replace("CENTER", "C")
+            
+            if "SLOP" in raw:
+                if "S" in raw.replace("SLOP", ""): 
+                    display_name = "SLOP S"
+                elif "P" in raw.replace("SLOP", ""): 
+                    display_name = "SLOP P"
+                else:
+                    display_name = "SLOP"
+            else:
+                cleaned = raw.replace("COT", "").replace("TANK", "").replace("NO", "").replace(".", "").replace(" ", "")
+                display_name = f"COT {cleaned}"
+
+            # Format Data
+            fmt = lambda v, p: f"{v:.{p}f}" if v is not None else ""
+            
+            row = {
+                'name': display_name,
+                'ullage_actual': fmt(reading.ullage, 0),
+                'ullage_corr': fmt(reading.corrected_ullage, 0),
+                'tov': fmt(reading.tov, 3),
+                'gov': fmt(reading.gov, 3),
+                'temp': fmt(reading.temp_celsius, 1),
+                'vcf': fmt(reading.vcf, 4),
+                'gsv': fmt(reading.gsv, 3),
+                'density': fmt(reading.density_vac, 4),
+                'w_vac': fmt(reading.mt_vac, 3),
+                'w_air': fmt(reading.mt_air, 3),
+                'fw_actual': '0.00',
+                'fw_corr': '0.00'
+            }
+            tank_data.append(row)
+        
+        if not tank_data:
+            QMessageBox.warning(self, "Uyarı", "Seçilen parsellere ait tank bulunamadı.")
+            return
+        
+        # 5. Build Density String from Selected Parcels
+        density_lines = []
+        parcel_map = {p.id: p for p in self.voyage.parcels}
+        for pid in selected_ids:
+            parcel = parcel_map.get(pid)
+            if parcel and parcel.density_vac:
+                label = f"{parcel.name} {parcel.receiver}".strip()
+                density_lines.append(f"{label}: {parcel.density_vac:.4f}")
+        
+        # Single parcel: "GradeName Receiver: 0.7430"
+        # Multiple: Each on new line
+        density_str = "\n".join(density_lines) if density_lines else ""
+        
+        # 6. Overview/Summary Data
+        total_tov = sum(float(t.get('tov', 0) or 0) for t in tank_data)
+        total_gov = sum(float(t.get('gov', 0) or 0) for t in tank_data)
+        total_gsv = sum(float(t.get('gsv', 0) or 0) for t in tank_data)
+        total_mt_vac = sum(float(t.get('w_vac', 0) or 0) for t in tank_data)
+        total_mt_air = sum(float(t.get('w_air', 0) or 0) for t in tank_data)
+        
+        avg_vcf = total_gsv / total_gov if total_gov > 0 else 0
+        
+        overview_data = {
+            'mmc_no': ui_data['mmc_no'],
+            'product': ui_data['cargo'],
+            'density': density_str,
+            'tov': f"{total_tov:.3f}",
+            'gov': f"{total_gov:.3f}",
+            'average_vcf': f"{avg_vcf:.4f}",
+            'gsv': f"{total_gsv:.3f}",
+            'mt_vac': f"{total_mt_vac:.3f}",
+            'mt_air': f"{total_mt_air:.3f}",
+            'remarks': ui_data['remarks']
+        }
+        
+        # Generate with Save Dialog
+        default_name = f"{self.voyage.voyage_number} SelectedParcels.pdf"
+        default_name = "".join(c for c in default_name if c.isalnum() or c in (' ', '.', '_', '-')).strip()
+        
+        output_dir = self.last_dir or os.getcwd()
+        initial_path = os.path.join(output_dir, default_name)
+        
+        from PyQt6.QtWidgets import QFileDialog, QInputDialog, QLineEdit
+        
+        selected_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Seçili Parsel Raporunu Kaydet",
+            initial_path,
+            "PDF Files (*.pdf)"
+        )
+        
+        if not selected_path:
+            return
+            
+        self.last_dir = os.path.dirname(selected_path)
+        
+        current_path = selected_path
+        
+        while True:
+            try:
+                report = UllagePDFReport(current_path, vessel_data, voyage_data, tank_data, overview_data)
+                report.generate()
+                
+                os.startfile(current_path)
+                break
+                
+            except PermissionError:
+                filename_only = os.path.basename(current_path)
+                new_name, ok = QInputDialog.getText(
+                    self, 
+                    "Dosya Erişim Hatası", 
+                    f"'{filename_only}' dosyası şu an açık veya yazma izni yok.\n\nLütfen yeni bir dosya adı giriniz:",
+                    QLineEdit.EchoMode.Normal,
+                    filename_only
+                )
+                if ok and new_name:
+                    new_name = new_name.strip()
+                    if not new_name.lower().endswith('.pdf'):
+                        new_name += ".pdf"
+                    current_path = os.path.join(os.path.dirname(current_path), new_name)
+                    continue
+                else:
+                    break
+            
+            except Exception as e:
+                QMessageBox.critical(self, "Hata", f"Rapor oluşturulurken hata oluştu:\n{str(e)}")
+                break
         if not self.ship_config:
             return
         
@@ -2306,6 +2479,15 @@ class MainWindow(QMainWindow):
             self.draft_fwd_spin.blockSignals(False)
             
             self._populate_grid()
+            
+            # Update Report Functions parcel selector
+            if hasattr(self, 'report_tab'):
+                self.report_tab.set_parcels(
+                    self.voyage.parcels,
+                    self.ship_config.tanks if self.ship_config else None,
+                    self.voyage.tank_readings
+                )
+            
             self.status_bar.showMessage(f"Voyage loaded: {filepath}")
             return True
         except Exception as e:
