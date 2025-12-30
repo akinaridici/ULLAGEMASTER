@@ -6,7 +6,7 @@ import os
 import json
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
-    QLabel, QSplitter, QTextBrowser, QPushButton, QFrame, QMessageBox,
+    QLabel, QSplitter, QTextEdit, QPushButton, QFrame, QMessageBox,
     QScrollArea, QSizePolicy
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer, QRect, QSettings
@@ -44,8 +44,6 @@ class ParcelSummaryCard(QLabel):
                 font-size: 10pt;
             }}
         """)
-
-
 
 
 class PreviewShipSchematic(QWidget):
@@ -92,11 +90,6 @@ class PreviewShipSchematic(QWidget):
         spacing = 5
         
         # Layout calculation
-        # Tank 1 is typically Bow (Right or Top depending on orientation, here usually Right in grid)
-        # Grid: Row 1 = Port, Row 2 = Starboard
-        # Cols: Mapped from tank numbers descending? Let's mimic ShipSchematicWidget
-        # Tank 1 on Right.
-        
         sorted_row_nums = sorted(rows.keys())
         max_row = max(sorted_row_nums)
         num_cols = len(sorted_row_nums)
@@ -123,18 +116,7 @@ class PreviewShipSchematic(QWidget):
         painter.setFont(font)
         
         for r_num in sorted_row_nums:
-            # Col index (0 to N-1). Tank 1 is last column (Right)
-            # ShipSchematicWidget uses: col_pos = max_tank_number - tank_num + 1
-            # Here calculate visually from Left to Right.
-            # If Tank 1 is Bow, and Bow is Right -> Tank 1 is at X_max.
-            # So Tank Max is at X_min.
-            
-            # Simplified: Order by key.
-            # If keys are 1, 2, 3...
-            # We want key=max at left, key=1 at right.
-            
             col_idx = max_row - r_num # 0 for max row, N-1 for row 1
-            
             x = start_x + col_idx * (cell_w + spacing)
             
             # Port (Top)
@@ -146,8 +128,6 @@ class PreviewShipSchematic(QWidget):
             if 'S' in rows[r_num]:
                 tank = rows[r_num]['S']
                 self._draw_tank(painter, tank, x, margin + cell_h + spacing, cell_w, cell_h)
-
-
 
     def _draw_tank(self, painter, tank, x, y, w, h):
         # Determine color
@@ -170,9 +150,6 @@ class PreviewShipSchematic(QWidget):
                 
                 if c_color:
                     fill_color = QColor(c_color)
-                
-                # Utilization bar logic? Maybe just simple fill
-                # Or fill entire rect with color
         
         rect = (int(x), int(y), int(w), int(h))
         q_rect = QRect(int(x), int(y), int(w), int(h))
@@ -183,13 +160,10 @@ class PreviewShipSchematic(QWidget):
         painter.drawRect(q_rect)
         
         # Draw Text
-        # Prepare text: Tank ID + Cargo + Receiver
         text_lines = [f"[{tank.id}]"]
         if self.plan:
             assign = self.plan.get_assignment(tank.id)
             if assign:
-                # Find the actual cargo request to get proper name/receiver if needed
-                # But assignment object should have copy.
                 c_name = assign.cargo.cargo_type
                 rec = assign.cargo.get_receiver_names()
                 
@@ -218,6 +192,7 @@ class VoyageExplorerWidget(QWidget):
         super().__init__(parent)
         self.ship_config = ship_config
         self.voyage_dir = os.path.join(os.getcwd(), 'data', 'voyages')
+        self.current_path = None
         self._init_ui()
         self.restore_state()
         self.refresh_list()
@@ -233,12 +208,13 @@ class VoyageExplorerWidget(QWidget):
         left_layout = QVBoxLayout(left_widget)
         left_layout.setContentsMargins(0, 0, 0, 0)
         
-        left_layout.addWidget(QLabel("Kayıtlı Seferler"))
+        left_layout.addWidget(QLabel("Saved Voyages"))
         self.file_list = QListWidget()
         self.file_list.itemSelectionChanged.connect(self._on_selection_changed)
+        self.file_list.itemDoubleClicked.connect(lambda item: self._on_load_clicked())
         left_layout.addWidget(self.file_list)
         
-        refresh_btn = QPushButton("Listeyi Yenile")
+        refresh_btn = QPushButton("Refresh List")
         refresh_btn.clicked.connect(self.refresh_list)
         left_layout.addWidget(refresh_btn)
         
@@ -252,21 +228,43 @@ class VoyageExplorerWidget(QWidget):
         # Splitter for Resizable Sections
         self.right_splitter = QSplitter(Qt.Orientation.Vertical)
         
-        # 1. Notes Section
+        # 1. Notes Section (Editable)
         notes_widget = QWidget()
         notes_layout = QVBoxLayout(notes_widget)
         notes_layout.setContentsMargins(0, 0, 0, 0)
-        notes_layout.addWidget(QLabel("Sefer Notları:"))
-        self.notes_browser = QTextBrowser()
-        self.notes_browser.setStyleSheet("background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155;")
-        notes_layout.addWidget(self.notes_browser)
+        
+        notes_header_layout = QHBoxLayout()
+        notes_header_layout.addWidget(QLabel("Voyage Notes:"))
+        notes_header_layout.addStretch()
+        
+        self.save_note_btn = QPushButton("Save Note")
+        self.save_note_btn.setFixedSize(90, 24)
+        self.save_note_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #0f766e; color: white; border: none; border-radius: 3px;
+                font-size: 9pt;
+            }
+            QPushButton:hover { background-color: #115e59; }
+            QPushButton:disabled { background-color: #cbd5e1; color: #94a3b8; }
+        """)
+        self.save_note_btn.clicked.connect(self._on_save_note_clicked)
+        self.save_note_btn.setEnabled(False)
+        notes_header_layout.addWidget(self.save_note_btn)
+        
+        notes_layout.addLayout(notes_header_layout)
+        
+        self.notes_edit = QTextEdit()
+        self.notes_edit.setPlaceholderText("Enter voyage notes here...")
+        self.notes_edit.setStyleSheet("background-color: #1e293b; color: #cbd5e1; border: 1px solid #334155;")
+        notes_layout.addWidget(self.notes_edit)
+        
         self.right_splitter.addWidget(notes_widget)
         
         # 2. Cargo Summary Section
         totals_widget = QWidget()
         totals_layout_container = QVBoxLayout(totals_widget)
         totals_layout_container.setContentsMargins(0, 0, 0, 0)
-        self.totals_label = QLabel("Yükler:")
+        self.totals_label = QLabel("Cargoes:")
         totals_layout_container.addWidget(self.totals_label)
         
         self.totals_scroll = QScrollArea()
@@ -289,7 +287,7 @@ class VoyageExplorerWidget(QWidget):
         preview_widget = QWidget()
         preview_layout = QVBoxLayout(preview_widget)
         preview_layout.setContentsMargins(0, 0, 0, 0)
-        preview_layout.addWidget(QLabel("Stowage Önizleme:"))
+        preview_layout.addWidget(QLabel("Stowage Preview:"))
         self.schematic_preview = PreviewShipSchematic()
         preview_layout.addWidget(self.schematic_preview)
         self.right_splitter.addWidget(preview_widget)
@@ -305,7 +303,7 @@ class VoyageExplorerWidget(QWidget):
         right_layout.addWidget(self.right_splitter)
         
         # Load Button (Fixed)
-        self.load_btn = QPushButton("Bu Seferi Yükle")
+        self.load_btn = QPushButton("Load This Voyage")
         self.load_btn.setStyleSheet("""
             QPushButton {
                 background-color: #2563eb; color: white; 
@@ -313,6 +311,7 @@ class VoyageExplorerWidget(QWidget):
                 border-radius: 5px;
             }
             QPushButton:hover { background-color: #1d4ed8; }
+            QPushButton:disabled { background-color: #94a3b8; }
         """)
         self.load_btn.clicked.connect(self._on_load_clicked)
         self.load_btn.setEnabled(False)
@@ -335,8 +334,8 @@ class VoyageExplorerWidget(QWidget):
             os.makedirs(self.voyage_dir, exist_ok=True)
             
         files = [f for f in os.listdir(self.voyage_dir) if f.endswith('.voyage')]
-        # Sort by modification time (newest first)
-        files.sort(key=lambda x: os.path.getmtime(os.path.join(self.voyage_dir, x)), reverse=True)
+        # Sort by filename descending (Largest/Newest number first)
+        files.sort(reverse=True)
         
         for f in files:
             self.file_list.addItem(f)
@@ -352,8 +351,9 @@ class VoyageExplorerWidget(QWidget):
         self._load_preview(filepath)
         
     def _clear_preview(self):
-
-        self.notes_browser.clear()
+        self.notes_edit.clear()
+        self.notes_edit.setDisabled(True)
+        self.save_note_btn.setEnabled(False)
         
         # Clear totals
         self._clear_totals()
@@ -380,12 +380,10 @@ class VoyageExplorerWidget(QWidget):
             s_data = data.get('stowage_plan', {})
             notes = v_data.get('notes', "")
             
-            voyage_no = v_data.get('voyage_number', '-')
-            date = v_data.get('date', '-')
-            port = v_data.get('port', '-')
-            
             # Notes
-            self.notes_browser.setText(notes if notes else "(Not yok)")
+            self.notes_edit.setDisabled(False)
+            self.notes_edit.setText(notes)
+            self.save_note_btn.setEnabled(True)
             
             # Cargo Summary
             self._clear_totals()
@@ -412,12 +410,10 @@ class VoyageExplorerWidget(QWidget):
                     else:
                         color = CARGO_COLORS[i % len(CARGO_COLORS)]
                         
-
-                        
                     card = ParcelSummaryCard(name, mt_air, rec, color)
                     self.totals_layout.addWidget(card)
             else:
-                lbl = QLabel("Plan verisi yok")
+                lbl = QLabel("No plan data available")
                 lbl.setStyleSheet("color: #64748b; font-style: italic;")
                 self.totals_layout.addWidget(lbl)
                 
@@ -432,7 +428,35 @@ class VoyageExplorerWidget(QWidget):
             
         except Exception as e:
             self._clear_preview()
-            self.notes_browser.setText(f"Dosya okunamadı:\n{e}")
+            self.notes_edit.setText(f"Could not read file:\n{e}")
+
+    def _on_save_note_clicked(self):
+        """Save the editable note content back to the voyage file."""
+        if not self.current_path or not os.path.exists(self.current_path):
+            return
+            
+        try:
+            # Read existing data
+            with open(self.current_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # Update notes
+            new_notes = self.notes_edit.toPlainText()
+            if 'voyage' in data:
+                data['voyage']['notes'] = new_notes
+            else:
+                # Should not happen if structure is valid, but handle safely
+                data['voyage'] = {'notes': new_notes}
+                
+            # Write back
+            with open(self.current_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+                
+            # Visual feedback (Could also be a status bar message)
+            QMessageBox.information(self, "Info", "Voyage note updated successfully.")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error saving note:\n{e}")
 
     def _on_load_clicked(self):
         if hasattr(self, 'current_path') and self.current_path:
