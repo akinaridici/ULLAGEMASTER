@@ -16,6 +16,7 @@ class ReportFunctionsWidget(QWidget):
     """
     request_generate_total = pyqtSignal()
     request_generate_selected = pyqtSignal()  # For Selected Parcels Report
+    request_generate_stowage = pyqtSignal()   # For Stowage Plan Report
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -119,14 +120,20 @@ class ReportFunctionsWidget(QWidget):
         info_layout.addWidget(QLabel("Draft Fwd (m):"), 3, 2)
         info_layout.addWidget(self.draft_fwd_edit, 3, 3)
         
-        # Row 4: Date
+        # Row 4: Date & SLOP Label
         self.date_edit = QDateEdit()
         self.date_edit.setCalendarPopup(True)
         self.date_edit.setDisplayFormat("dd-MM-yyyy")
         self.date_edit.setDate(QDate.currentDate())  # Default to today
         
+        self.slop_label_edit = QLineEdit()
+        self.slop_label_edit.setPlaceholderText("SLOP / WASHING WATER")
+        self.slop_label_edit.setText("SLOP")
+        
         info_layout.addWidget(QLabel("Date:"), 4, 0)
         info_layout.addWidget(self.date_edit, 4, 1)
+        info_layout.addWidget(QLabel("SLOP Label:"), 4, 2)
+        info_layout.addWidget(self.slop_label_edit, 4, 3)
         
         # Row 5: Remarks
         self.remarks_edit = QTextEdit()
@@ -143,7 +150,7 @@ class ReportFunctionsWidget(QWidget):
         reports_layout.setContentsMargins(0, 0, 0, 0)
         reports_layout.setSpacing(15)
         
-        # --- Parcel Selection + Selected Report ---
+        # --- LEFT: Parcel Selection + Selected Report ---
         parcel_group = QGroupBox("Select Parcels")
         parcel_layout = QVBoxLayout(parcel_group)
         parcel_layout.setContentsMargins(10, 10, 10, 10)
@@ -208,7 +215,38 @@ class ReportFunctionsWidget(QWidget):
         self.generate_selected_btn.clicked.connect(self._on_generate_selected_clicked)
         parcel_layout.addWidget(self.generate_selected_btn)
         
-        reports_layout.addWidget(parcel_group)
+        reports_layout.addWidget(parcel_group, stretch=2)
+        
+        # --- RIGHT: Stowage Plan Report ---
+        stowage_group = QGroupBox("Stowage Plan")
+        stowage_layout = QVBoxLayout(stowage_group)
+        stowage_layout.setContentsMargins(15, 15, 15, 15)
+        
+        self.generate_stowage_btn = QPushButton("STOWAGE PLAN REPORT")
+        self.generate_stowage_btn.setMinimumHeight(40)
+        self.generate_stowage_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.generate_stowage_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #7c3aed; 
+                color: white; 
+                font-weight: bold; 
+                font-size: 11pt;
+                border-radius: 6px;
+                padding: 5px;
+            }
+            QPushButton:hover {
+                background-color: #6d28d9;
+            }
+            QPushButton:pressed {
+                background-color: #5b21b6;
+            }
+        """)
+        self.generate_stowage_btn.clicked.connect(self._on_generate_stowage_clicked)
+        
+        stowage_layout.addWidget(self.generate_stowage_btn)
+        stowage_layout.addStretch()
+        
+        reports_layout.addWidget(stowage_group, stretch=1)
         
         layout.addWidget(reports_container)
         layout.addStretch()
@@ -276,13 +314,19 @@ class ReportFunctionsWidget(QWidget):
             'draft_fwd': self.draft_fwd_edit.text(),
             'draft_aft': self.draft_aft_edit.text(),
             'date': self.date_edit.date().toString("dd-MM-yyyy"),
-            'remarks': self.remarks_edit.toPlainText()
+            'remarks': self.remarks_edit.toPlainText(),
+            'slop_label': self.slop_label_edit.text() or 'SLOP'
         }
 
     def _on_generate_selected_clicked(self):
         """Emit signal for selected parcels report generation."""
         self._save_history()
         self.request_generate_selected.emit()
+
+    def _on_generate_stowage_clicked(self):
+        """Emit signal for stowage plan report generation."""
+        self._save_history()
+        self.request_generate_stowage.emit()
 
     def _on_all_parcels_toggled(self, item):
         """Handle ALL PARCELS checkbox toggle to select/deselect all."""

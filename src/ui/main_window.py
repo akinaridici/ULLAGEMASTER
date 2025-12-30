@@ -319,6 +319,7 @@ class MainWindow(QMainWindow):
         # Connect generation signals
         self.report_tab.request_generate_total.connect(self._generate_total_ullage_report)
         self.report_tab.request_generate_selected.connect(self._generate_selected_parcels_report)
+        self.report_tab.request_generate_stowage.connect(self._generate_stowage_plan_report)
             
         # Restore last active tab
         last_tab = self.settings.value("last_tab", 0, type=int)  # Default to Explorer tab
@@ -2346,6 +2347,77 @@ class MainWindow(QMainWindow):
             self.ship_config.master = master
             save_config(self.ship_config)
             self.status_bar.showMessage("Officer names saved", 2000)
+
+    def _generate_stowage_plan_report(self):
+        """Generate the Stowage Plan PDF report."""
+        if not self.ship_config or not self.voyage:
+            QMessageBox.warning(self, "Hata", "Gemi ve Sefer bilgisi bulunamadı.")
+            return
+        
+        from export.stowage_plan_pdf import generate_stowage_plan_pdf
+        
+        # Get report data from UI
+        ui_data = self.report_tab.get_report_data()
+        
+        # Generate with Save Dialog
+        default_name = f"{self.voyage.voyage_number} StowagePlan.pdf"
+        default_name = "".join(c for c in default_name if c.isalnum() or c in (' ', '.', '_', '-')).strip()
+        
+        output_dir = self.last_dir or os.getcwd()
+        initial_path = os.path.join(output_dir, default_name)
+        
+        from PyQt6.QtWidgets import QFileDialog, QInputDialog, QLineEdit
+        
+        selected_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Stowage Plan Raporunu Kaydet",
+            initial_path,
+            "PDF Files (*.pdf)"
+        )
+        
+        if not selected_path:
+            return
+        
+        self.last_dir = os.path.dirname(selected_path)
+        
+        current_path = selected_path
+        
+        while True:
+            try:
+                success = generate_stowage_plan_pdf(
+                    self.voyage,
+                    self.ship_config,
+                    current_path,
+                    ui_data
+                )
+                
+                if success:
+                    os.startfile(current_path)
+                else:
+                    QMessageBox.warning(self, "Hata", "Stowage Plan raporu oluşturulamadı.")
+                break
+                
+            except PermissionError:
+                filename_only = os.path.basename(current_path)
+                new_name, ok = QInputDialog.getText(
+                    self, 
+                    "Dosya Erişim Hatası", 
+                    f"'{filename_only}' dosyası şu an açık veya yazma izni yok.\n\nLütfen yeni bir dosya adı giriniz:",
+                    QLineEdit.EchoMode.Normal,
+                    filename_only
+                )
+                if ok and new_name:
+                    new_name = new_name.strip()
+                    if not new_name.lower().endswith('.pdf'):
+                        new_name += ".pdf"
+                    current_path = os.path.join(os.path.dirname(current_path), new_name)
+                    continue
+                else:
+                    break
+            
+            except Exception as e:
+                QMessageBox.critical(self, "Hata", f"Rapor oluşturulurken hata oluştu:\n{str(e)}")
+                break
     
     # Menu actions
     def _new_voyage(self):
