@@ -1,56 +1,108 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, 
     QGroupBox, QLineEdit, QTextEdit, QFrame, QCheckBox, QPushButton, QDateEdit,
-    QListWidget, QListWidgetItem
+    QListWidget, QListWidgetItem, QComboBox, QCompleter
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QDate
 from datetime import datetime
 
+from core.history_manager import get_history_manager
+
+
 class ReportFunctionsWidget(QWidget):
     """
     Widget to host report generation functions and settings.
-    Includes data entry for Report Header/Footer details.
+    Includes data entry for Report Header/Footer details with autocomplete.
     """
     request_generate_total = pyqtSignal()
     request_generate_selected = pyqtSignal()  # For Selected Parcels Report
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._history = get_history_manager()
         self._init_ui()
+        self._load_history()
+
+    def _create_autocomplete_combo(self) -> QComboBox:
+        """Create an editable combobox with autocomplete functionality."""
+        combo = QComboBox()
+        combo.setEditable(True)
+        combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        combo.setMaxVisibleItems(10)
+        
+        # Configure completer for substring matching
+        completer = combo.completer()
+        if completer:
+            completer.setFilterMode(Qt.MatchFlag.MatchContains)
+            completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        
+        # Style the combobox to match dark theme
+        combo.setStyleSheet("""
+            QComboBox {
+                background-color: #2d3748;
+                color: #e2e8f0;
+                border: 1px solid #4a5568;
+                border-radius: 4px;
+                padding: 4px 8px;
+                min-height: 24px;
+            }
+            QComboBox:focus {
+                border: 1px solid #4299e1;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 20px;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-top: 6px solid #718096;
+                margin-right: 6px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #2d3748;
+                color: #e2e8f0;
+                border: 1px solid #4a5568;
+                selection-background-color: #4299e1;
+            }
+        """)
+        
+        return combo
 
     def _init_ui(self):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
         
         # === Report Information Group ===
-        info_group = QGroupBox("Rapor Bilgileri")
+        info_group = QGroupBox("Report Headers")
         info_layout = QGridLayout(info_group)
         info_layout.setVerticalSpacing(10)
         info_layout.setHorizontalSpacing(15)
         
-        # Row 0: Port & Terminal
-        self.port_edit = QLineEdit()
-        self.terminal_edit = QLineEdit()
+        # Row 0: Port & Terminal (autocomplete)
+        self.port_edit = self._create_autocomplete_combo()
+        self.terminal_edit = self._create_autocomplete_combo()
         
         info_layout.addWidget(QLabel("Actual Port:"), 0, 0)
         info_layout.addWidget(self.port_edit, 0, 1)
         info_layout.addWidget(QLabel("Actual Terminal:"), 0, 2)
         info_layout.addWidget(self.terminal_edit, 0, 3)
         
-        # Row 1: MMC & Type
-        self.mmc_edit = QLineEdit()
-        self.report_type_edit = QLineEdit()
+        # Row 1: MMC & Type (autocomplete)
+        self.mmc_edit = self._create_autocomplete_combo()
+        self.report_type_edit = self._create_autocomplete_combo()
         
         info_layout.addWidget(QLabel("MMC NO:"), 1, 0)
         info_layout.addWidget(self.mmc_edit, 1, 1)
         info_layout.addWidget(QLabel("Report Type:"), 1, 2)
         info_layout.addWidget(self.report_type_edit, 1, 3)
         
-        # Row 2: Cargo & Receiver
-        self.cargo_edit = QLineEdit()
-        self.receiver_edit = QLineEdit()
+        # Row 2: Cargo & Receiver (autocomplete)
+        self.cargo_edit = self._create_autocomplete_combo()
+        self.receiver_edit = self._create_autocomplete_combo()
         
-        info_layout.addWidget(QLabel("Cargo:"), 2, 0)
+        info_layout.addWidget(QLabel("Product (cargo):"), 2, 0)
         info_layout.addWidget(self.cargo_edit, 2, 1)
         info_layout.addWidget(QLabel("Receiver:"), 2, 2)
         info_layout.addWidget(self.receiver_edit, 2, 3)
@@ -91,8 +143,8 @@ class ReportFunctionsWidget(QWidget):
         reports_layout.setContentsMargins(0, 0, 0, 0)
         reports_layout.setSpacing(15)
         
-        # --- LEFT: Parcel Selection + Selected Report ---
-        parcel_group = QGroupBox("Parsel Seçimi")
+        # --- Parcel Selection + Selected Report ---
+        parcel_group = QGroupBox("Select Parcels")
         parcel_layout = QVBoxLayout(parcel_group)
         parcel_layout.setContentsMargins(10, 10, 10, 10)
         
@@ -156,44 +208,55 @@ class ReportFunctionsWidget(QWidget):
         self.generate_selected_btn.clicked.connect(self._on_generate_selected_clicked)
         parcel_layout.addWidget(self.generate_selected_btn)
         
-        reports_layout.addWidget(parcel_group, stretch=2)
-        
-        # --- RIGHT: Total Ullage Report ---
-        action_group = QGroupBox("Rapor Oluştur")
-        action_layout = QVBoxLayout(action_group)
-        action_layout.setContentsMargins(15, 15, 15, 15)
-        
-        self.generate_btn = QPushButton("TOTAL ULLAGE REPORT")
-        self.generate_btn.setMinimumHeight(40)
-        self.generate_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.generate_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #4f46e5; 
-                color: white; 
-                font-weight: bold; 
-                font-size: 11pt;
-                border-radius: 6px;
-                padding: 5px;
-            }
-            QPushButton:hover {
-                background-color: #4338ca;
-            }
-            QPushButton:pressed {
-                background-color: #3730a3;
-            }
-        """)
-        self.generate_btn.clicked.connect(self._on_generate_clicked)
-        
-        action_layout.addWidget(self.generate_btn)
-        action_layout.addStretch()  # Push button to top
-        
-        reports_layout.addWidget(action_group, stretch=1)
+        reports_layout.addWidget(parcel_group)
         
         layout.addWidget(reports_container)
         layout.addStretch()
 
+    def _load_history(self):
+        """Load history from INI file into comboboxes."""
+        # Map field names to widgets
+        field_widgets = {
+            'port': self.port_edit,
+            'terminal': self.terminal_edit,
+            'mmc_no': self.mmc_edit,
+            'report_type': self.report_type_edit,
+            'cargo': self.cargo_edit,
+            'receiver': self.receiver_edit
+        }
+        
+        for field_name, widget in field_widgets.items():
+            entries = self._history.get_history(field_name)
+            widget.clear()
+            widget.addItems(entries)
+            widget.setCurrentText("")  # Start with empty text
+
+    def _save_history(self):
+        """Save current field values to history."""
+        data = {
+            'port': self.port_edit.currentText(),
+            'terminal': self.terminal_edit.currentText(),
+            'mmc_no': self.mmc_edit.currentText(),
+            'report_type': self.report_type_edit.currentText(),
+            'cargo': self.cargo_edit.currentText(),
+            'receiver': self.receiver_edit.currentText()
+        }
+        self._history.save_all(data)
+        
+        # Refresh combobox items to reflect new MRU order
+        self._load_history()
+        
+        # Restore current values after refresh
+        self.port_edit.setCurrentText(data['port'])
+        self.terminal_edit.setCurrentText(data['terminal'])
+        self.mmc_edit.setCurrentText(data['mmc_no'])
+        self.report_type_edit.setCurrentText(data['report_type'])
+        self.cargo_edit.setCurrentText(data['cargo'])
+        self.receiver_edit.setCurrentText(data['receiver'])
+
     def _on_generate_clicked(self):
         """Emit signal for report generation."""
+        self._save_history()
         self.request_generate_total.emit()
 
     def update_drafts(self, fwd: float, aft: float):
@@ -204,12 +267,12 @@ class ReportFunctionsWidget(QWidget):
     def get_report_data(self) -> dict:
         """Retrieve all data input from this widget."""
         return {
-            'port': self.port_edit.text(),
-            'terminal': self.terminal_edit.text(),
-            'mmc_no': self.mmc_edit.text(),
-            'report_type': self.report_type_edit.text(),
-            'cargo': self.cargo_edit.text(),
-            'receiver': self.receiver_edit.text(),
+            'port': self.port_edit.currentText(),
+            'terminal': self.terminal_edit.currentText(),
+            'mmc_no': self.mmc_edit.currentText(),
+            'report_type': self.report_type_edit.currentText(),
+            'cargo': self.cargo_edit.currentText(),
+            'receiver': self.receiver_edit.currentText(),
             'draft_fwd': self.draft_fwd_edit.text(),
             'draft_aft': self.draft_aft_edit.text(),
             'date': self.date_edit.date().toString("dd-MM-yyyy"),
@@ -218,6 +281,7 @@ class ReportFunctionsWidget(QWidget):
 
     def _on_generate_selected_clicked(self):
         """Emit signal for selected parcels report generation."""
+        self._save_history()
         self.request_generate_selected.emit()
 
     def _on_all_parcels_toggled(self, item):
@@ -325,3 +389,4 @@ class ReportFunctionsWidget(QWidget):
             if item.checkState() == Qt.CheckState.Checked:
                 selected.append(parcel_id)
         return selected
+

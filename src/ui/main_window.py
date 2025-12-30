@@ -2064,8 +2064,8 @@ class MainWindow(QMainWindow):
             
             row = {
                 'name': display_name,
-                'ullage_actual': fmt(reading.ullage, 0),
-                'ullage_corr': fmt(reading.corrected_ullage, 0),
+                'ullage_actual': fmt(reading.ullage, 1),
+                'ullage_corr': fmt(reading.corrected_ullage, 1),
                 'tov': fmt(reading.tov, 3),
                 'fw_actual': "0.00", # Placeholder for FW if not in model
                 'fw_corr': "0.00",
@@ -2238,14 +2238,14 @@ class MainWindow(QMainWindow):
             
             row = {
                 'name': display_name,
-                'ullage_actual': fmt(reading.ullage, 0),
-                'ullage_corr': fmt(reading.corrected_ullage, 0),
+                'ullage_actual': fmt(reading.ullage, 1),
+                'ullage_corr': fmt(reading.corrected_ullage, 1),
                 'tov': fmt(reading.tov, 3),
                 'gov': fmt(reading.gov, 3),
                 'temp': fmt(reading.temp_celsius, 1),
                 'vcf': fmt(reading.vcf, 4),
                 'gsv': fmt(reading.gsv, 3),
-                'density': fmt(reading.density_vac, 4),
+                'density': "",  # Empty for manual entry on printed PDF
                 'w_vac': fmt(reading.mt_vac, 3),
                 'w_air': fmt(reading.mt_air, 3),
                 'fw_actual': '0.00',
@@ -2257,18 +2257,8 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Uyarı", "Seçilen parsellere ait tank bulunamadı.")
             return
         
-        # 5. Build Density String from Selected Parcels
-        density_lines = []
-        parcel_map = {p.id: p for p in self.voyage.parcels}
-        for pid in selected_ids:
-            parcel = parcel_map.get(pid)
-            if parcel and parcel.density_vac:
-                label = f"{parcel.name} {parcel.receiver}".strip()
-                density_lines.append(f"{label}: {parcel.density_vac:.4f}")
-        
-        # Single parcel: "GradeName Receiver: 0.7430"
-        # Multiple: Each on new line
-        density_str = "\n".join(density_lines) if density_lines else ""
+        # 5. Vacuum Density - Leave empty for manual entry on printed PDF
+        density_str = ""
         
         # 6. Overview/Summary Data
         total_tov = sum(float(t.get('tov', 0) or 0) for t in tank_data)
