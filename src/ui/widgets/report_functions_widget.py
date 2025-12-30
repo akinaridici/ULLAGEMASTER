@@ -3,10 +3,183 @@ from PyQt6.QtWidgets import (
     QGroupBox, QLineEdit, QTextEdit, QFrame, QCheckBox, QPushButton, QDateEdit,
     QListWidget, QListWidgetItem, QComboBox, QCompleter
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QDate
+from PyQt6.QtCore import Qt, pyqtSignal, QDate, QPointF, QRectF
+from PyQt6.QtGui import QPainter, QPainterPath, QColor, QPen, QBrush, QLinearGradient
 from datetime import datetime
 
 from core.history_manager import get_history_manager
+
+
+class ShipIconWidget(QWidget):
+    """
+    A widget that draws a top-down (bird's eye) view of a tanker ship.
+    Professional maritime-style icon for the Stowage Plan section.
+    Shows hull outline with tank compartments, bow (right), stern (left).
+    """
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setMinimumSize(180, 90)
+    
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # Get widget dimensions
+        w = self.width()
+        h = self.height()
+        
+        # Margins
+        margin_x = 15
+        margin_y = 12
+        
+        ship_w = w - 2 * margin_x
+        ship_h = h - 2 * margin_y
+        
+        # Ship dimensions
+        x = margin_x
+        y = margin_y
+        center_y = y + ship_h / 2
+        
+        bow_len = ship_w * 0.12   # Pointed bow
+        stern_len = ship_w * 0.06  # Rounded stern
+        body_len = ship_w - bow_len - stern_len
+        
+        # Colors
+        hull_color = QColor("#374151")      # Dark hull outline
+        deck_color = QColor("#E5E7EB")      # Light gray deck
+        tank_green = QColor("#10B981")      # Emerald green
+        tank_orange = QColor("#F59E0B")     # Amber orange
+        tank_blue = QColor("#3B82F6")       # Blue
+        tank_pink = QColor("#EC4899")       # Pink
+        centerline_color = QColor("#9CA3AF") # Gray centerline
+        bridge_color = QColor("#6B7280")    # Bridge gray
+        
+        # =========================
+        # 1. HULL OUTLINE (top-down)
+        # =========================
+        hull_path = QPainterPath()
+        
+        hull_top = y
+        hull_bottom = y + ship_h
+        
+        # Start at stern top-left
+        hull_path.moveTo(x + stern_len * 0.5, hull_top)
+        
+        # Stern curve (left side - rounded)
+        hull_path.cubicTo(
+            QPointF(x, hull_top),
+            QPointF(x, center_y),
+            QPointF(x, center_y)
+        )
+        hull_path.cubicTo(
+            QPointF(x, center_y),
+            QPointF(x, hull_bottom),
+            QPointF(x + stern_len * 0.5, hull_bottom)
+        )
+        
+        # Bottom edge to bow
+        hull_path.lineTo(x + stern_len + body_len, hull_bottom)
+        
+        # Bow curve (right side - pointed)
+        bow_start_x = x + stern_len + body_len
+        bow_tip_x = x + ship_w
+        
+        hull_path.cubicTo(
+            QPointF(bow_start_x + bow_len * 0.6, hull_bottom),
+            QPointF(bow_tip_x, center_y + ship_h * 0.15),
+            QPointF(bow_tip_x, center_y)
+        )
+        hull_path.cubicTo(
+            QPointF(bow_tip_x, center_y - ship_h * 0.15),
+            QPointF(bow_start_x + bow_len * 0.6, hull_top),
+            QPointF(bow_start_x, hull_top)
+        )
+        
+        # Top edge back to stern
+        hull_path.lineTo(x + stern_len * 0.5, hull_top)
+        hull_path.closeSubpath()
+        
+        # Draw hull
+        painter.setPen(QPen(hull_color, 2))
+        painter.setBrush(QBrush(deck_color))
+        painter.drawPath(hull_path)
+        
+        # =========================
+        # 2. CENTERLINE (dashed)
+        # =========================
+        painter.setPen(QPen(centerline_color, 1, Qt.PenStyle.DashLine))
+        painter.drawLine(
+            int(x + stern_len * 0.3), int(center_y),
+            int(bow_start_x + bow_len * 0.5), int(center_y)
+        )
+        
+        # =========================
+        # 3. TANK COMPARTMENTS (Port & Starboard rows)
+        # =========================
+        tank_count = 6
+        tank_area_start = x + stern_len + body_len * 0.08
+        tank_area_width = body_len * 0.85
+        tank_w = (tank_area_width / tank_count) - 2
+        tank_h = ship_h * 0.32
+        gap = 1.5
+        
+        tank_colors = [tank_green, tank_orange, tank_blue, tank_pink, tank_green, tank_orange]
+        
+        for i in range(tank_count):
+            tank_x = tank_area_start + i * (tank_w + 2)
+            color = tank_colors[i % len(tank_colors)]
+            
+            # Port tank (top row)
+            port_rect = QRectF(tank_x, center_y - tank_h - gap, tank_w, tank_h)
+            painter.setPen(QPen(hull_color.lighter(130), 0.5))
+            painter.setBrush(QBrush(color.lighter(115)))
+            painter.drawRoundedRect(port_rect, 2, 2)
+            
+            # Starboard tank (bottom row)
+            stbd_rect = QRectF(tank_x, center_y + gap, tank_w, tank_h)
+            painter.setBrush(QBrush(color.lighter(115)))
+            painter.drawRoundedRect(stbd_rect, 2, 2)
+        
+        # =========================
+        # 4. BRIDGE (stern area)
+        # =========================
+        bridge_w = body_len * 0.08
+        bridge_h = ship_h * 0.5
+        bridge_x = x + stern_len * 0.6
+        bridge_y = center_y - bridge_h / 2
+        
+        bridge_rect = QRectF(bridge_x, bridge_y, bridge_w, bridge_h)
+        painter.setPen(QPen(hull_color, 1))
+        painter.setBrush(QBrush(bridge_color))
+        painter.drawRoundedRect(bridge_rect, 2, 2)
+        
+        # =========================
+        # 5. P/S LABELS
+        # =========================
+        painter.setPen(QPen(QColor("#3B82F6")))  # Blue for Port
+        painter.setFont(painter.font())
+        font = painter.font()
+        font.setBold(True)
+        font.setPointSize(8)
+        painter.setFont(font)
+        painter.drawText(int(x + stern_len + 3), int(center_y - tank_h - gap - 2), "P")
+        
+        painter.setPen(QPen(QColor("#10B981")))  # Green for Starboard
+        painter.drawText(int(x + stern_len + 3), int(center_y + tank_h + gap + 10), "S")
+        
+        # =========================
+        # 6. BOW/STERN INDICATORS
+        # =========================
+        painter.setPen(QPen(QColor("#6B7280")))
+        font.setPointSize(6)
+        painter.setFont(font)
+        
+        # Bow arrow/label (right)
+        painter.drawText(int(bow_tip_x - 8), int(center_y - ship_h * 0.42), "▶")
+        
+        # Stern label (left)
+        painter.drawText(int(x + 2), int(center_y - ship_h * 0.42), "◀")
 
 
 class ReportFunctionsWidget(QWidget):
@@ -221,7 +394,17 @@ class ReportFunctionsWidget(QWidget):
         stowage_group = QGroupBox("Stowage Plan")
         stowage_layout = QVBoxLayout(stowage_group)
         stowage_layout.setContentsMargins(15, 15, 15, 15)
+        stowage_layout.setSpacing(10)
         
+        # Ship icon widget (symbolic tanker silhouette)
+        ship_icon = ShipIconWidget()
+        ship_icon.setMinimumHeight(100)
+        ship_icon.setMaximumHeight(120)
+        stowage_layout.addWidget(ship_icon)
+        
+        stowage_layout.addStretch()
+        
+        # Stowage Plan Report button at bottom
         self.generate_stowage_btn = QPushButton("STOWAGE PLAN REPORT")
         self.generate_stowage_btn.setMinimumHeight(40)
         self.generate_stowage_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -242,9 +425,7 @@ class ReportFunctionsWidget(QWidget):
             }
         """)
         self.generate_stowage_btn.clicked.connect(self._on_generate_stowage_clicked)
-        
         stowage_layout.addWidget(self.generate_stowage_btn)
-        stowage_layout.addStretch()
         
         reports_layout.addWidget(stowage_group, stretch=1)
         

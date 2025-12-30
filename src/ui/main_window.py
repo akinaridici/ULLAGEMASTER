@@ -374,7 +374,7 @@ class MainWindow(QMainWindow):
         main_splitter = QSplitter(Qt.Orientation.Vertical)
         
         # === TOP PANEL: Control Panel ===
-        top_panel = QGroupBox("Kontrol Paneli")
+        top_panel = QGroupBox("")
         top_layout = QVBoxLayout(top_panel)
         top_layout.setContentsMargins(2, 2, 2, 2)
         top_layout.setSpacing(5)
@@ -405,7 +405,7 @@ class MainWindow(QMainWindow):
         buttons_col.addWidget(self.colorize_btn)
         
         # %100 Yap button
-        self.fill_100_btn = QPushButton("%100 Yap")
+        self.fill_100_btn = QPushButton("%100")
         self.fill_100_btn.setMinimumHeight(35)
         self.fill_100_btn.setStyleSheet("""
             font-size: 10pt; font-weight: bold;
@@ -429,7 +429,7 @@ class MainWindow(QMainWindow):
         bottom_splitter = QSplitter(Qt.Orientation.Horizontal)
         
         # Left: Cargo Input (Yükleme Talepleri)
-        left_panel = QGroupBox("Yükleme Talepleri")
+        left_panel = QGroupBox("Charterer Order")
         left_layout = QVBoxLayout(left_panel)
         left_layout.setContentsMargins(2, 2, 2, 2)
         
@@ -440,7 +440,7 @@ class MainWindow(QMainWindow):
         bottom_splitter.addWidget(left_panel)
         
         # Right: Plan Viewer (Yükleme Planı)
-        right_panel = QGroupBox("Yükleme Planı")
+        right_panel = QGroupBox("Loading Plan")
         right_layout = QVBoxLayout(right_panel)
         right_layout.setContentsMargins(2, 2, 2, 2)
         

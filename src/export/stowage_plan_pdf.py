@@ -4,7 +4,7 @@ Stowage Plan PDF Report Generator.
 Generates a visual stowage plan PDF with:
 - Header (Ship name, Voyage, Port/Terminal)
 - Parcel legend table with color coding
-- Dynamic tank grid (Port on top, Starboard on bottom)
+- Dynamic ship hull outline with tank grid
 - Support for 6, 9, 12+ tank pair configurations
 - SLOP tank support
 - Transparent colors for ink saving
@@ -29,6 +29,11 @@ if TYPE_CHECKING:
 
 # Transparency level for colors (0.0 = fully transparent, 1.0 = opaque)
 COLOR_ALPHA = 0.5
+
+# Ship hull colors
+HULL_STROKE_COLOR = colors.Color(0.2, 0.2, 0.2)
+HULL_FILL_COLOR = colors.Color(0.95, 0.97, 1.0, 0.3)  # Very light blue with transparency
+DECK_LINE_COLOR = colors.Color(0.3, 0.3, 0.3)
 
 
 def _hex_to_transparent(hex_color: str, alpha: float = COLOR_ALPHA) -> colors.Color:
@@ -68,6 +73,103 @@ def _register_fonts():
         return 'Arial', 'Arial-Bold'
     except:
         return 'Helvetica', 'Helvetica-Bold'
+
+
+def _draw_ship_hull(
+    c: canvas.Canvas,
+    x: float, y: float,
+    hull_width: float, hull_height: float,
+    bow_length: float, stern_length: float
+) -> None:
+    """
+    Draw a professional ship hull outline.
+    
+    Layout (left to right):
+    - Stern (square back) on the left
+    - Main body (rectangular) in the middle
+    - Bow (pointed/curved) on the right
+    
+    Args:
+        c: Canvas object
+        x: Left edge of the hull (stern)
+        y: Bottom edge of the hull
+        hull_width: Total width including bow and stern
+        hull_height: Height of the hull
+        bow_length: Length of the bow section
+        stern_length: Length of the stern section
+    """
+    body_width = hull_width - bow_length - stern_length
+    
+    # Start path for hull
+    path = c.beginPath()
+    
+    # Define key points
+    stern_x = x
+    stern_top = y + hull_height
+    stern_bottom = y
+    
+    body_left = x + stern_length
+    body_right = x + stern_length + body_width
+    
+    bow_tip_x = x + hull_width
+    bow_mid_y = y + hull_height / 2
+    
+    # Draw hull outline (clockwise from stern bottom-left)
+    
+    # 1. Stern - slightly rounded back
+    path.moveTo(stern_x + stern_length * 0.3, stern_bottom)
+    
+    # Stern bottom curve
+    path.curveTo(
+        stern_x, stern_bottom,  # Control point 1
+        stern_x, stern_bottom + hull_height * 0.2,  # Control point 2
+        stern_x, stern_bottom + hull_height * 0.3  # End point
+    )
+    
+    # Stern left edge (straight)
+    path.lineTo(stern_x, stern_top - hull_height * 0.3)
+    
+    # Stern top curve
+    path.curveTo(
+        stern_x, stern_top - hull_height * 0.2,  # Control point 1
+        stern_x, stern_top,  # Control point 2
+        stern_x + stern_length * 0.3, stern_top  # End point
+    )
+    
+    # 2. Top edge to bow
+    path.lineTo(body_right, stern_top)
+    
+    # 3. Bow - smooth pointed curve (top side)
+    path.curveTo(
+        body_right + bow_length * 0.5, stern_top,  # Control point 1
+        bow_tip_x - bow_length * 0.1, bow_mid_y + hull_height * 0.15,  # Control point 2
+        bow_tip_x, bow_mid_y  # Bow tip
+    )
+    
+    # 4. Bow - smooth pointed curve (bottom side)
+    path.curveTo(
+        bow_tip_x - bow_length * 0.1, bow_mid_y - hull_height * 0.15,  # Control point 1
+        body_right + bow_length * 0.5, stern_bottom,  # Control point 2
+        body_right, stern_bottom  # End at body bottom-right
+    )
+    
+    # 5. Bottom edge back to stern
+    path.lineTo(stern_x + stern_length * 0.3, stern_bottom)
+    
+    path.close()
+    
+    # Fill hull with light color
+    c.setFillColor(HULL_FILL_COLOR)
+    c.setStrokeColor(HULL_STROKE_COLOR)
+    c.setLineWidth(1.5)
+    c.drawPath(path, fill=1, stroke=1)
+    
+    # Draw center line (deck marking)
+    c.setStrokeColor(DECK_LINE_COLOR)
+    c.setLineWidth(0.5)
+    c.setDash([3, 2])  # Dashed line
+    c.line(stern_x + stern_length * 0.5, bow_mid_y, body_right + bow_length * 0.3, bow_mid_y)
+    c.setDash([])  # Reset dash
 
 
 def _draw_tank_cell(
@@ -122,30 +224,50 @@ def _draw_tank_cell(
         hex_color = "#E5E7EB"
 
     # Layout dimensions
-    header_h = 0.55 * cm
-    receiver_h = 0.35 * cm
-    footer_h = 0.45 * cm
+    header_h = 0.5 * cm
+    receiver_h = 0.5 * cm  # Increased for 2 lines
+    footer_h = 0.4 * cm
     data_h = h - header_h - receiver_h - footer_h
     
     # 1. Header (Parcel Name) - colored with transparency
     c.setFillColor(header_color)
-    c.setStrokeColor(colors.Color(0.3, 0.3, 0.3))
+    c.setStrokeColor(colors.Color(0.4, 0.4, 0.4))
+    c.setLineWidth(0.5)
     c.rect(x, y + h - header_h, w, header_h, fill=1, stroke=1)
     
     c.setFillColor(text_color)
-    c.setFont(font_bold, 7)
+    c.setFont(font_bold, 6)
     display_header = header_text[:12] if len(header_text) > 12 else header_text
-    c.drawCentredString(x + w/2, y + h - header_h + 0.15*cm, display_header)
+    c.drawCentredString(x + w/2, y + h - header_h + 0.12*cm, display_header)
     
-    # 2. Receiver row - colored with transparency
+    # 2. Receiver row - colored with transparency (2 lines with word wrap)
     rec_y = y + h - header_h - receiver_h
     c.setFillColor(header_color)
     c.rect(x, rec_y, w, receiver_h, fill=1, stroke=1)
     
     c.setFillColor(text_color)
     c.setFont(font_norm, 5)
-    display_recv = receiver_text[:15] if len(receiver_text) > 15 else receiver_text
-    c.drawCentredString(x + w/2, rec_y + 0.08*cm, display_recv)
+    
+    # Word wrap logic - break at spaces
+    if receiver_text:
+        max_chars_per_line = int(w / 1.8)  # Approximate chars per line based on width
+        words = receiver_text.split()
+        line1 = ""
+        line2 = ""
+        
+        for word in words:
+            if len(line1) + len(word) + 1 <= max_chars_per_line:
+                line1 = (line1 + " " + word).strip()
+            elif len(line2) + len(word) + 1 <= max_chars_per_line:
+                line2 = (line2 + " " + word).strip()
+            else:
+                break  # No more space
+        
+        # Draw 2 lines centered
+        if line1:
+            c.drawCentredString(x + w/2, rec_y + receiver_h - 0.22*cm, line1)  # Moved down
+        if line2:
+            c.drawCentredString(x + w/2, rec_y + 0.06*cm, line2)
     
     # 3. Data body - white background
     data_y = y + footer_h
@@ -154,7 +276,7 @@ def _draw_tank_cell(
     
     # Data rows
     c.setFillColor(colors.black)
-    c.setFont(font_bold, 7)
+    c.setFont(font_bold, 6)
     
     row_h = data_h / 4
     labels = ["ULL", "MT", "CBM", "%"]
@@ -170,17 +292,17 @@ def _draw_tank_cell(
         values = ["", "", "", ""]
     
     for i, (label, value) in enumerate(zip(labels, values)):
-        row_y = data_y + data_h - (i + 1) * row_h + 0.08*cm
-        c.drawString(x + 2, row_y, label)
-        c.drawRightString(x + w - 2, row_y, value)
+        row_y = data_y + data_h - (i + 1) * row_h + 0.06*cm
+        c.drawString(x + 1, row_y, label)
+        c.drawRightString(x + w - 1, row_y, value)
     
     # 4. Footer (Tank Label) - white background
     c.setFillColor(colors.white)
     c.rect(x, y, w, footer_h, fill=1, stroke=1)
     
     c.setFillColor(colors.black)
-    c.setFont(font_bold, 8)
-    c.drawCentredString(x + w/2, y + 0.1*cm, tank_label)
+    c.setFont(font_bold, 7)
+    c.drawCentredString(x + w/2, y + 0.08*cm, tank_label)
 
 
 def generate_stowage_plan_pdf(
@@ -208,28 +330,61 @@ def generate_stowage_plan_pdf(
         
         font_norm, font_bold = _register_fonts()
         
-        # Margins
-        margin_x = 1 * cm
-        margin_y = 1 * cm
+        # Margins (2cm on all sides)
+        margin_x = 2 * cm
+        margin_y = 2 * cm
         
         # =================================================================
         # 1. HEADER
         # =================================================================
-        title = f"M/T {ship_config.ship_name} STOWAGE PLAN"
+        # Fix ship name - remove duplicate M/T if already present
+        ship_name = ship_config.ship_name
+        if ship_name.upper().startswith('M/T ') or ship_name.upper().startswith('MT '):
+            title = f"{ship_name} STOWAGE PLAN"
+        else:
+            title = f"M/T {ship_name} STOWAGE PLAN"
         c.setFont(font_bold, 16)
-        c.drawCentredString(width/2, height - 1.2*cm, title)
+        c.drawCentredString(width/2, height - 2*cm, title)  # 2cm from top
         
-        # Voyage/Port info (below title, left side)
+        # NOTE: Voyage/Port info will be drawn after hull position is calculated for alignment
+        
+        # =================================================================
+        # PRE-CALCULATE HULL POSITION FOR ALIGNMENT
+        # =================================================================
+        # Count tanks for hull width calculation
+        tank_count = len([t for t in ship_config.tanks if 'SLOP' not in t.name.upper()])
+        num_cols = (tank_count // 2) + (1 if any('SLOP' in t.name.upper() for t in ship_config.tanks) else 0)
+        if num_cols < 1:
+            num_cols = 8  # Default
+        
+        hull_padding = 0.2 * cm
+        bow_length = 2.0 * cm
+        stern_length = 0.8 * cm
+        cell_h = 2.8 * cm
+        gap = 0.04 * cm
+        
+        available_width = width - 2 * margin_x - 1.5*cm - bow_length - stern_length
+        cell_w = min((available_width - gap * (num_cols - 1)) / num_cols, 2.8 * cm)
+        total_tank_width = num_cols * cell_w + (num_cols - 1) * gap
+        hull_width = total_tank_width + bow_length + stern_length + 2 * hull_padding
+        
+        # Hull X position (centered)
+        pre_hull_x = (width - hull_width) / 2
+        pre_hull_right = pre_hull_x + hull_width  # Right edge of hull
+        
+        # =================================================================
+        # 1b. VOYAGE/PORT INFO (Aligned with hull/table)
+        # =================================================================
         c.setFont(font_bold, 10)
-        info_y = height - 2.0*cm
-        c.drawString(margin_x, info_y, f"VOYAGE/SEFER: {voyage.voyage_number}")
-        c.drawString(margin_x, info_y - 0.5*cm, f"PORT/TERMINAL: {report_data.get('port', voyage.port)} / {report_data.get('terminal', voyage.terminal)}")
+        info_y = height - 2.8*cm
+        c.drawString(pre_hull_x, info_y, f"VOYAGE/SEFER: {voyage.voyage_number}")
+        c.drawString(pre_hull_x, info_y - 0.5*cm, f"PORT/TERMINAL: {report_data.get('port', voyage.port)} / {report_data.get('terminal', voyage.terminal)}")
         
         # =================================================================
-        # 2. PARCEL LEGEND TABLE (Top area)
+        # 2. PARCEL LEGEND TABLE (Top area) - Aligned with hull
         # =================================================================
-        table_x = margin_x
-        table_y = height - 3.5*cm
+        table_x = pre_hull_x  # Align with hull left edge
+        table_y = height - 4.3*cm  # Adjusted for 2cm top margin
         row_h = 0.5*cm
         
         # Column definitions
@@ -324,11 +479,11 @@ def generate_stowage_plan_pdf(
             table_y -= row_h
         
         # =================================================================
-        # 3. DRAFT BOX (Top right)
+        # 3. DRAFT BOX (Top right) - Aligned with hull right edge
         # =================================================================
-        draft_x = width - 5*cm
-        draft_y = height - 3.0*cm
         draft_w = 4*cm
+        draft_x = pre_hull_right - draft_w  # Right edge aligned with hull
+        draft_y = height - 4.3*cm  # Same level as table
         
         # Header
         c.setFillColor(colors.Color(0.82, 0.84, 0.86, 0.7))
@@ -355,7 +510,7 @@ def generate_stowage_plan_pdf(
         c.drawRightString(draft_x + draft_w - 2, draft_y + 0.12*cm, f"{voyage.drafts.aft:.2f}")
         
         # =================================================================
-        # 4. TANK GRID (Main Visual)
+        # 4. TANK GRID WITH SHIP HULL
         # =================================================================
         # Group tanks by number and side - including SLOP tanks
         tank_groups: Dict[int, Dict[str, Tuple[str, Optional['TankReading'], str]]] = {}
@@ -406,23 +561,49 @@ def generate_stowage_plan_pdf(
             return True
         
         # Grid positioning
-        grid_y = 7.5 * cm  # Center of grid area
-        cell_h = 3.2 * cm
-        gap = 0.08 * cm
+        grid_center_y = 6.5 * cm  # Center Y of the grid area
+        cell_h = 2.8 * cm
+        gap = 0.06 * cm
+        
+        # Total height for both rows
+        total_tank_height = cell_h * 2 + gap
+        grid_top_y = grid_center_y + total_tank_height / 2
+        grid_bottom_y = grid_center_y - total_tank_height / 2
         
         # Calculate cell width based on tank count (including SLOP column if exists)
         num_cols = len(tank_groups) + (1 if slop_tanks else 0)
-        available_width = width - 2 * margin_x - 2*cm  # Leave space for P/S labels
-        cell_w = min((available_width - gap * (num_cols - 1)) / num_cols, 2.4 * cm)
         
-        total_grid_w = num_cols * cell_w + (num_cols - 1) * gap
-        start_x = (width - total_grid_w) / 2 + 0.5*cm  # Offset for P/S labels
+        # Ship hull dimensions (matching pre-calculation)
+        hull_padding = 0.2 * cm
+        bow_length = 2.0 * cm
+        stern_length = 0.8 * cm
+        
+        available_width = width - 2 * margin_x - 1.5*cm - bow_length - stern_length
+        cell_w = min((available_width - gap * (num_cols - 1)) / num_cols, 2.8 * cm)
+        
+        total_tank_width = num_cols * cell_w + (num_cols - 1) * gap
+        
+        # Hull dimensions
+        hull_width = total_tank_width + bow_length + stern_length + 2 * hull_padding
+        hull_height = total_tank_height + 2 * hull_padding
+        
+        # Center the hull on page
+        hull_x = (width - hull_width) / 2
+        hull_y = grid_bottom_y - hull_padding
+        
+        # Draw ship hull first (behind tanks)
+        _draw_ship_hull(c, hull_x, hull_y, hull_width, hull_height, bow_length, stern_length)
+        
+        # Tank starting position (inside hull, after stern)
+        start_x = hull_x + stern_length + hull_padding
         
         # Build parcel lookup
         parcel_map = {p.id: p for p in voyage.parcels}
         
-        # Draw SLOP tanks first (leftmost position)
+        # Draw SLOP tanks first (leftmost position, near stern)
         curr_x = start_x
+        port_y = grid_top_y - cell_h
+        starboard_y = grid_bottom_y
         
         if slop_tanks:
             # Port SLOP
@@ -432,7 +613,7 @@ def generate_stowage_plan_pdf(
                 parcel = parcel_map.get(reading.parcel_id) if reading and reading.parcel_id and reading.parcel_id != "0" else None
                 
                 _draw_tank_cell(
-                    c, curr_x, grid_y, cell_w, cell_h,
+                    c, curr_x, port_y, cell_w, cell_h,
                     tank_label, reading, parcel, is_slop, slop_label,
                     font_norm, font_bold
                 )
@@ -444,7 +625,7 @@ def generate_stowage_plan_pdf(
                 parcel = parcel_map.get(reading.parcel_id) if reading and reading.parcel_id and reading.parcel_id != "0" else None
                 
                 _draw_tank_cell(
-                    c, curr_x, grid_y - cell_h - gap, cell_w, cell_h,
+                    c, curr_x, starboard_y, cell_w, cell_h,
                     tank_label, reading, parcel, is_slop, slop_label,
                     font_norm, font_bold
                 )
@@ -470,7 +651,7 @@ def generate_stowage_plan_pdf(
                         parcel = parcel_map.get(reading.parcel_id)
                 
                 _draw_tank_cell(
-                    c, curr_x, grid_y, cell_w, cell_h,
+                    c, curr_x, port_y, cell_w, cell_h,
                     tank_label, reading, parcel, is_slop, slop_label,
                     font_norm, font_bold
                 )
@@ -488,7 +669,7 @@ def generate_stowage_plan_pdf(
                         parcel = parcel_map.get(reading.parcel_id)
                 
                 _draw_tank_cell(
-                    c, curr_x, grid_y - cell_h - gap, cell_w, cell_h,
+                    c, curr_x, starboard_y, cell_w, cell_h,
                     tank_label, reading, parcel, is_slop, slop_label,
                     font_norm, font_bold
                 )
@@ -496,19 +677,21 @@ def generate_stowage_plan_pdf(
             curr_x += cell_w + gap
         
         # =================================================================
-        # 5. SIDE LABELS (P/S indicators)
+        # 5. SIDE LABELS (P/S indicators) - Left of hull
         # =================================================================
-        label_x = start_x - 1*cm
+        label_x = hull_x - 0.8*cm
         
         c.setFont(font_bold, 14)
-        c.setFillColor(colors.Color(0.23, 0.51, 0.97))  # Blue for Port
-        c.drawCentredString(label_x, grid_y + cell_h/2, "P")
+        c.setFillColor(colors.Color(0.86, 0.15, 0.15))  # Red for Port
+        c.drawCentredString(label_x, port_y + cell_h/2, "P")
         
-        c.setFillColor(colors.Color(0.19, 0.73, 0.49))  # Green for Starboard
-        c.drawCentredString(label_x, grid_y - cell_h/2 - gap, "S")
+        c.setFillColor(colors.Color(0.13, 0.72, 0.30))  # Green for Starboard
+        c.drawCentredString(label_x, starboard_y + cell_h/2, "S")
+        
+        # BOW/STERN labels removed as per user request
         
         # =================================================================
-        # 6. CHIEF OFFICER SIGNATURE (Bottom Right)
+        # 7. CHIEF OFFICER SIGNATURE (Bottom Right)
         # =================================================================
         chief_officer = voyage.chief_officer if hasattr(voyage, 'chief_officer') else ""
         if chief_officer:
