@@ -46,6 +46,12 @@ class ConfigEditorDialog(QDialog):
         """Set up the dialog UI."""
         layout = QVBoxLayout(self)
         
+        # Warning Label
+        warning_label = QLabel("Do not change any value without CO permission!")
+        warning_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        warning_label.setStyleSheet("color: red; font-weight: bold; font-size: 12pt; margin-bottom: 10px;")
+        layout.addWidget(warning_label)
+
         # Tab widget
         self.tabs = QTabWidget()
         layout.addWidget(self.tabs)

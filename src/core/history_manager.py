@@ -37,7 +37,7 @@ class HistoryManager:
         if ini_path is None:
             # Default path relative to project root
             base_dir = Path(__file__).parent.parent.parent  # src/core -> src -> project root
-            self.ini_path = base_dir / "data" / "report_history.ini"
+            self.ini_path = base_dir / "data" / "config" / "report_history.ini"
         else:
             self.ini_path = Path(ini_path)
         

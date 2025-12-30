@@ -205,7 +205,7 @@ class VoyageExplorerWidget(QWidget):
     def __init__(self, ship_config: ShipConfig, parent=None):
         super().__init__(parent)
         self.ship_config = ship_config
-        self.voyage_dir = os.path.join(os.getcwd(), 'data', 'voyages')
+        self.voyage_dir = os.path.join(os.getcwd(), 'VOYAGES')
         self.current_path = None
         self._init_ui()
         self.restore_state()

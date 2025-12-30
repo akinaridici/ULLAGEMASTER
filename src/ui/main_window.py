@@ -31,7 +31,7 @@ from export import (
     export_to_excel, export_to_pdf, generate_stowage_plan,
     export_template_report, get_template_path
 )
-from ui.dialogs import ShipSetupDialog, ShipSetupWizard, PreferencesDialog
+from ui.dialogs import ShipSetupDialog, ShipSetupWizard
 from utils import config_exists, load_config, save_config
 import pandas as pd
 
@@ -41,10 +41,12 @@ from .styles import (
 )
 from .widgets.delegates import TankGridDelegate
 from .widgets.flow_layout import FlowLayout
+from .widgets.flow_layout import FlowLayout
 from .widgets.voyage_explorer import VoyageExplorerWidget
 from .widgets.report_functions_widget import ReportFunctionsWidget
-from ui.dialogs.notes_dialog import NotesDialog
+
 from ui.dialogs.manual_dialog import ManualDialog
+from ui.dialogs.backup_restore import BackupDialog, RestoreDialog
 
 
 # Legacy naming for compatibility with existing logic
@@ -124,6 +126,22 @@ class MainWindow(QMainWindow):
         # Load default or create new
         self._init_default_data()
     
+    def _get_reports_dir(self) -> str:
+        """Get the absolute path to the REPORTS directory."""
+        # src/ui -> src -> root
+        root = Path(__file__).parent.parent.parent
+        reports_dir = root / "REPORTS"
+        reports_dir.mkdir(exist_ok=True)
+        return str(reports_dir)
+
+    def _get_voyages_dir(self) -> str:
+        """Get the absolute path to the VOYAGES directory."""
+        # src/ui -> src -> root
+        root = Path(__file__).parent.parent.parent
+        voyages_dir = root / "VOYAGES"
+        voyages_dir.mkdir(exist_ok=True)
+        return str(voyages_dir)
+
     def _update_last_dir(self, filepath: str):
         """Update last used directory in settings."""
         if not filepath:
@@ -156,9 +174,7 @@ class MainWindow(QMainWindow):
         
         file_menu.addSeparator()
 
-        notes_action = QAction("Sefer Notları...", self)
-        notes_action.triggered.connect(self._edit_notes)
-        file_menu.addAction(notes_action)
+
         
         file_menu.addSeparator()
         
@@ -167,8 +183,9 @@ class MainWindow(QMainWindow):
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
         
-        # Settings menu
-        settings_menu = menubar.addMenu(t("settings", "menu"))
+        # Settings submenu (under File)
+        file_menu.addSeparator()
+        settings_menu = file_menu.addMenu(t("settings", "menu"))
         
         ship_config_action = QAction(t("ship_config", "menu"), self)
         ship_config_action.triggered.connect(self._show_ship_config)
@@ -186,10 +203,17 @@ class MainWindow(QMainWindow):
         
         settings_menu.addSeparator()
         
-        prefs_action = QAction(t("preferences", "menu"), self)
-        prefs_action.triggered.connect(self._show_preferences)
-        settings_menu.addAction(prefs_action)
+        backup_action = QAction("Backup Configuration...", self)
+        backup_action.triggered.connect(self._show_backup)
+        settings_menu.addAction(backup_action)
         
+        restore_action = QAction("Restore from Backup...", self)
+        restore_action.triggered.connect(self._show_restore)
+        settings_menu.addAction(restore_action)
+        
+        settings_menu.addSeparator()
+
+
         # Stowage Plan menu
         stowage_menu = menubar.addMenu("Stowage Plan")
         
@@ -1047,47 +1071,7 @@ class MainWindow(QMainWindow):
             f"{assignment_count} tank ataması Stowage Plan'a aktarıldı."
         )
     
-    def _save_stowage_plan(self):
-        """Save current stowage plan to JSON file."""
-        filename, _ = QFileDialog.getSaveFileName(
-            self, "Stowage Plan Kaydet",
-            "data/stowplans/STOWPLAN.json",
-            "JSON Files (*.json)"
-        )
-        if filename:
-            try:
-                self.stowage_plan.save_to_json(filename)
-                self.status_bar.showMessage(f"Stowage plan saved: {filename}")
-            except Exception as e:
-                QMessageBox.critical(self, "Hata", f"Plan kaydedilemedi:\n{e}")
-    
-    def _load_stowage_plan(self):
-        """Load stowage plan from JSON file."""
-        from models import StowagePlan
-        
-        filename, _ = QFileDialog.getOpenFileName(
-            self, "Stowage Plan Yükle",
-            "data/stowplans",
-            "JSON Files (*.json)"
-        )
-        if filename:
-            try:
-                self.stowage_plan = StowagePlan.load_from_json(filename)
-                
-                # Update cargo input widget (bottom left table)
-                if hasattr(self, 'cargo_input_widget'):
-                    self.cargo_input_widget.set_cargo_list(self.stowage_plan.cargo_requests)
-                
-                # Update cargo legend (draggable cards)
-                self.cargo_legend.set_stowage_plan(self.stowage_plan)
-                
-                # Update ship schematic
-                self.ship_schematic.set_stowage_plan(self.stowage_plan)
-                
-                self._on_stowage_changed()
-                self.status_bar.showMessage(f"Stowage plan yüklendi: {filename}")
-            except Exception as e:
-                QMessageBox.critical(self, "Hata", f"Plan yüklenemedi:\n{e}")
+
 
     
     def _create_ullage_tab(self) -> QWidget:
@@ -2198,7 +2182,8 @@ class MainWindow(QMainWindow):
         # Sanitize
         default_name = "".join(c for c in default_name if c.isalnum() or c in (' ', '.', '_', '-')).strip()
         
-        output_dir = self.last_dir or os.getcwd()
+        # User requested specific REPORTS folder for PDF reports
+        output_dir = self._get_reports_dir()
         initial_path = os.path.join(output_dir, default_name)
         
         from PyQt6.QtWidgets import QFileDialog, QInputDialog, QLineEdit
@@ -2373,7 +2358,8 @@ class MainWindow(QMainWindow):
         default_name = f"{self.voyage.voyage_number} SelectedParcels.pdf"
         default_name = "".join(c for c in default_name if c.isalnum() or c in (' ', '.', '_', '-')).strip()
         
-        output_dir = self.last_dir or os.getcwd()
+        # User requested specific REPORTS folder for PDF reports
+        output_dir = self._get_reports_dir()
         initial_path = os.path.join(output_dir, default_name)
         
         from PyQt6.QtWidgets import QFileDialog, QInputDialog, QLineEdit
@@ -2449,7 +2435,8 @@ class MainWindow(QMainWindow):
         default_name = f"{self.voyage.voyage_number} StowagePlan.pdf"
         default_name = "".join(c for c in default_name if c.isalnum() or c in (' ', '.', '_', '-')).strip()
         
-        output_dir = self.last_dir or os.getcwd()
+        # User requested specific REPORTS folder for PDF reports
+        output_dir = self._get_reports_dir()
         initial_path = os.path.join(output_dir, default_name)
         
         from PyQt6.QtWidgets import QFileDialog, QInputDialog, QLineEdit
@@ -2545,8 +2532,10 @@ class MainWindow(QMainWindow):
     
     def _open_voyage(self):
         """Open existing voyage from unified .voyage file."""
+        initial_path = self.last_dir or self._get_voyages_dir()
+        
         filepath, _ = QFileDialog.getOpenFileName(
-            self, "Open Voyage", self.last_dir, "Voyage Files (*.voyage)"
+            self, "Open Voyage", initial_path, "Voyage Files (*.voyage)"
         )
         if filepath:
             self._load_voyage_from_file(filepath)
@@ -2642,15 +2631,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Error", f"Failed to load voyage: {e}")
             return False
 
-    def _edit_notes(self):
-        """Open dialog to edit voyage notes."""
-        if not self.voyage:
-            return
-            
-        dialog = NotesDialog(self.voyage.notes, self)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            self.voyage.notes = dialog.get_notes()
-            self.status_bar.showMessage("Sefer notları güncellendi.")
+
     
     def _save_voyage(self):
         """Save current voyage with stowage plan to unified .voyage file."""
@@ -2679,9 +2660,12 @@ class MainWindow(QMainWindow):
         suggested_name = self.voyage.voyage_number or "voyage"
         suggested_name = suggested_name.replace("/", "-").replace("\\", "-")
         
+        # Use VOYAGES directory
+        default_dir = self._get_voyages_dir()
+        
         filepath, _ = QFileDialog.getSaveFileName(
             self, "Save Voyage", 
-            f"{self.last_dir}/{suggested_name}.voyage", 
+            f"{default_dir}/{suggested_name}.voyage", 
             "Voyage Files (*.voyage)"
         )
         if filepath:
@@ -2718,8 +2702,15 @@ class MainWindow(QMainWindow):
         if format_type == "visual":
             default_file = f"stowage_plan_{self.voyage.voyage_number.replace('/', '-')}.pdf"
         
-        # Combine last_dir with default_file if provided
-        initial_path = str(Path(self.last_dir) / default_file) if default_file else self.last_dir
+        # Determine initial directory
+        # If PDF or Visual (PDF), enforce REPORTS directory
+        if format_type in ["pdf", "visual"]:
+            base_dir = self._get_reports_dir()
+        else:
+            base_dir = self.last_dir
+            
+        # Combine base_dir with default_file if provided
+        initial_path = str(Path(base_dir) / default_file) if default_file else base_dir
         
         filepath, _ = QFileDialog.getSaveFileName(
             self, f"Export to {format_type.upper()}", initial_path, filters.get(format_type, "*.*")
@@ -2820,6 +2811,21 @@ class MainWindow(QMainWindow):
     
     def _show_ship_config(self):
         """Show ship configuration dialog."""
+        # Ask for Password
+        password, ok = QInputDialog.getText(
+            self, "Admin Password",
+            "Attention! This area is restricted.\n"
+            "Please enter Admin password!",
+            QLineEdit.EchoMode.Password
+        )
+        
+        if not ok:
+            return
+            
+        if password != "19771977":
+            QMessageBox.critical(self, "Access Denied", "Incorrect password.")
+            return
+
         from ui.dialogs import ConfigEditorDialog
         
         # If config exists and has tanks, show editor; otherwise show wizard
@@ -2839,21 +2845,25 @@ class MainWindow(QMainWindow):
                 self._recalculate_all()
                 self.status_bar.showMessage(f"Ship configuration saved: {len(self.ship_config.tanks)} tanks loaded")
     
-    def _show_preferences(self):
-        """Show preferences dialog."""
-        dialog = PreferencesDialog(self)
-        if dialog.exec():
-            settings = dialog.get_settings()
-            # Apply settings
-            if settings.get("language"):
-                set_language(settings["language"])
-                # Note: Full UI refresh would require restart
-                self.status_bar.showMessage(
-                    f"Language changed to {settings['language']}. Restart for full effect."
-                )
+
     
     def _import_config(self):
         """Import configuration from an external JSON file."""
+        # Ask for Password
+        password, ok = QInputDialog.getText(
+            self, "Admin Password",
+            "Attention! This area is restricted.\n"
+            "Please enter Admin password!",
+            QLineEdit.EchoMode.Password
+        )
+        
+        if not ok:
+            return
+            
+        if password != "19771977":
+            QMessageBox.critical(self, "Access Denied", "Incorrect password.")
+            return
+
         filepath, _ = QFileDialog.getOpenFileName(
             self, "Import Configuration", self.last_dir, "JSON Files (*.json)"
         )
@@ -3105,4 +3115,17 @@ class MainWindow(QMainWindow):
         """Show the user manual dialog."""
         dialog = ManualDialog(self)
         dialog.exec()
+
+    def _show_backup(self):
+        """Show backup dialog."""
+        dialog = BackupDialog(self)
+        dialog.exec()
+        
+    def _show_restore(self):
+        """Show restore dialog."""
+        dialog = RestoreDialog(self)
+        if dialog.exec():
+            # If restore successful, reload config
+            self._init_default_data()
+            self.status_bar.showMessage("Configuration restored from backup.")
 
