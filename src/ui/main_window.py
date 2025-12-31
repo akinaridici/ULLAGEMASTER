@@ -562,6 +562,94 @@ class MainWindow(QMainWindow):
                 self.cargo_legend.get_cargo_colors() if hasattr(self, 'cargo_legend') else [],
                 total_capacity
             )
+        
+        # Sync colors to Voyage.parcels (Stowage → Ullage)
+        self._sync_stowage_colors_to_voyage()
+    
+    def _sync_stowage_colors_to_voyage(self):
+        """
+        Sync cargo colors from StowagePlan to Voyage parcels.
+        
+        Maps StowageCargo.custom_color → Parcel.color by matching:
+        - cargo_type → parcel.name
+        - receiver → parcel.receiver
+        
+        This ensures color changes in Stowage tab reflect in Ullage tab.
+        """
+        if not hasattr(self, 'stowage_plan') or not self.stowage_plan:
+            return
+        if not hasattr(self, 'voyage') or not self.voyage:
+            return
+        if not self.voyage.parcels:
+            return
+        
+        # Get current colors from cargo legend (always accurate)
+        cargo_colors = self.cargo_legend.get_cargo_colors() if hasattr(self, 'cargo_legend') else []
+        
+        # Build a map: (cargo_type, receiver) -> color
+        cargo_color_map = {}
+        for i, cargo in enumerate(self.stowage_plan.cargo_requests):
+            color = cargo_colors[i] if i < len(cargo_colors) else cargo.custom_color
+            if color:
+                key = (cargo.cargo_type.upper().strip(), cargo.get_receiver_names().upper().strip())
+                cargo_color_map[key] = color
+        
+        # Update matching parcels
+        updated = False
+        for parcel in self.voyage.parcels:
+            key = (parcel.name.upper().strip(), parcel.receiver.upper().strip())
+            if key in cargo_color_map:
+                new_color = cargo_color_map[key]
+                if parcel.color != new_color:
+                    parcel.color = new_color
+                    updated = True
+        
+        # Refresh Ullage grid if colors changed
+        if updated and hasattr(self, 'tank_table'):
+            self._populate_grid()
+    
+    def _sync_voyage_colors_to_stowage(self):
+        """
+        Sync parcel colors from Voyage to StowagePlan cargos.
+        
+        Maps Parcel.color → StowageCargo.custom_color by matching:
+        - parcel.name → cargo_type
+        - parcel.receiver → receiver
+        
+        This ensures color changes in Ullage tab reflect in Stowage tab.
+        """
+        if not hasattr(self, 'voyage') or not self.voyage:
+            return
+        if not hasattr(self, 'stowage_plan') or not self.stowage_plan:
+            return
+        if not self.voyage.parcels:
+            return
+        
+        # Build a map: (name, receiver) -> color from parcels
+        parcel_color_map = {}
+        for parcel in self.voyage.parcels:
+            if parcel.color:
+                key = (parcel.name.upper().strip(), parcel.receiver.upper().strip())
+                parcel_color_map[key] = parcel.color
+        
+        # Update matching stowage cargos
+        updated = False
+        for cargo in self.stowage_plan.cargo_requests:
+            key = (cargo.cargo_type.upper().strip(), cargo.get_receiver_names().upper().strip())
+            if key in parcel_color_map:
+                new_color = parcel_color_map[key]
+                if cargo.custom_color != new_color:
+                    cargo.custom_color = new_color
+                    updated = True
+        
+        # Refresh Stowage tab UI if colors changed
+        if updated:
+            if hasattr(self, 'cargo_legend'):
+                self.cargo_legend.set_stowage_plan(self.stowage_plan)
+            if hasattr(self, 'ship_schematic') and hasattr(self, 'cargo_legend'):
+                self.ship_schematic.set_cargo_colors(self.cargo_legend.get_cargo_colors())
+                self.ship_schematic.refresh()
+
     
     def _init_stowage_with_ship_config(self):
         """Initialize stowage tab with current ship config."""
@@ -3090,6 +3178,8 @@ class MainWindow(QMainWindow):
         if dialog.exec():
             self.voyage.parcels = dialog.get_parcels()
             self._update_parcel_dropdowns()
+            # Sync colors to Stowage tab (Ullage → Stowage)
+            self._sync_voyage_colors_to_stowage()
             self.status_bar.showMessage(f"Updated {len(self.voyage.parcels)} parcels")
     
     def _update_parcel_dropdowns(self):

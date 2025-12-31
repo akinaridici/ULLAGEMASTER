@@ -20,7 +20,7 @@ class TankSplashScreen(QWidget):
         self.fill_level = 0.0  # 0.0 to 1.0
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_animation)
-        self.timer.start(30)  # Update every 30ms
+        self.timer.start(20)  # Faster update: 20ms
         
         # Colors
         self.tank_border_color = QColor("#2c3e50")
@@ -30,14 +30,14 @@ class TankSplashScreen(QWidget):
         
     def update_animation(self):
         """Increments the fill level."""
-        self.fill_level += 0.01
+        self.fill_level += 0.02  # Faster fill (2% per step)
         
         if self.fill_level >= 1.0:
             self.fill_level = 1.0
             self.timer.stop()
-            # Hold for a moment then finish
-            QTimer.singleShot(500, self.loading_complete.emit)
-            QTimer.singleShot(500, self.close)
+            # Hold briefly then finish
+            QTimer.singleShot(200, self.loading_complete.emit)
+            QTimer.singleShot(200, self.close)
             
         self.update()  # Trigger paintEvent
 
