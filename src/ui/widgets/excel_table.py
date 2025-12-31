@@ -40,21 +40,18 @@ class ExcelTableWidget(QTableWidget):
     def closeEditor(self, editor, hint):
         """
         Called when editing finishes (e.g. user pressed Enter in the editor).
-        We want to move down after editing closes.
+        We want to move down after editing closes ONLY when Enter was pressed.
         """
         # Call super first to commit data
         super().closeEditor(editor, hint)
         
-        # We enforce move down unless it was Tab (EditNextItem) or Shift+Tab (EditPreviousItem)
-        if hint == QAbstractItemDelegate.EndEditHint.EditNextItem:
-            # Tab key - default behavior moves right
-            pass
-        elif hint == QAbstractItemDelegate.EndEditHint.EditPreviousItem:
-            # Shift+Tab - default behavior moves left
-            pass
-        else:
-            # For Enter (SubmitModelCache) or click-away, move down
-            # Use flag to prevent multiple moves
+        # Only enforce move down on Enter key (SubmitModelCache)
+        # Do NOT move down on:
+        # - Tab (EditNextItem) - moves right
+        # - Shift+Tab (EditPreviousItem) - moves left
+        # - Click-away (NoHint) - user clicked somewhere else
+        if hint == QAbstractItemDelegate.EndEditHint.SubmitModelCache:
+            # Enter key was pressed - move down
             if not self._pending_move:
                 self._pending_move = True
                 QTimer.singleShot(0, self._move_selection_down)

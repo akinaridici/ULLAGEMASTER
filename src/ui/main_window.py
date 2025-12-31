@@ -395,6 +395,10 @@ class MainWindow(QMainWindow):
     def _on_tab_changed(self, index: int):
         """Save last active tab to settings."""
         self.settings.setValue("last_tab", index)
+        
+        # Refresh Voyage Explorer preview when switching to Voyages tab (Index 0)
+        if index == 0 and hasattr(self, 'explorer_tab'):
+            self.explorer_tab.refresh_preview()
 
         # Update Report Functions tab if selected (Index 3)
         if index == 3 and hasattr(self, 'report_tab'):
@@ -2864,11 +2868,45 @@ class MainWindow(QMainWindow):
         if filepath:
             self._perform_save(filepath)
 
+    def _sync_stowage_plan_quantities(self):
+        """
+        Sync calculated quantities from voyage tank readings to stowage plan cargo requests.
+        This ensures the preview shows actual MT AIR values.
+        """
+        if not self.voyage or not self.stowage_plan:
+            return
+        
+        # Calculate MT totals per parcel from tank readings
+        parcel_totals = {}  # parcel_id -> mt_air
+        for reading in self.voyage.tank_readings.values():
+            if reading.parcel_id and reading.mt_air:
+                parcel_totals[reading.parcel_id] = parcel_totals.get(reading.parcel_id, 0) + reading.mt_air
+        
+        # Match stowage cargos to voyage parcels and update quantities
+        for cargo in self.stowage_plan.cargo_requests:
+            # Find matching parcel by cargo_type and receiver
+            cargo_name = cargo.cargo_type
+            cargo_receivers = [r.name for r in cargo.receivers] if cargo.receivers else []
+            
+            for parcel in self.voyage.parcels:
+                if parcel.name == cargo_name and parcel.receiver in cargo_receivers:
+                    # Found match - update cargo quantity with calculated MT
+                    if parcel.id in parcel_totals:
+                        mt_air = parcel_totals[parcel.id]
+                        density = parcel.density_vac if parcel.density_vac else 0.85
+                        # Convert MT AIR back to volume: Vol = MT / (density - 0.0011)
+                        if density > 0.0011:
+                            cargo.quantity = mt_air / (density - 0.0011)
+                    break
+
     def _perform_save(self, filepath: str):
         """Write the voyage data to the specified file."""
         # Ensure .voyage extension
         if not filepath.endswith('.voyage'):
             filepath += '.voyage'
+        
+        # Sync calculated MT AIR from voyage tank readings to stowage plan
+        self._sync_stowage_plan_quantities()
         
         # Create unified save structure
         save_data = {

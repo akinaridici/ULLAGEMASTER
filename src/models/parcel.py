@@ -18,7 +18,9 @@ class Parcel:
         density_vac: Vacuum density in kg/m³
         color: Hex color for UI display (e.g., "#FF5733")
         bl_loading: B/L figure for loading operations (MT AIR)
-        bl_discharging: B/L figure for discharging operations (MT AIR)
+        bl_discharging: B/L figure for discharging operations (MT AIR) - DEPRECATED
+        ship_figure_loading: Ship figure at loading port for discharging ops
+        outturn_figure: Outturn figure for discharging ops
     """
     id: str
     name: str = ""
@@ -26,7 +28,9 @@ class Parcel:
     density_vac: float = 0.0
     color: str = "#3B82F6"  # Default blue
     bl_loading: float = 0.0  # B/L figure for loading
-    bl_discharging: float = 0.0  # B/L figure for discharging
+    bl_discharging: float = 0.0  # B/L figure for discharging (kept for backward compat)
+    ship_figure_loading: float = 0.0  # Ship figure at loading port (for discharging ops)
+    outturn_figure: float = 0.0  # Outturn figure (for discharging ops)
     
     def to_dict(self) -> dict:
         """Convert parcel to dictionary for JSON serialization."""
@@ -38,6 +42,8 @@ class Parcel:
             'color': self.color,
             'bl_loading': self.bl_loading,
             'bl_discharging': self.bl_discharging,
+            'ship_figure_loading': self.ship_figure_loading,
+            'outturn_figure': self.outturn_figure,
         }
     
     @classmethod
@@ -51,6 +57,8 @@ class Parcel:
             color=data.get('color', '#3B82F6'),
             bl_loading=data.get('bl_loading', 0.0),
             bl_discharging=data.get('bl_discharging', 0.0),
+            ship_figure_loading=data.get('ship_figure_loading', 0.0),
+            outturn_figure=data.get('outturn_figure', 0.0),
         )
     
     @classmethod

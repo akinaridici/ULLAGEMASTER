@@ -21,7 +21,9 @@
         "density_vac": 0.7377,
         "color": "#FF6B6B",
         "bl_loading": 2544.0,
-        "bl_discharging": 0.0
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 2554.664,
+        "outturn_figure": 0.0
       },
       {
         "id": "2",
@@ -30,7 +32,9 @@
         "density_vac": 0.7377,
         "color": "#4ECDC4",
         "bl_loading": 2547.0,
-        "bl_discharging": 0.0
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
       },
       {
         "id": "3",
@@ -39,7 +43,9 @@
         "density_vac": 0.7377,
         "color": "#00aa00",
         "bl_loading": 3948.0,
-        "bl_discharging": 0.0
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
       },
       {
         "id": "4",
@@ -48,7 +54,9 @@
         "density_vac": 0.7377,
         "color": "#ffaa00",
         "bl_loading": 933.0,
-        "bl_discharging": 0.0
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
       },
       {
         "id": "5",
@@ -57,7 +65,9 @@
         "density_vac": 0.7377,
         "color": "#FFEAA7",
         "bl_loading": 989.0,
-        "bl_discharging": 0.0
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
       },
       {
         "id": "6",
@@ -66,7 +76,9 @@
         "density_vac": 0.7377,
         "color": "#DDA0DD",
         "bl_loading": 1197.0,
-        "bl_discharging": 0.0
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
       },
       {
         "id": "7",
@@ -75,7 +87,9 @@
         "density_vac": 0.7377,
         "color": "#F7DC6F",
         "bl_loading": 1171.0,
-        "bl_discharging": 0.0
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
       },
       {
         "id": "8",
@@ -84,21 +98,23 @@
         "density_vac": 0.8326,
         "color": "#00557f",
         "bl_loading": 2438.0,
-        "bl_discharging": 0.0
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
       }
     ],
     "tank_readings": {
       "1P": {
         "tank_id": "1P",
         "parcel_id": "1",
-        "ullage": 105.0,
-        "temp_celsius": 18.0,
+        "ullage": 104.0,
+        "temp_celsius": 19.0,
         "density_vac": 0.7377
       },
       "1S": {
         "tank_id": "1S",
         "parcel_id": "2",
-        "ullage": 105.0,
+        "ullage": 103.0,
         "temp_celsius": 18.0,
         "density_vac": 0.7377
       },
@@ -161,15 +177,15 @@
       "6P": {
         "tank_id": "6P",
         "parcel_id": "1",
-        "ullage": 113.0,
-        "temp_celsius": 18.0,
+        "ullage": 112.0,
+        "temp_celsius": 18.5,
         "density_vac": 0.7377
       },
       "6S": {
         "tank_id": "6S",
         "parcel_id": "1",
-        "ullage": 113.0,
-        "temp_celsius": 18.0,
+        "ullage": 112.0,
+        "temp_celsius": 18.7,
         "density_vac": 0.7377
       },
       "7P": {
@@ -216,8 +232,8 @@
       }
     },
     "totals": {
-      "gsv": 21017.628973079998,
-      "mt": 15759.82958915601
+      "gsv": 21019.43351007,
+      "mt": 15761.158811102843
     },
     "notes": "Sadece KBZ ve MOTORİN.\nAliağa yükleme->Mersin ve Antalya tahliye\nPSC geldi.\nAtaş inertli tahliye."
   },
@@ -230,7 +246,7 @@
       {
         "unique_id": "3e8f7630-dd31-452d-8641-631bce7b9078",
         "cargo_type": "KBZ",
-        "quantity": 3468.183084808,
+        "quantity": 3455.6877099900003,
         "receivers": [
           {
             "name": "MERSİN TÜPRAŞ"
@@ -242,7 +258,7 @@
       {
         "unique_id": "adbe77aa-8177-44b9-9c2b-6ceb7d51caae",
         "cargo_type": "KBZ",
-        "quantity": 3467.95609979,
+        "quantity": 3456.5921127,
         "receivers": [
           {
             "name": "MERSİN OPET"
@@ -254,7 +270,7 @@
       {
         "unique_id": "dc547d2b-81ee-4eb1-b243-63a2b1fba619",
         "cargo_type": "KBZ",
-        "quantity": 5381.376805688,
+        "quantity": 5361.4649088,
         "receivers": [
           {
             "name": "MERSİN SHELL"
@@ -266,7 +282,7 @@
       {
         "unique_id": "0df78659-1f3f-4718-8f2f-e70d946e5a0e",
         "cargo_type": "KBZ",
-        "quantity": 1268.8512502899998,
+        "quantity": 1264.1562513000001,
         "receivers": [
           {
             "name": "MERSİN POAS"
@@ -278,7 +294,7 @@
       {
         "unique_id": "57afe36b-9caf-4cc4-a35e-94f745831670",
         "cargo_type": "KBZ",
-        "quantity": 1346.6661141700001,
+        "quantity": 1341.6833358,
         "receivers": [
           {
             "name": "ANTALYA OPET"
@@ -290,7 +306,7 @@
       {
         "unique_id": "b553df1f-c1ae-4b96-b9f2-2f2e5e852ebd",
         "cargo_type": "KBZ",
-        "quantity": 1627.7925586,
+        "quantity": 1621.7691696,
         "receivers": [
           {
             "name": "ANTALYA SHELL"
@@ -302,7 +318,7 @@
       {
         "unique_id": "7d9ffc58-32aa-4759-9ec2-c192b022a0e3",
         "cargo_type": "KBZ",
-        "quantity": 1591.998921136,
+        "quantity": 1586.1086037,
         "receivers": [
           {
             "name": "ANTALYA POAS"
@@ -314,7 +330,7 @@
       {
         "unique_id": "4e880653-8e67-4646-ae28-33827816b3f7",
         "cargo_type": "MOTORİN",
-        "quantity": 2939.52597848,
+        "quantity": 2931.97141818,
         "receivers": [
           {
             "name": "ANTALYA OPET"

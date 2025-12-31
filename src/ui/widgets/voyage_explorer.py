@@ -40,9 +40,12 @@ class ParcelSummaryCard(QLabel):
         text = f"{name}"
         if receiver and receiver != "Genel":
             text += f" ({receiver})"
-        text += f": {qty:,.3f} MT"
+        text += f": {qty:.3f} MT"
         
         self.setText(text)
+        # Enable text selection with mouse for copy
+        self.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.setCursor(Qt.CursorShape.IBeamCursor)
         self.setStyleSheet(f"""
             ParcelSummaryCard {{
                 background-color: {color};
@@ -384,6 +387,11 @@ class VoyageExplorerWidget(QWidget):
             if widget:
                 widget.deleteLater()
 
+    def refresh_preview(self):
+        """Re-load preview for currently selected file (used when switching back to tab after save)."""
+        if self.current_path and os.path.exists(self.current_path):
+            self._load_preview(self.current_path)
+
     def _load_preview(self, filepath):
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
@@ -399,31 +407,36 @@ class VoyageExplorerWidget(QWidget):
             self.notes_edit.setText(notes)
             self.save_note_btn.setEnabled(True)
             
-            # Cargo Summary
+            # Cargo Summary - Use stowage plan for quantities, voyage parcels for colors
             self._clear_totals()
+            parcels_data = v_data.get('parcels', [])
+            
+            # Build parcel color map from voyage parcels
+            parcel_colors = {}
+            for p in parcels_data:
+                key = (p.get('name', ''), p.get('receiver', ''))
+                parcel_colors[key] = p.get('color', '#E0E0E0')
+            
             if s_data and 'cargo_requests' in s_data:
                 cargos = s_data['cargo_requests']
                 for i, c in enumerate(cargos):
                     name = c.get('cargo_type', 'Unknown')
                     qty = c.get('quantity', 0)
-                    density = c.get('density', 0.85) # VAC density
+                    density = c.get('density', 0.85)
                     
                     # Calculate MT Air
-                    # MT = Vol * (Density_vac - 0.0011)
                     mt_air = qty * (density - 0.0011)
                     
-                    # Parse receivers list from dict
+                    # Parse receivers
                     receivers_list = c.get('receivers', [])
                     rec_names = [r.get('name', '') for r in receivers_list]
                     rec = ", ".join(rec_names) if rec_names else ""
                     
-                    # Determine color
-                    color = "#E0E0E0"
+                    # Get color from voyage parcels if available, otherwise use palette
+                    color = parcel_colors.get((name, rec), CARGO_COLORS[i % len(CARGO_COLORS)])
                     if 'custom_color' in c and c['custom_color']:
                         color = c['custom_color']
-                    else:
-                        color = CARGO_COLORS[i % len(CARGO_COLORS)]
-                        
+                    
                     card = ParcelSummaryCard(name, mt_air, rec, color)
                     self.totals_layout.addWidget(card)
             else:
