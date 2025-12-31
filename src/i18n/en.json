@@ -1,7 +1,6 @@
 {
   "app_name": "UllageMaster",
   "language": "English",
-  
   "menu": {
     "file": "File",
     "new_voyage": "New Voyage",
@@ -19,12 +18,12 @@
     "help": "Help",
     "about": "About"
   },
-  
   "header": {
     "loading_port": "Loading Port",
     "loading_terminal": "Loading Terminal",
     "voyage_no": "Voyage No",
     "date": "Date",
+    "bl_date": "B/L Date",
     "vef": "V.E.F.",
     "draft_aft": "Draft AFT",
     "draft_fwd": "Draft FWD",
@@ -32,7 +31,6 @@
     "present_port": "Present Port",
     "present_terminal": "Present Terminal"
   },
-  
   "grid": {
     "tank_no": "Tank No",
     "parcel": "Parcel",
@@ -55,7 +53,6 @@
     "bl_figure": "B/L Figure",
     "discrepancy": "Discrepancy"
   },
-  
   "footer": {
     "total_gsv": "Total GSV",
     "total_mt": "Total MT",
@@ -66,7 +63,6 @@
     "stowage_plan": "Stowage Plan",
     "total_ullage_report": "Total Ullage Report"
   },
-  
   "dialogs": {
     "ship_setup_title": "Ship Configuration",
     "ship_name": "Ship Name",
@@ -78,7 +74,6 @@
     "cancel": "Cancel",
     "ok": "OK"
   },
-  
   "settings": {
     "title": "Settings",
     "language": "Language",
@@ -87,14 +82,12 @@
     "imperial": "Imperial (BBL, °F, API)",
     "default_vef": "Default V.E.F."
   },
-  
   "warnings": {
     "high_high": "HIGH HIGH - Loading must stop!",
     "high": "HIGH - Approaching maximum level",
     "low": "LOW - Slosh effect warning",
     "normal": ""
   },
-  
   "messages": {
     "save_success": "Voyage saved successfully",
     "save_error": "Error saving voyage",
@@ -105,7 +98,6 @@
     "invalid_input": "Invalid input value",
     "missing_table": "Ullage table not loaded for this tank"
   },
-  
   "units": {
     "cm": "cm",
     "m": "m",

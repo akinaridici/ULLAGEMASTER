@@ -2,14 +2,14 @@
   "version": "2.0",
   "voyage": {
     "voyage_number": "2021_SON",
-    "date": "28-12-2025",
-    "port": "ALİAĞA",
-    "terminal": "TÜPRAŞ",
+    "date": "31-12-2025",
+    "port": "ALİAĞAA",
+    "terminal": "TÜPRAŞŞ",
     "vef": 0.9996,
     "drafts": {
-      "aft": 8.75,
+      "aft": 9.0,
       "fwd": 8.75,
-      "trim": 0.0
+      "trim": 0.25
     },
     "chief_officer": "Harun Kurtuluş",
     "master": "Akın Arıdıcı",
@@ -20,10 +20,10 @@
         "receiver": "MERSİN TÜPRAŞ",
         "density_vac": 0.7377,
         "color": "#FF6B6B",
-        "bl_loading": 2544.0,
+        "bl_loading": 2541.0,
         "bl_discharging": 0.0,
         "ship_figure_loading": 2554.664,
-        "outturn_figure": 0.0
+        "outturn_figure": 2540.0
       },
       {
         "id": "2",
@@ -31,10 +31,10 @@
         "receiver": "MERSİN OPET",
         "density_vac": 0.7377,
         "color": "#4ECDC4",
-        "bl_loading": 2547.0,
+        "bl_loading": 2542.0,
         "bl_discharging": 0.0,
-        "ship_figure_loading": 0.0,
-        "outturn_figure": 0.0
+        "ship_figure_loading": 2544.0,
+        "outturn_figure": 2540.0
       },
       {
         "id": "3",
@@ -42,10 +42,10 @@
         "receiver": "MERSİN SHELL",
         "density_vac": 0.7377,
         "color": "#00aa00",
-        "bl_loading": 3948.0,
+        "bl_loading": 3944.0,
         "bl_discharging": 0.0,
-        "ship_figure_loading": 0.0,
-        "outturn_figure": 0.0
+        "ship_figure_loading": 3940.0,
+        "outturn_figure": 3939.0
       },
       {
         "id": "4",
@@ -53,10 +53,10 @@
         "receiver": "MERSİN POAS",
         "density_vac": 0.7377,
         "color": "#ffaa00",
-        "bl_loading": 933.0,
+        "bl_loading": 930.0,
         "bl_discharging": 0.0,
-        "ship_figure_loading": 0.0,
-        "outturn_figure": 0.0
+        "ship_figure_loading": 932.0,
+        "outturn_figure": 929.0
       },
       {
         "id": "5",
@@ -64,10 +64,10 @@
         "receiver": "ANTALYA OPET",
         "density_vac": 0.7377,
         "color": "#FFEAA7",
-        "bl_loading": 989.0,
+        "bl_loading": 987.0,
         "bl_discharging": 0.0,
-        "ship_figure_loading": 0.0,
-        "outturn_figure": 0.0
+        "ship_figure_loading": 990.0,
+        "outturn_figure": 986.0
       },
       {
         "id": "6",
@@ -77,8 +77,8 @@
         "color": "#DDA0DD",
         "bl_loading": 1197.0,
         "bl_discharging": 0.0,
-        "ship_figure_loading": 0.0,
-        "outturn_figure": 0.0
+        "ship_figure_loading": 1200.0,
+        "outturn_figure": 1195.0
       },
       {
         "id": "7",
@@ -88,8 +88,8 @@
         "color": "#F7DC6F",
         "bl_loading": 1171.0,
         "bl_discharging": 0.0,
-        "ship_figure_loading": 0.0,
-        "outturn_figure": 0.0
+        "ship_figure_loading": 1168.0,
+        "outturn_figure": 1168.0
       },
       {
         "id": "8",
@@ -97,10 +97,10 @@
         "receiver": "ANTALYA OPET",
         "density_vac": 0.8326,
         "color": "#00557f",
-        "bl_loading": 2438.0,
+        "bl_loading": 2439.0,
         "bl_discharging": 0.0,
-        "ship_figure_loading": 0.0,
-        "outturn_figure": 0.0
+        "ship_figure_loading": 2436.0,
+        "outturn_figure": 2438.0
       }
     ],
     "tank_readings": {
@@ -232,8 +232,8 @@
       }
     },
     "totals": {
-      "gsv": 21019.43351007,
-      "mt": 15761.158811102843
+      "gsv": 21021.828437329998,
+      "mt": 15762.984914272645
     },
     "notes": "Sadece KBZ ve MOTORİN.\nAliağa yükleme->Mersin ve Antalya tahliye\nPSC geldi.\nAtaş inertli tahliye."
   },
@@ -246,7 +246,7 @@
       {
         "unique_id": "3e8f7630-dd31-452d-8641-631bce7b9078",
         "cargo_type": "KBZ",
-        "quantity": 3455.6877099900003,
+        "quantity": 3455.6927697,
         "receivers": [
           {
             "name": "MERSİN TÜPRAŞ"
@@ -258,7 +258,7 @@
       {
         "unique_id": "adbe77aa-8177-44b9-9c2b-6ceb7d51caae",
         "cargo_type": "KBZ",
-        "quantity": 3456.5921127,
+        "quantity": 3456.7455428999997,
         "receivers": [
           {
             "name": "MERSİN OPET"
@@ -270,7 +270,7 @@
       {
         "unique_id": "dc547d2b-81ee-4eb1-b243-63a2b1fba619",
         "cargo_type": "KBZ",
-        "quantity": 5361.4649088,
+        "quantity": 5361.999921899999,
         "receivers": [
           {
             "name": "MERSİN SHELL"
@@ -282,7 +282,7 @@
       {
         "unique_id": "0df78659-1f3f-4718-8f2f-e70d946e5a0e",
         "cargo_type": "KBZ",
-        "quantity": 1264.1562513000001,
+        "quantity": 1264.3834077,
         "receivers": [
           {
             "name": "MERSİN POAS"
@@ -306,7 +306,7 @@
       {
         "unique_id": "b553df1f-c1ae-4b96-b9f2-2f2e5e852ebd",
         "cargo_type": "KBZ",
-        "quantity": 1621.7691696,
+        "quantity": 1621.8857366999998,
         "receivers": [
           {
             "name": "ANTALYA SHELL"
@@ -318,7 +318,7 @@
       {
         "unique_id": "7d9ffc58-32aa-4759-9ec2-c192b022a0e3",
         "cargo_type": "KBZ",
-        "quantity": 1586.1086037,
+        "quantity": 1586.8129877999997,
         "receivers": [
           {
             "name": "ANTALYA POAS"
@@ -330,7 +330,7 @@
       {
         "unique_id": "4e880653-8e67-4646-ae28-33827816b3f7",
         "cargo_type": "MOTORİN",
-        "quantity": 2931.97141818,
+        "quantity": 2932.62473483,
         "receivers": [
           {
             "name": "ANTALYA OPET"

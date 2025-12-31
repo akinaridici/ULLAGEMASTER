@@ -303,7 +303,7 @@ class ReportFunctionsWidget(QWidget):
         self.slop_label_edit.setPlaceholderText("SLOP / WASHING WATER")
         self.slop_label_edit.setText("SLOP")
         
-        info_layout.addWidget(QLabel("Date:"), 4, 0)
+        info_layout.addWidget(QLabel("Report Date:"), 4, 0)
         info_layout.addWidget(self.date_edit, 4, 1)
         info_layout.addWidget(QLabel("SLOP Label:"), 4, 2)
         info_layout.addWidget(self.slop_label_edit, 4, 3)

@@ -217,8 +217,8 @@ class ParcelDiscrepancyCard(QFrame):
         ship_with = ship_wo * self.vef
         
         # Differences
-        diff_wo = bl - ship_wo
-        diff_with = bl - ship_with
+        diff_wo = ship_wo - bl    # #3: Ship W/O VEF - B/L
+        diff_with = ship_with - bl  # #6: Ship with VEF - B/L
         
         # Per mille (‰) = (diff / bl) * 1000
         diff_pct_wo = (diff_wo / bl) * 1000 if bl != 0 else 0.0
@@ -386,7 +386,7 @@ class DischargingDiscrepancyCard(QFrame):
         row += 1
         
         # Row 2: Ship Figure Loading Port (input)
-        lbl = QLabel("2. Ship Figure Loading Port (W VEF)")
+        lbl = QLabel("2. Ship Figure Loading Port (W/O VEF)")
         lbl.setStyleSheet(label_style)
         grid.addWidget(lbl, row, 0)
         self.ship_loading_input = QLineEdit()
@@ -552,16 +552,16 @@ class DischargingDiscrepancyCard(QFrame):
         # Row 5: Transit Loss = #3 - #2 (Ship Arrival - Ship Loading)
         transit_loss = ship_arrival - ship_load
         
-        # Row 6: Arrival-BL diff W/O VEF ‰ = ((#1 - #3) / #1) * 1000
-        arrival_bl_wo_pct = ((bl - ship_arrival) / bl) * 1000 if bl != 0 else 0.0
+        # Row 6: Arrival-BL diff W/O VEF ‰ = ((#3 - #1) / #1) * 1000
+        arrival_bl_wo_pct = ((ship_arrival - bl) / bl) * 1000 if bl != 0 else 0.0
         
-        # Row 7: Arrival-BL diff VEF ‰ = ((#1 - #4) / #1) * 1000
-        arrival_bl_vef_pct = ((bl - ship_arrival_vef) / bl) * 1000 if bl != 0 else 0.0
+        # Row 7: Arrival-BL diff VEF ‰ = ((#4 - #1) / #1) * 1000
+        arrival_bl_vef_pct = ((ship_arrival_vef - bl) / bl) * 1000 if bl != 0 else 0.0
         
         outturn = self.outturn                 # Row 8
         
-        # Row 9: Outturn-BL Diff = #1 - #8
-        outturn_bl_diff = bl - outturn
+        # Row 9: Outturn-BL Diff = #8 - #1
+        outturn_bl_diff = outturn - bl
         
         # Row 10: Outturn-BL Diff ‰ = (#9 / #1) * 1000
         outturn_bl_diff_pct = (outturn_bl_diff / bl) * 1000 if bl != 0 else 0.0
@@ -654,6 +654,11 @@ class DiscrepancyWidget(QWidget):
                 color: #22c55e;
             }
         """)
+        # Add context menu for Protest All
+        loading_group.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        loading_group.customContextMenuRequested.connect(
+            lambda pos: self._show_protest_all_menu(pos, loading_group, "loading")
+        )
         loading_layout = QVBoxLayout(loading_group)
         
         self.loading_scroll = QScrollArea()
@@ -689,6 +694,11 @@ class DiscrepancyWidget(QWidget):
                 color: #ef4444;
             }
         """)
+        # Add context menu for Protest All
+        discharging_group.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        discharging_group.customContextMenuRequested.connect(
+            lambda pos: self._show_protest_all_menu(pos, discharging_group, "discharging")
+        )
         discharging_layout = QVBoxLayout(discharging_group)
         
         self.discharging_scroll = QScrollArea()
@@ -780,6 +790,7 @@ class DiscrepancyWidget(QWidget):
                 loading_card.set_bl_figure(parcel.bl_loading)
             # Connect signal to save B/L value and update Discharging card
             loading_card.bl_figure_changed.connect(self._on_loading_bl_changed)
+            loading_card.protest_requested.connect(self._on_protest_requested)
             self.loading_flow.insertWidget(self.loading_flow.count() - 1, loading_card)
             self.loading_cards[parcel.id] = loading_card
             
@@ -794,6 +805,7 @@ class DiscrepancyWidget(QWidget):
             # Connect signals to save values
             discharging_card.ship_loading_changed.connect(self._on_ship_loading_changed)
             discharging_card.outturn_changed.connect(self._on_outturn_changed)
+            discharging_card.protest_requested.connect(self._on_protest_requested)
             self.discharging_flow.insertWidget(self.discharging_flow.count() - 1, discharging_card)
             self.discharging_cards[parcel.id] = discharging_card
     
@@ -843,3 +855,270 @@ class DiscrepancyWidget(QWidget):
             
             if parcel.id in self.discharging_cards:
                 self.discharging_cards[parcel.id].update_ship_arrival(ship_figure, vef)
+    
+    def _on_protest_requested(self, parcel_id: str, operation_type: str):
+        """Handle protest request - generate PDF protest letter."""
+        import os
+        import subprocess
+        from datetime import datetime
+        from PyQt6.QtWidgets import QMessageBox
+        from reporting.protest_pdf import ProtestPDFReport
+        
+        if not self.voyage:
+            return
+        
+        # Find the parcel
+        parcel = None
+        for p in self.voyage.parcels:
+            if p.id == parcel_id:
+                parcel = p
+                break
+        
+        if not parcel:
+            return
+        
+        # Get vessel name from main window if available
+        vessel_name = "UNKNOWN VESSEL"
+        main_window = self.window()
+        if hasattr(main_window, 'ship_config') and main_window.ship_config:
+            vessel_name = main_window.ship_config.ship_name.replace("M/T ", "")
+        
+        # Collect parcel data based on operation type
+        if operation_type == "loading":
+            card = self.loading_cards.get(parcel_id)
+            if not card:
+                return
+            parcel_data = {
+                'name': parcel.name,
+                'receiver': parcel.receiver,
+                'bl_figure': card.bl_figure,
+                'ship_wo_vef': card.ship_figure,
+                'diff_wo_vef': card.ship_figure - card.bl_figure,  # #3: Ship - B/L
+                'diff_pct_wo_vef': ((card.ship_figure - card.bl_figure) / card.bl_figure * 1000) if card.bl_figure else 0,
+                'ship_with_vef': card.ship_figure * card.vef,
+                'diff_with_vef': (card.ship_figure * card.vef) - card.bl_figure,  # #6: Ship with VEF - B/L
+                'diff_pct_with_vef': (((card.ship_figure * card.vef) - card.bl_figure) / card.bl_figure * 1000) if card.bl_figure else 0,
+            }
+        else:  # discharging
+            card = self.discharging_cards.get(parcel_id)
+            if not card:
+                return
+            vef = card.vef if card.vef else 1.0
+            bl = card.bl_figure
+            ship_arrival = card.ship_arrival
+            ship_arrival_vef = ship_arrival / vef if vef else ship_arrival
+            outturn = card.outturn
+            
+            parcel_data = {
+                'name': parcel.name,
+                'receiver': parcel.receiver,
+                'bl_figure': bl,                                                     # #1
+                'ship_arrival': ship_arrival,                                        # #3
+                'arrival_bl_wo_pct': ((ship_arrival - bl) / bl * 1000) if bl else 0, # #6 - updated formula
+                'ship_arrival_vef': ship_arrival_vef,                                # #4
+                'arrival_bl_vef_pct': ((ship_arrival_vef - bl) / bl * 1000) if bl else 0, # #7 - updated formula
+                'outturn': outturn,                                                  # #8
+                'outturn_bl_diff': outturn - bl,                                     # #9
+                'outturn_bl_pct': ((outturn - bl) / bl * 1000) if bl else 0,         # #10
+            }
+        
+        # Voyage data - sources differ by operation type
+        voyage_data = {
+            'voyage_number': self.voyage.voyage_number,
+            'bl_date': self.voyage.date,  # B/L Date - always from Ullage Calculation
+            'report_date': '',  # Report Date - source depends on operation_type
+            'port': '',
+            'terminal': '',
+        }
+        
+        # Get values from main window UI
+        if main_window:
+            # B/L Date from Ullage Calculation date picker (for top date in cargo table)
+            if hasattr(main_window, 'date_edit') and main_window.date_edit:
+                try:
+                    voyage_data['bl_date'] = main_window.date_edit.date().toString('dd-MM-yyyy')
+                except:
+                    pass
+            
+            if operation_type == "loading":
+                # LOADING OPS: All data from Ullage Calculation tab
+                voyage_data['report_date'] = voyage_data['bl_date']  # Same as B/L Date
+                voyage_data['port'] = self.voyage.port or ''
+                voyage_data['terminal'] = self.voyage.terminal or ''
+            else:
+                # DISCHARGING OPS: port/terminal/report_date from Report Functions tab
+                if hasattr(main_window, 'report_tab') and main_window.report_tab:
+                    try:
+                        voyage_data['port'] = main_window.report_tab.port_edit.currentText() or ''
+                    except:
+                        pass
+                    try:
+                        voyage_data['terminal'] = main_window.report_tab.terminal_edit.currentText() or ''
+                    except:
+                        pass
+                    try:
+                        voyage_data['report_date'] = main_window.report_tab.date_edit.date().toString('dd-MM-yyyy')
+                    except:
+                        pass
+        
+        # Generate filename and path
+        reports_dir = os.path.join(os.getcwd(), 'REPORTS')
+        os.makedirs(reports_dir, exist_ok=True)
+        
+        safe_name = f"{parcel.name}_{parcel.receiver}".replace(" ", "_").replace("/", "-")
+        filename = f"{self.voyage.voyage_number}_{safe_name}_{operation_type}_Protest.pdf"
+        output_path = os.path.join(reports_dir, filename)
+        
+        try:
+            # Generate the PDF
+            report = ProtestPDFReport(output_path, vessel_name, parcel_data, operation_type, voyage_data)
+            report.generate()
+            
+            # Open the PDF
+            if os.name == 'nt':  # Windows
+                os.startfile(output_path)
+            else:  # Linux/Mac
+                subprocess.run(['xdg-open', output_path])
+            
+            QMessageBox.information(self, "Protest Letter", f"Protest letter generated:\n{filename}")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to generate protest letter:\n{e}")
+    
+    def _show_protest_all_menu(self, pos, widget, operation_type: str):
+        """Show context menu with Protest All option for group header."""
+        menu = QMenu(self)
+        protest_all_action = QAction("📋 Protest All", self)
+        protest_all_action.triggered.connect(lambda: self._on_protest_all_requested(operation_type))
+        menu.addAction(protest_all_action)
+        menu.exec(widget.mapToGlobal(pos))
+    
+    def _on_protest_all_requested(self, operation_type: str):
+        """Handle protest all request - generate multi-page PDF with all parcels."""
+        import os
+        import subprocess
+        from datetime import datetime
+        from PyQt6.QtWidgets import QMessageBox
+        from reporting.protest_pdf import ProtestPDFReport
+        
+        if not self.voyage:
+            return
+        
+        # Get vessel name
+        vessel_name = "UNKNOWN VESSEL"
+        main_window = self.window()
+        if hasattr(main_window, 'ship_config') and main_window.ship_config:
+            vessel_name = main_window.ship_config.ship_name.replace("M/T ", "")
+        
+        # Collect all parcel data
+        parcel_data_list = []
+        cards = self.loading_cards if operation_type == "loading" else self.discharging_cards
+        
+        for parcel_id, card in cards.items():
+            # Find the parcel
+            parcel = None
+            for p in self.voyage.parcels:
+                if p.id == parcel_id:
+                    parcel = p
+                    break
+            if not parcel:
+                continue
+            
+            # Build parcel_data based on operation type
+            if operation_type == "loading":
+                parcel_data = {
+                    'name': parcel.name,
+                    'receiver': parcel.receiver,
+                    'bl_figure': card.bl_figure,
+                    'ship_wo_vef': card.ship_figure,
+                    'diff_wo_vef': card.ship_figure - card.bl_figure,
+                    'diff_pct_wo_vef': ((card.ship_figure - card.bl_figure) / card.bl_figure * 1000) if card.bl_figure else 0,
+                    'ship_with_vef': card.ship_figure * card.vef,
+                    'diff_with_vef': (card.ship_figure * card.vef) - card.bl_figure,
+                    'diff_pct_with_vef': (((card.ship_figure * card.vef) - card.bl_figure) / card.bl_figure * 1000) if card.bl_figure else 0,
+                }
+            else:  # discharging
+                vef = card.vef if card.vef else 1.0
+                bl = card.bl_figure
+                ship_arrival = card.ship_arrival
+                ship_arrival_vef = ship_arrival / vef if vef else ship_arrival
+                outturn = card.outturn
+                
+                parcel_data = {
+                    'name': parcel.name,
+                    'receiver': parcel.receiver,
+                    'bl_figure': bl,
+                    'ship_arrival': ship_arrival,
+                    'arrival_bl_wo_pct': ((ship_arrival - bl) / bl * 1000) if bl else 0,
+                    'ship_arrival_vef': ship_arrival_vef,
+                    'arrival_bl_vef_pct': ((ship_arrival_vef - bl) / bl * 1000) if bl else 0,
+                    'outturn': outturn,
+                    'outturn_bl_diff': outturn - bl,
+                    'outturn_bl_pct': ((outturn - bl) / bl * 1000) if bl else 0,
+                }
+            
+            parcel_data_list.append(parcel_data)
+        
+        if not parcel_data_list:
+            QMessageBox.warning(self, "No Parcels", "No parcels found to generate protest letters.")
+            return
+        
+        # Build voyage_data based on operation type
+        voyage_data = {
+            'voyage_number': self.voyage.voyage_number,
+            'bl_date': self.voyage.date,
+            'report_date': '',
+            'port': '',
+            'terminal': '',
+        }
+        
+        if main_window:
+            # B/L Date from Ullage Calculation
+            if hasattr(main_window, 'date_edit') and main_window.date_edit:
+                try:
+                    voyage_data['bl_date'] = main_window.date_edit.date().toString('dd-MM-yyyy')
+                except:
+                    pass
+            
+            if operation_type == "loading":
+                # LOADING OPS: All from Ullage Calculation
+                voyage_data['report_date'] = voyage_data['bl_date']
+                voyage_data['port'] = self.voyage.port or ''
+                voyage_data['terminal'] = self.voyage.terminal or ''
+            else:
+                # DISCHARGING OPS: From Report Functions
+                if hasattr(main_window, 'report_tab') and main_window.report_tab:
+                    try:
+                        voyage_data['port'] = main_window.report_tab.port_edit.currentText() or ''
+                    except:
+                        pass
+                    try:
+                        voyage_data['terminal'] = main_window.report_tab.terminal_edit.currentText() or ''
+                    except:
+                        pass
+                    try:
+                        voyage_data['report_date'] = main_window.report_tab.date_edit.date().toString('dd-MM-yyyy')
+                    except:
+                        pass
+        
+        # Generate filename and path
+        reports_dir = os.path.join(os.getcwd(), 'REPORTS')
+        os.makedirs(reports_dir, exist_ok=True)
+        
+        filename = f"{self.voyage.voyage_number}_ALL_{operation_type}_Protest.pdf"
+        output_path = os.path.join(reports_dir, filename)
+        
+        try:
+            # Generate multi-page PDF
+            ProtestPDFReport.generate_multi(output_path, vessel_name, parcel_data_list, operation_type, voyage_data)
+            
+            # Open the PDF
+            if os.name == 'nt':
+                os.startfile(output_path)
+            else:
+                subprocess.run(['xdg-open', output_path])
+            
+            QMessageBox.information(self, "Protest All", f"Generated protest letters for {len(parcel_data_list)} parcels:\n{filename}")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to generate protest letters:\n{e}")

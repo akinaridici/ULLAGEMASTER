@@ -23,6 +23,7 @@
         "loading_terminal": "Yükleme Terminali",
         "voyage_no": "Sefer No",
         "date": "Tarih",
+        "bl_date": "B/L Tarih",
         "vef": "V.E.F.",
         "draft_aft": "Kıç Draft",
         "draft_fwd": "Baş Draft",

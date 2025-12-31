@@ -1227,7 +1227,7 @@ class MainWindow(QMainWindow):
         self.voyage_edit = QLineEdit()
         layout.addWidget(self.voyage_edit, 0, 5)
         
-        layout.addWidget(QLabel(t("date", "header")), 0, 6)
+        layout.addWidget(QLabel(t("bl_date", "header")), 0, 6)
         self.date_edit = QDateEdit()
         self.date_edit.setCalendarPopup(True)  # Enable dropdown calendar
         self.date_edit.setDisplayFormat("dd-MM-yyyy")
