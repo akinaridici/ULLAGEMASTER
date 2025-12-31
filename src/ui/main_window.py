@@ -115,6 +115,9 @@ class MainWindow(QMainWindow):
         self.original_cargo_colors: Dict[str, str] = {}
         self.original_custom_colors: Dict[str, Optional[str]] = {}
         
+        # Track current file path for reports
+        self.current_voyage_file: Optional[str] = None
+        
         # Setup UI
         self.setWindowTitle("UllageMaster - Tanker Cargo Calculator")
         self.setMinimumSize(1400, 800)
@@ -171,6 +174,11 @@ class MainWindow(QMainWindow):
         save_action.setShortcut(QKeySequence.StandardKey.Save)
         save_action.triggered.connect(self._save_voyage)
         file_menu.addAction(save_action)
+        
+        save_as_action = QAction("Save As...", self)
+        save_as_action.setShortcut("Ctrl+Shift+S")
+        save_as_action.triggered.connect(self._save_voyage_as)
+        file_menu.addAction(save_as_action)
         
         file_menu.addSeparator()
 
@@ -2177,8 +2185,15 @@ class MainWindow(QMainWindow):
             'mt_air': f"{total_mt_air:.3f}"
         }
         
+        
         # Generate with Save Dialog and Retry Logic
-        default_name = f"{self.voyage.voyage_number} TotalUllage.pdf"
+        if self.current_voyage_file:
+            # Use current filename as base
+            base = os.path.splitext(os.path.basename(self.current_voyage_file))[0]
+            default_name = f"{base} TotalUllage.pdf"
+        else:
+            default_name = f"{self.voyage.voyage_number} TotalUllage.pdf"
+            
         # Sanitize
         default_name = "".join(c for c in default_name if c.isalnum() or c in (' ', '.', '_', '-')).strip()
         
@@ -2354,8 +2369,38 @@ class MainWindow(QMainWindow):
             'remarks': ui_data['remarks']
         }
         
-        # Generate with Save Dialog
-        default_name = f"{self.voyage.voyage_number} SelectedParcels.pdf"
+        # Generate Default Filename
+        suffix = ""
+        # Check if all parcels are selected (compare counts)
+        # Note: self.voyage.parcels contains all defined parcels
+        if len(selected_ids) >= len(self.voyage.parcels):
+             suffix = "All Parcels"
+        else:
+             names = []
+             for pid in selected_ids:
+                 if pid == "0": # SLOP
+                      names.append("SLOP")
+                      continue
+                      
+                 parcel = self._get_parcel(pid)
+                 if parcel:
+                     p_name = parcel.name
+                     p_receiver = parcel.receiver
+                     if p_receiver:
+                         names.append(f"{p_name}_{p_receiver}")
+                     else:
+                         names.append(p_name)
+             
+             suffix = "_".join(names)
+
+        if self.current_voyage_file:
+            # Use current filename as base
+            base = os.path.splitext(os.path.basename(self.current_voyage_file))[0]
+            default_name = f"{base}_{suffix}.pdf"
+        else:
+            default_name = f"{self.voyage.voyage_number}_{suffix}.pdf"
+            
+        # Sanitize filename (keep alphanumeric, space, dot, underscore, dash)
         default_name = "".join(c for c in default_name if c.isalnum() or c in (' ', '.', '_', '-')).strip()
         
         # User requested specific REPORTS folder for PDF reports
@@ -2432,7 +2477,13 @@ class MainWindow(QMainWindow):
         ui_data = self.report_tab.get_report_data()
         
         # Generate with Save Dialog
-        default_name = f"{self.voyage.voyage_number} StowagePlan.pdf"
+        if self.current_voyage_file:
+            # Use current filename as base
+            base = os.path.splitext(os.path.basename(self.current_voyage_file))[0]
+            default_name = f"{base} StowagePlan.pdf"
+        else:
+            default_name = f"{self.voyage.voyage_number} StowagePlan.pdf"
+            
         default_name = "".join(c for c in default_name if c.isalnum() or c in (' ', '.', '_', '-')).strip()
         
         # User requested specific REPORTS folder for PDF reports
@@ -2528,6 +2579,10 @@ class MainWindow(QMainWindow):
         self.voyage_edit.clear()
         self.date_edit.setDate(datetime.now())
         self._populate_grid()
+        
+        # Reset current file
+        self.current_voyage_file = None
+        
         self.status_bar.showMessage("New voyage created")
     
     def _open_voyage(self):
@@ -2625,6 +2680,9 @@ class MainWindow(QMainWindow):
                     self.voyage.tank_readings
                 )
             
+            # Update current file path
+            self.current_voyage_file = filepath
+            
             self.status_bar.showMessage(f"Voyage loaded: {filepath}")
             return True
         except Exception as e:
@@ -2634,20 +2692,57 @@ class MainWindow(QMainWindow):
 
     
     def _save_voyage(self):
-        """Save current voyage with stowage plan to unified .voyage file."""
+        """Save current voyage to the open file, or Ask to Save As."""
         if not self.voyage:
             return
+
+        # Update voyage from UI before saving
+        self._save_voyage_data()
         
+        # If we have an open file, save directly to it
+        if self.current_voyage_file:
+             self._perform_save(self.current_voyage_file)
+        else:
+             # Otherwise, treat as Save As
+             self._save_voyage_as()
+
+    def _save_voyage_as(self):
+        """Save current voyage as a new file."""
+        if not self.voyage:
+            return
+            
         # Update voyage from UI
-        self.voyage.port = self.port_edit.text()
-        self.voyage.terminal = self.terminal_edit.text()
-        self.voyage.voyage_number = self.voyage_edit.text()
-        self.voyage.date = self.date_edit.date().toString("dd-MM-yyyy")
-        self.voyage.vef = self.vef_spin.value()
-        self.voyage.drafts.aft = self.draft_aft_spin.value()
-        self.voyage.drafts.fwd = self.draft_fwd_spin.value()
-        self.voyage.chief_officer = self.chief_officer_edit.text()
-        self.voyage.master = self.master_edit.text()
+        self._save_voyage_data()
+        
+        # Determine suggestion
+        if self.current_voyage_file:
+            # Use current filename
+            suggested_name = os.path.basename(self.current_voyage_file)
+        else:
+            # Fallback to voyage number
+            suggested_name = self.voyage.voyage_number or "voyage"
+            suggested_name = suggested_name.replace("/", "-").replace("\\", "-")
+            if not suggested_name.endswith('.voyage'):
+                suggested_name += ".voyage"
+        
+        # Use VOYAGES directory
+        default_dir = self._get_voyages_dir()
+        initial_path = os.path.join(default_dir, suggested_name)
+        
+        filepath, _ = QFileDialog.getSaveFileName(
+            self, "Save Voyage As", 
+            initial_path, 
+            "Voyage Files (*.voyage)"
+        )
+        
+        if filepath:
+            self._perform_save(filepath)
+
+    def _perform_save(self, filepath: str):
+        """Write the voyage data to the specified file."""
+        # Ensure .voyage extension
+        if not filepath.endswith('.voyage'):
+            filepath += '.voyage'
         
         # Create unified save structure
         save_data = {
@@ -2656,31 +2751,19 @@ class MainWindow(QMainWindow):
             "stowage_plan": self.stowage_plan.to_dict() if self.stowage_plan else None
         }
         
-        # Suggest filename based on voyage number
-        suggested_name = self.voyage.voyage_number or "voyage"
-        suggested_name = suggested_name.replace("/", "-").replace("\\", "-")
-        
-        # Use VOYAGES directory
-        default_dir = self._get_voyages_dir()
-        
-        filepath, _ = QFileDialog.getSaveFileName(
-            self, "Save Voyage", 
-            f"{default_dir}/{suggested_name}.voyage", 
-            "Voyage Files (*.voyage)"
-        )
-        if filepath:
-            # Ensure .voyage extension
-            if not filepath.endswith('.voyage'):
-                filepath += '.voyage'
+        try:
+            import json
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(save_data, f, indent=2, ensure_ascii=False)
             
+            # Update state
+            self.current_voyage_file = filepath
             self._update_last_dir(filepath)
-            try:
-                import json
-                with open(filepath, 'w', encoding='utf-8') as f:
-                    json.dump(save_data, f, indent=2, ensure_ascii=False)
-                self.status_bar.showMessage(f"Voyage saved: {filepath}")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to save voyage: {e}")
+            
+            self.status_bar.showMessage(f"Voyage saved: {filepath}")
+        except Exception as e:
+             QMessageBox.critical(self, "Error", f"Failed to save voyage: {e}")
+
     
     def _export(self, format_type: str):
         """Export voyage data."""
@@ -3107,8 +3190,9 @@ class MainWindow(QMainWindow):
             "• Ullage-to-volume conversion\n"
             "• Trim corrections\n"
             "• ASTM 54B VCF calculation\n"
-            "• Multi-format export\n"
-            "• English/Turkish UI"
+            "• Multi-format export\n\n"
+            "Developed by Akın KAPTAN\n"
+            "akinkaptan77@hotmail.com"
         )
     
     def _show_manual(self):

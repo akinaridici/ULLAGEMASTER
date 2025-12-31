@@ -311,6 +311,7 @@ class ReportFunctionsWidget(QWidget):
         # Row 5: Remarks
         self.remarks_edit = QTextEdit()
         self.remarks_edit.setMaximumHeight(80)
+        self.remarks_edit.setText("Moderate sea state")
         
         info_layout.addWidget(QLabel("Remarks:"), 5, 0)
         info_layout.addWidget(self.remarks_edit, 5, 1, 1, 3) # Span 3 cols

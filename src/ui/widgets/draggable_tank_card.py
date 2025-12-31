@@ -261,7 +261,7 @@ class DraggableTankCard(QGroupBox):
         except RuntimeError:
             event.ignore()
     
-    def dropEvent(self, drop_event):
+    def dropEvent(self, event):
         """
         Handle drop event.
         
@@ -273,11 +273,11 @@ class DraggableTankCard(QGroupBox):
         """
         try:
             if not self or not hasattr(self, 'tank'):
-                drop_event.ignore()
+                event.ignore()
                 return
             
             if self.is_excluded or self.is_fixed:
-                drop_event.ignore()
+                event.ignore()
                 return
             
             mime = event.mimeData()
