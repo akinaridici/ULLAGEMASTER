@@ -9,6 +9,7 @@ from .ship_schematic_widget import ShipSchematicWidget
 from .cargo_legend_widget import CargoLegendWidget, CargoInputDialog, DraggableCargoCard
 from .cargo_input_widget import CargoInputWidget, CargoEditDialog
 from .plan_viewer_widget import PlanViewerWidget
+from .discrepancy_widget import DiscrepancyWidget
 
 __all__ = [
     'DataEntryGrid', 
@@ -21,4 +22,6 @@ __all__ = [
     'CargoInputWidget',
     'CargoEditDialog',
     'PlanViewerWidget',
+    'DiscrepancyWidget',
 ]
+

@@ -5,7 +5,7 @@
     "date": "28-12-2025",
     "port": "ALİAĞA",
     "terminal": "TÜPRAŞ",
-    "vef": 1.0,
+    "vef": 0.9996,
     "drafts": {
       "aft": 8.75,
       "fwd": 8.75,
@@ -19,56 +19,72 @@
         "name": "KBZ",
         "receiver": "MERSİN TÜPRAŞ",
         "density_vac": 0.7377,
-        "color": "#FF6B6B"
+        "color": "#FF6B6B",
+        "bl_loading": 2544.0,
+        "bl_discharging": 0.0
       },
       {
         "id": "2",
         "name": "KBZ",
         "receiver": "MERSİN OPET",
         "density_vac": 0.7377,
-        "color": "#4ECDC4"
+        "color": "#4ECDC4",
+        "bl_loading": 2547.0,
+        "bl_discharging": 0.0
       },
       {
         "id": "3",
         "name": "KBZ",
         "receiver": "MERSİN SHELL",
         "density_vac": 0.7377,
-        "color": "#00aa00"
+        "color": "#00aa00",
+        "bl_loading": 3948.0,
+        "bl_discharging": 0.0
       },
       {
         "id": "4",
         "name": "KBZ",
         "receiver": "MERSİN POAS",
         "density_vac": 0.7377,
-        "color": "#ffaa00"
+        "color": "#ffaa00",
+        "bl_loading": 933.0,
+        "bl_discharging": 0.0
       },
       {
         "id": "5",
         "name": "KBZ",
         "receiver": "ANTALYA OPET",
         "density_vac": 0.7377,
-        "color": "#FFEAA7"
+        "color": "#FFEAA7",
+        "bl_loading": 989.0,
+        "bl_discharging": 0.0
       },
       {
         "id": "6",
         "name": "KBZ",
         "receiver": "ANTALYA SHELL",
         "density_vac": 0.7377,
-        "color": "#DDA0DD"
+        "color": "#DDA0DD",
+        "bl_loading": 1197.0,
+        "bl_discharging": 0.0
       },
       {
         "id": "7",
         "name": "KBZ",
         "receiver": "ANTALYA POAS",
         "density_vac": 0.7377,
-        "color": "#F7DC6F"
+        "color": "#F7DC6F",
+        "bl_loading": 1171.0,
+        "bl_discharging": 0.0
       },
       {
         "id": "8",
         "name": "MOTORİN",
         "receiver": "ANTALYA OPET",
         "density_vac": 0.8326,
-        "color": "#00557f"
+        "color": "#00557f",
+        "bl_loading": 2438.0,
+        "bl_discharging": 0.0
       }
     ],
     "tank_readings": {

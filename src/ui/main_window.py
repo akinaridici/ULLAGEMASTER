@@ -360,6 +360,11 @@ class MainWindow(QMainWindow):
         self.report_tab = ReportFunctionsWidget()
         self.tab_widget.addTab(self.report_tab, "📑 Report Functions")
         
+        # Tab 5: Discrepancy / Protests
+        from ui.widgets import DiscrepancyWidget
+        self.discrepancy_tab = DiscrepancyWidget()
+        self.tab_widget.addTab(self.discrepancy_tab, "⚖️ Discrepancy / Protests")
+        
         # Connect draft changes to report tab
         if hasattr(self, 'draft_fwd_spin') and hasattr(self, 'draft_aft_spin'):
             self.draft_fwd_spin.valueChanged.connect(self._sync_drafts_to_report)
@@ -397,6 +402,13 @@ class MainWindow(QMainWindow):
             fwd = self.draft_fwd_spin.value() if hasattr(self, 'draft_fwd_spin') else 0.0
             aft = self.draft_aft_spin.value() if hasattr(self, 'draft_aft_spin') else 0.0
             self.report_tab.update_drafts(fwd, aft)
+        
+        # Update Discrepancy tab if selected (Index 4)
+        if index == 4 and hasattr(self, 'discrepancy_tab') and hasattr(self, 'voyage'):
+            # Sync VEF from UI to voyage object before passing
+            if hasattr(self, 'vef_spin'):
+                self.voyage.vef = self.vef_spin.value()
+            self.discrepancy_tab.set_voyage(self.voyage)
     
     def _create_stowage_tab(self) -> QWidget:
         """Create the Stowage Planning tab with STOWAGEMASTER-style layout.
@@ -2363,6 +2375,32 @@ class MainWindow(QMainWindow):
         # 1. Collect Data from UI
         ui_data = self.report_tab.get_report_data()
         
+        # Build dynamic report_type title based on selected parcels
+        # 1. If all parcels selected → "ALL PARCELS"
+        # 2. If single parcel → "[Parcel Name - Receiver]"
+        # 3. If multiple parcels → "[Parcel1 - Receiver1] - [Parcel2 - Receiver2] - ..."
+        if len(selected_ids) >= len(self.voyage.parcels) and len(self.voyage.parcels) > 0:
+            report_type_title = "ALL PARCELS"
+        else:
+            parcel_names = []
+            for pid in selected_ids:
+                if pid == "0":  # SLOP
+                    parcel_names.append("SLOP")
+                else:
+                    parcel = self._get_parcel(pid)
+                    if parcel:
+                        name = parcel.name or ""
+                        receiver = parcel.receiver or ""
+                        if receiver:
+                            parcel_names.append(f"{name} - {receiver}")
+                        else:
+                            parcel_names.append(name)
+            
+            if len(parcel_names) == 1:
+                report_type_title = parcel_names[0]
+            else:
+                report_type_title = " / ".join(parcel_names)
+        
         # 2. Vessel Data
         vessel_data = {
             'name': self.ship_config.ship_name
@@ -2378,7 +2416,7 @@ class MainWindow(QMainWindow):
             'draft_fwd': ui_data['draft_fwd'],
             'draft_aft': ui_data['draft_aft'],
             'cargo': ui_data['cargo'],
-            'report_type': ui_data['report_type']
+            'report_type': report_type_title
         }
         
         # 4. Tank Data - Filter by selected parcels
