@@ -7,10 +7,10 @@ import json
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
     QLabel, QSplitter, QTextEdit, QPushButton, QFrame, QMessageBox,
-    QScrollArea, QSizePolicy
+    QScrollArea, QSizePolicy, QAbstractItemView, QMenu
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer, QRect, QSettings
-from PyQt6.QtGui import QColor, QPainter, QBrush, QPen, QFont
+from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer, QRect, QSettings, QEvent
+from PyQt6.QtGui import QColor, QPainter, QBrush, QPen, QFont, QAction, QKeySequence
 
 from models import ShipConfig
 from models.voyage import Voyage
@@ -227,6 +227,9 @@ class VoyageExplorerWidget(QWidget):
         
         left_layout.addWidget(QLabel("Saved Voyages"))
         self.file_list = QListWidget()
+        self.file_list.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.file_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.file_list.customContextMenuRequested.connect(self._show_context_menu)
         self.file_list.itemSelectionChanged.connect(self._on_selection_changed)
         self.file_list.itemDoubleClicked.connect(lambda item: self._on_load_clicked())
         left_layout.addWidget(self.file_list)
@@ -513,3 +516,46 @@ class VoyageExplorerWidget(QWidget):
         main_state = settings.value("main_splitter_state")
         if main_state:
             self.splitter.restoreState(main_state)
+        if main_state:
+            self.splitter.restoreState(main_state)
+            
+    def _show_context_menu(self, pos):
+        """Show context menu for list items."""
+        items = self.file_list.selectedItems()
+        if not items:
+            return
+            
+        menu = QMenu(self)
+        remove_action = QAction("❌ Remove from List", self)
+        remove_action.setShortcut(QKeySequence("Delete"))
+        remove_action.triggered.connect(self._remove_selected_voyages)
+        menu.addAction(remove_action)
+        
+        menu.exec(self.file_list.mapToGlobal(pos))
+        
+    def _remove_selected_voyages(self):
+        """Remove selected items from the list widget (files remain on disk)."""
+        items = self.file_list.selectedItems()
+        if not items:
+            return
+            
+        selected_filenames = [item.text() for item in items]
+        
+        # Check if current preview is among removed items
+        if self.current_path:
+            current_filename = os.path.basename(self.current_path)
+            if current_filename in selected_filenames:
+                self._clear_preview()
+        
+        # Remove items
+        for item in items:
+            self.file_list.takeItem(self.file_list.row(item))
+            
+    def keyPressEvent(self, event):
+        """Handle Delete key to remove items."""
+        if event.key() == Qt.Key.Key_Delete:
+            if self.file_list.hasFocus():
+                self._remove_selected_voyages()
+                event.accept()
+                return
+        super().keyPressEvent(event)

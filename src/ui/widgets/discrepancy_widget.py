@@ -150,11 +150,11 @@ class ParcelDiscrepancyCard(QFrame):
         
         # Difference W/O VEF ‰
         lbl = QLabel("Difference W/O VEF ‰")
-        lbl.setStyleSheet(label_style + "color: #dc2626;")  # Red text
+        lbl.setStyleSheet(label_style)
         grid.addWidget(lbl, row, 0)
         self.diff_pct_wo_vef_label = QLabel("0.000")
         self.diff_pct_wo_vef_label.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.diff_pct_wo_vef_label.setStyleSheet(value_style + "color: #dc2626;")
+        self.diff_pct_wo_vef_label.setStyleSheet(value_style)
         grid.addWidget(self.diff_pct_wo_vef_label, row, 1)
         row += 1
         
@@ -181,11 +181,11 @@ class ParcelDiscrepancyCard(QFrame):
         
         # Difference with VEF ‰
         lbl = QLabel("Difference with VEF ‰")
-        lbl.setStyleSheet(label_style + "color: #dc2626;")
+        lbl.setStyleSheet(label_style)
         grid.addWidget(lbl, row, 0)
         self.diff_pct_with_vef_label = QLabel("0.000")
         self.diff_pct_with_vef_label.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.diff_pct_with_vef_label.setStyleSheet(value_style + "color: #dc2626;")
+        self.diff_pct_with_vef_label.setStyleSheet(value_style)
         grid.addWidget(self.diff_pct_with_vef_label, row, 1)
         
         layout.addWidget(grid_widget)
@@ -231,19 +231,29 @@ class ParcelDiscrepancyCard(QFrame):
         self.diff_with_vef_label.setText(f"{diff_with:.3f}")
         self.diff_pct_with_vef_label.setText(f"{diff_pct_with:.3f}")
         
-        # Apply color coding to Difference with VEF ‰ based on absolute value
-        # |value| >= 3: RED, 2-3: ORANGE, 0-2: GREEN
-        abs_diff = abs(diff_pct_with)
-        if abs_diff >= 3:
-            color = "#dc2626"  # Red - Critical
-        elif abs_diff >= 2:
-            color = "#f97316"  # Orange - Warning
-        else:
-            color = "#22c55e"  # Green - Good
+        # Apply color coding based on absolute value
+        # |value| >= 3: RED, 2-3: ORANGE, < 2: WHITE (default/theme text color)
+        # Note: We use explicit white/default conditional logic
         
-        # Apply styling to the Difference with VEF ‰ label
+        def get_color(value):
+            abs_val = abs(value)
+            if abs_val >= 3:
+                return "#dc2626"  # Red - Critical
+            elif abs_val >= 2:
+                return "#f97316"  # Orange - Warning
+            else:
+                return "#ffffff"  # White - Good (as requested)
+
+        # Apply to W/O VEF
+        color_wo = get_color(diff_pct_wo)
+        self.diff_pct_wo_vef_label.setStyleSheet(
+            f"font-size: 9pt; font-weight: bold; padding: 3px; text-align: right; color: {color_wo};"
+        )
+
+        # Apply to With VEF
+        color_with = get_color(diff_pct_with)
         self.diff_pct_with_vef_label.setStyleSheet(
-            f"font-size: 9pt; font-weight: bold; padding: 3px; text-align: right; color: {color};"
+            f"font-size: 9pt; font-weight: bold; padding: 3px; text-align: right; color: {color_with};"
         )
     
     def update_ship_figure(self, ship_figure: float, vef: float):
