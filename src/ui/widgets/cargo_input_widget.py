@@ -6,7 +6,7 @@ Ported from STOWAGEMASTER with adaptations for ULLAGEMASTER.
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QTableWidget, QTableWidgetItem, QPushButton,
-    QLineEdit, QDoubleSpinBox, QMessageBox,
+    QLineEdit, QMessageBox, QDoubleSpinBox,
     QHeaderView, QDialog, QDialogButtonBox, QCheckBox
 )
 from PyQt6.QtCore import Qt, pyqtSignal

@@ -5,12 +5,13 @@ Parcel Setup Dialog - Define parcels for a voyage.
 from typing import List, Optional
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
-    QLabel, QLineEdit, QDoubleSpinBox, QPushButton,
+    QLabel, QLineEdit, QPushButton,
     QTableWidget, QTableWidgetItem, QHeaderView,
     QColorDialog, QMessageBox, QGroupBox
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
+from utils.decimal_utils import parse_decimal_or_zero
 
 from models import Parcel
 from ui.styles import COLOR_TEXT_SECONDARY
@@ -112,7 +113,7 @@ class ParcelSetupDialog(QDialog):
         self.table.setItem(row, 2, receiver_item)
         
         # Density
-        density_item = QTableWidgetItem(f"{parcel.density_vac:.3f}")
+        density_item = QTableWidgetItem(f"{parcel.density_vac:.4f}")
         self.table.setItem(row, 3, density_item)
         
         # Color button
@@ -183,7 +184,7 @@ class ParcelSetupDialog(QDialog):
             ids_seen.add(parcel_id)
             
             try:
-                density = float(density_item.text()) if density_item and density_item.text() else 0.0
+                density = parse_decimal_or_zero(density_item.text()) if density_item and density_item.text() else 0.0
             except ValueError:
                 density = 0.0
             

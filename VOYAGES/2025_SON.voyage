@@ -5,7 +5,7 @@
     "date": "28-12-2025",
     "port": "ALİAĞA",
     "terminal": "TÜPRAŞ",
-    "vef": 1.0,
+    "vef": 0.9992700000000001,
     "drafts": {
       "aft": 9.0,
       "fwd": 8.75,
@@ -18,66 +18,98 @@
         "id": "1",
         "name": "KBZ",
         "receiver": "ANTALYA OPET",
-        "density_vac": 0.734,
-        "color": "#FF6B6B"
+        "density_vac": 0.7366,
+        "color": "#FF6B6B",
+        "bl_loading": 1493.5,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
       },
       {
         "id": "2",
         "name": "KBZ",
         "receiver": "MERSİN TÜPRAŞ",
         "density_vac": 0.734,
-        "color": "#4ECDC4"
+        "color": "#4ECDC4",
+        "bl_loading": 2474.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
       },
       {
         "id": "3",
         "name": "MOTORİN",
         "receiver": "ANTALYA OPET",
         "density_vac": 0.83,
-        "color": "#00aa00"
+        "color": "#00aa00",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
       },
       {
         "id": "4",
         "name": "KBZ",
         "receiver": "ANTALYA POAŞ",
         "density_vac": 0.734,
-        "color": "#ffaa00"
+        "color": "#ffaa00",
+        "bl_loading": 1140.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
       },
       {
         "id": "5",
         "name": "KBZ",
         "receiver": "MERSİN SHELL",
         "density_vac": 0.734,
-        "color": "#FFEAA7"
+        "color": "#FFEAA7",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
       },
       {
         "id": "6",
         "name": "KBZ",
         "receiver": "MERSİN POAŞ",
         "density_vac": 0.734,
-        "color": "#DDA0DD"
+        "color": "#DDA0DD",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
       },
       {
         "id": "7",
         "name": "KBZ",
         "receiver": "ANTALYA SHELL",
         "density_vac": 0.734,
-        "color": "#F7DC6F"
+        "color": "#F7DC6F",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
       },
       {
         "id": "8",
         "name": "JET",
         "receiver": "ANTALYA TÜPRAŞ",
         "density_vac": 0.797,
-        "color": "#00557f"
+        "color": "#00557f",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
       }
     ],
     "tank_readings": {
       "1P": {
         "tank_id": "1P",
         "parcel_id": "1",
-        "ullage": 121.25500667556734,
+        "ullage": 111.0,
         "temp_celsius": 23.0,
-        "density_vac": 0.734
+        "density_vac": 0.7366
       },
       "1S": {
         "tank_id": "1S",
@@ -180,9 +212,9 @@
       "8S": {
         "tank_id": "8S",
         "parcel_id": "1",
-        "ullage": 129.2679509632225,
+        "ullage": 111.0,
         "temp_celsius": 23.0,
-        "density_vac": 0.734
+        "density_vac": 0.7366
       },
       "SlopP": {
         "tank_id": "SlopP",
@@ -200,8 +232,8 @@
       }
     },
     "totals": {
-      "gsv": 20600.46490104,
-      "mt": 15601.733263003656
+      "gsv": 20628.78198134,
+      "mt": 15627.752121569305
     },
     "notes": "STOWAGE JSON var mı kontrol etmek için1"
   },
@@ -214,7 +246,7 @@
       {
         "unique_id": "f1bbcb79-478e-451f-8d51-9d1880ec4b60",
         "cargo_type": "KBZ",
-        "quantity": 2051.4137508760004,
+        "quantity": 2025.1040053,
         "receivers": [
           {
             "name": "ANTALYA OPET"
@@ -226,7 +258,7 @@
       {
         "unique_id": "549a6f27-5ba3-4b65-837f-091e309fd177",
         "cargo_type": "KBZ",
-        "quantity": 3465.328362972,
+        "quantity": 3373.11677204,
         "receivers": [
           {
             "name": "MERSİN TÜPRAŞ"
@@ -238,7 +270,7 @@
       {
         "unique_id": "64205fce-8449-40ef-8513-5cffa348d319",
         "cargo_type": "MOTORİN",
-        "quantity": 4297.011130608,
+        "quantity": 4195.837481,
         "receivers": [
           {
             "name": "ANTALYA OPET"
@@ -250,7 +282,7 @@
       {
         "unique_id": "d7a43520-00cc-4ee7-8376-c1a589f850a9",
         "cargo_type": "KBZ",
-        "quantity": 1596.559718068,
+        "quantity": 1554.91821244,
         "receivers": [
           {
             "name": "ANTALYA POAŞ"
@@ -262,7 +294,7 @@
       {
         "unique_id": "fabbb877-efa4-4196-971e-8f381a76edfb",
         "cargo_type": "KBZ",
-        "quantity": 4047.6702219520002,
+        "quantity": 3941.26607664,
         "receivers": [
           {
             "name": "MERSİN SHELL"
@@ -274,7 +306,7 @@
       {
         "unique_id": "2af278af-29a7-4c94-b98e-ac9e5fc4ebdf",
         "cargo_type": "KBZ",
-        "quantity": 1349.829153932,
+        "quantity": 1313.73060788,
         "receivers": [
           {
             "name": "MERSİN POAŞ"
@@ -286,7 +318,7 @@
       {
         "unique_id": "678e8548-367c-4702-a4ab-f24cae2ea9f1",
         "cargo_type": "KBZ",
-        "quantity": 2695.1067071320003,
+        "quantity": 2623.98122516,
         "receivers": [
           {
             "name": "ANTALYA SHELL"
@@ -298,7 +330,7 @@
       {
         "unique_id": "375c1220-6f34-4cc0-b454-972160ecf081",
         "cargo_type": "JET",
-        "quantity": 1634.227689584,
+        "quantity": 1600.82760088,
         "receivers": [
           {
             "name": "ANTALYA TÜPRAŞ"

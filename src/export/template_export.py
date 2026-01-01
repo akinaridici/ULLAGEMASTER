@@ -19,10 +19,33 @@ if TYPE_CHECKING:
 
 
 def get_template_path() -> Path:
-    """Get the path to the TEMPLATE directory."""
-    # Template folder is in the application root directory
-    app_dir = Path(__file__).parent.parent.parent  # src/export -> src -> app_root
-    return app_dir / "TEMPLATE" / "TEMPLATE.XLSM"
+    """
+    Get the path to the TEMPLATE directory.
+    
+    Supports:
+    - Normal Python execution
+    - PyInstaller frozen EXE
+    - Network share execution
+    """
+    import sys
+    import os
+    
+    # For frozen executable: use the directory where EXE is located
+    if getattr(sys, 'frozen', False):
+        # sys.executable is the path to the EXE file
+        app_dir = Path(sys.executable).parent
+    else:
+        # For normal Python execution: go up from src/export to app root
+        app_dir = Path(__file__).parent.parent.parent
+    
+    # Template folder should be next to the EXE or in app root
+    template_path = app_dir / "TEMPLATE" / "TEMPLATE.XLSM"
+    
+    # Fallback: also check 'template' (lowercase) folder
+    if not template_path.exists():
+        template_path = app_dir / "template" / "TEMPLATE.XLSM"
+    
+    return template_path
 
 
 def export_template_report(voyage: 'Voyage', output_path: str, column_keys: list,

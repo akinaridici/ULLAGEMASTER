@@ -6,10 +6,11 @@ Allows editing ship name, ullage and trim data, but NOT trim value columns.
 from typing import Optional, Dict
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
-    QLabel, QLineEdit, QDoubleSpinBox, QPushButton,
+    QLabel, QLineEdit, QPushButton,
     QTabWidget, QWidget, QGroupBox, QMessageBox,
     QTableWidget, QTableWidgetItem, QHeaderView
 )
+from utils.decimal_utils import LocaleIndependentDoubleSpinBox, parse_decimal_or_zero
 from PyQt6.QtCore import Qt
 
 from models import ShipConfig, TankConfig
@@ -91,7 +92,7 @@ class ConfigEditorDialog(QDialog):
         layout.addRow("Ship Name:", self.ship_name_edit)
         
         # VEF (editable)
-        self.vef_spin = QDoubleSpinBox()
+        self.vef_spin = LocaleIndependentDoubleSpinBox()
         self.vef_spin.setDecimals(5)
         self.vef_spin.setRange(0.9, 1.1)
         layout.addRow("Default V.E.F.:", self.vef_spin)
@@ -323,7 +324,7 @@ class ConfigEditorDialog(QDialog):
                 tank = self.config.get_tank(tank_id_item.text())
                 if tank:
                     try:
-                        user_capacity = float(capacity_item.text())
+                        user_capacity = parse_decimal_or_zero(capacity_item.text())
                         if user_capacity > 0:
                             tank.capacity_m3 = user_capacity
                         elif tank.ullage_table:

@@ -304,7 +304,10 @@ class ProtestPDFReport:
         grade_display = f"{parcel_name}" if not receiver else f"{parcel_name}-{receiver}"
         
         # Header row
-        header_text = f"On completion {'Loading' if self.operation_type == 'loading' else 'Discharging'} vessel based ullage report."
+        if self.operation_type == 'loading':
+            header_text = "Discrepancy on Completion of Loading"
+        else:
+            header_text = "Discrepancy on Completion of Discharging (Ship has received empty tank certificate)"
         
         header_rows = [
             [Paragraph(f"<b>{header_text}</b>", self.style_bold_center), ""],

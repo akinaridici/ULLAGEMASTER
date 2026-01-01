@@ -7,11 +7,12 @@ from typing import Optional, Dict, List
 
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGridLayout, QFormLayout,
-    QLabel, QLineEdit, QSpinBox, QDoubleSpinBox, QPushButton,
+    QLabel, QLineEdit, QSpinBox, QPushButton,
     QTableWidget, QTableWidgetItem, QHeaderView, QFileDialog,
     QMessageBox, QGroupBox, QTabWidget, QWidget, QScrollArea,
     QWizard, QWizardPage, QCheckBox, QComboBox
 )
+from utils.decimal_utils import LocaleIndependentDoubleSpinBox, parse_decimal_or_zero
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QFont
 
@@ -94,7 +95,7 @@ class ShipInfoPage(QWizardPage):
         layout.addRow("Ship Name:", self.ship_name_edit)
         
         # Default VEF
-        self.vef_spin = QDoubleSpinBox()
+        self.vef_spin = LocaleIndependentDoubleSpinBox()
         self.vef_spin.setDecimals(5)
         self.vef_spin.setRange(0.9, 1.1)
         self.vef_spin.setValue(1.0)
@@ -131,7 +132,7 @@ class ShipInfoPage(QWizardPage):
         layout.addRow(self.thermal_check)
         
         # Slop density
-        self.slop_density_spin = QDoubleSpinBox()
+        self.slop_density_spin = LocaleIndependentDoubleSpinBox()
         self.slop_density_spin.setDecimals(4)
         self.slop_density_spin.setRange(0.5, 2.0)
         self.slop_density_spin.setValue(0.85)
@@ -349,7 +350,7 @@ class TankSetupPage(QWizardPage):
                 tank_name = name_item.text().strip() if name_item else f"Tank {tank_id}"
                 
                 try:
-                    capacity = float(capacity_item.text()) if capacity_item and capacity_item.text() else 0.0
+                    capacity = parse_decimal_or_zero(capacity_item.text()) if capacity_item and capacity_item.text() else 0.0
                 except ValueError:
                     capacity = 0.0
                 

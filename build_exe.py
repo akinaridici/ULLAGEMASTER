@@ -12,7 +12,7 @@ def build():
     # Format: (source_path, dest_folder_in_dist)
     # PyInstaller convention: "src;dest" for Windows
     add_data = [
-        ('src/i18n/*.json', 'src/i18n'),
+        ('src/i18n/*.json', 'i18n'),
         ('data/config/company_logo', 'data/config/company_logo'),
         ('template/*.xlsm', 'template'),
         ('template/*.xlsx', 'template'),

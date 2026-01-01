@@ -1,0 +1,7 @@
+Frozen mode: False
+sys.executable: C:\Users\akina\AppData\Local\Python\pythoncore-3.14-64\python.exe
+app_root: D:\ULLAGEMASTER
+data_dir: D:\ULLAGEMASTER\data
+data_dir exists: True
+config_path: D:\ULLAGEMASTER\data\config\ship_config.json
+config_path exists: True

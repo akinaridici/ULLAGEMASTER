@@ -12,6 +12,12 @@ from .data_manager import (
     save_config,
     delete_config
 )
+from .decimal_utils import (
+    parse_decimal,
+    parse_decimal_or_zero,
+    LocaleIndependentDoubleSpinBox,
+    DotDecimalValidator
+)
 
 __all__ = [
     'generate_ship_template',
@@ -24,4 +30,8 @@ __all__ = [
     'load_config',
     'save_config',
     'delete_config',
+    'parse_decimal',
+    'parse_decimal_or_zero',
+    'LocaleIndependentDoubleSpinBox',
+    'DotDecimalValidator',
 ]

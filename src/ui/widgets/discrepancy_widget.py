@@ -8,7 +8,8 @@ from PyQt6.QtWidgets import (
     QGroupBox, QScrollArea, QFrame, QGridLayout, QSizePolicy, QMenu
 )
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QColor, QDoubleValidator, QAction
+from PyQt6.QtGui import QColor, QAction
+from utils.decimal_utils import parse_decimal_or_zero, DotDecimalValidator
 
 from typing import Optional, List, Dict, TYPE_CHECKING
 
@@ -119,7 +120,7 @@ class ParcelDiscrepancyCard(QFrame):
         grid.addWidget(lbl, row, 0)
         
         self.bl_input = QLineEdit()
-        self.bl_input.setValidator(QDoubleValidator(0, 999999.999, 3))
+        self.bl_input.setValidator(DotDecimalValidator(0, 999999.999, 3))
         self.bl_input.setPlaceholderText("0.000")
         self.bl_input.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.bl_input.setStyleSheet("font-size: 9pt; font-weight: bold; padding: 3px;")
@@ -162,7 +163,7 @@ class ParcelDiscrepancyCard(QFrame):
         lbl = QLabel("Ship Figure with VEF")
         lbl.setStyleSheet(label_style)
         grid.addWidget(lbl, row, 0)
-        ship_with_vef = self.ship_figure * self.vef
+        ship_with_vef = self.ship_figure / self.vef if self.vef != 0 else self.ship_figure
         self.ship_with_vef_label = QLabel(f"{ship_with_vef:.3f}")
         self.ship_with_vef_label.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.ship_with_vef_label.setStyleSheet(value_style)
@@ -193,7 +194,7 @@ class ParcelDiscrepancyCard(QFrame):
     def _on_bl_changed(self, text: str):
         """Handle B/L figure input change."""
         try:
-            self.bl_figure = float(text) if text else 0.0
+            self.bl_figure = parse_decimal_or_zero(text)
         except ValueError:
             self.bl_figure = 0.0
         
@@ -205,7 +206,7 @@ class ParcelDiscrepancyCard(QFrame):
         text = self.bl_input.text()
         if text:
             try:
-                value = float(text)
+                value = parse_decimal_or_zero(text)
                 self.bl_input.setText(f"{value:.3f}")
             except ValueError:
                 pass
@@ -214,7 +215,7 @@ class ParcelDiscrepancyCard(QFrame):
         """Recalculate all discrepancy values."""
         bl = self.bl_figure
         ship_wo = self.ship_figure
-        ship_with = ship_wo * self.vef
+        ship_with = ship_wo / self.vef if self.vef != 0 else ship_wo
         
         # Differences
         diff_wo = ship_wo - bl    # #3: Ship W/O VEF - B/L
@@ -400,7 +401,7 @@ class DischargingDiscrepancyCard(QFrame):
         lbl.setStyleSheet(label_style)
         grid.addWidget(lbl, row, 0)
         self.ship_loading_input = QLineEdit()
-        self.ship_loading_input.setValidator(QDoubleValidator(0, 999999.999, 3))
+        self.ship_loading_input.setValidator(DotDecimalValidator(0, 999999.999, 3))
         self.ship_loading_input.setPlaceholderText("0.000")
         self.ship_loading_input.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.ship_loading_input.setStyleSheet("font-size: 8pt; font-weight: bold; padding: 2px;")
@@ -462,7 +463,7 @@ class DischargingDiscrepancyCard(QFrame):
         lbl.setStyleSheet(label_style + "font-weight: bold;")
         grid.addWidget(lbl, row, 0)
         self.outturn_input = QLineEdit()
-        self.outturn_input.setValidator(QDoubleValidator(0, 999999.999, 3))
+        self.outturn_input.setValidator(DotDecimalValidator(0, 999999.999, 3))
         self.outturn_input.setPlaceholderText("0.000")
         self.outturn_input.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.outturn_input.setStyleSheet("font-size: 8pt; font-weight: bold; padding: 2px;")
@@ -514,7 +515,7 @@ class DischargingDiscrepancyCard(QFrame):
     def _on_ship_loading_changed(self, text: str):
         """Handle Ship Figure Loading Port input change."""
         try:
-            self.ship_loading = float(text) if text else 0.0
+            self.ship_loading = parse_decimal_or_zero(text)
         except ValueError:
             self.ship_loading = 0.0
         self._recalculate()
@@ -523,7 +524,7 @@ class DischargingDiscrepancyCard(QFrame):
     def _on_outturn_changed(self, text: str):
         """Handle Outturn Figure input change."""
         try:
-            self.outturn = float(text) if text else 0.0
+            self.outturn = parse_decimal_or_zero(text)
         except ValueError:
             self.outturn = 0.0
         self._recalculate()
@@ -534,7 +535,7 @@ class DischargingDiscrepancyCard(QFrame):
         text = self.ship_loading_input.text()
         if text:
             try:
-                value = float(text)
+                value = parse_decimal_or_zero(text)
                 self.ship_loading_input.setText(f"{value:.3f}")
             except ValueError:
                 pass
@@ -544,7 +545,7 @@ class DischargingDiscrepancyCard(QFrame):
         text = self.outturn_input.text()
         if text:
             try:
-                value = float(text)
+                value = parse_decimal_or_zero(text)
                 self.outturn_input.setText(f"{value:.3f}")
             except ValueError:
                 pass
@@ -905,9 +906,9 @@ class DiscrepancyWidget(QWidget):
                 'ship_wo_vef': card.ship_figure,
                 'diff_wo_vef': card.ship_figure - card.bl_figure,  # #3: Ship - B/L
                 'diff_pct_wo_vef': ((card.ship_figure - card.bl_figure) / card.bl_figure * 1000) if card.bl_figure else 0,
-                'ship_with_vef': card.ship_figure * card.vef,
-                'diff_with_vef': (card.ship_figure * card.vef) - card.bl_figure,  # #6: Ship with VEF - B/L
-                'diff_pct_with_vef': (((card.ship_figure * card.vef) - card.bl_figure) / card.bl_figure * 1000) if card.bl_figure else 0,
+                'ship_with_vef': card.ship_figure / card.vef if card.vef else card.ship_figure,
+                'diff_with_vef': (card.ship_figure / card.vef if card.vef else card.ship_figure) - card.bl_figure,  # #6: Ship with VEF - B/L
+                'diff_pct_with_vef': (((card.ship_figure / card.vef if card.vef else card.ship_figure) - card.bl_figure) / card.bl_figure * 1000) if card.bl_figure else 0,
             }
         else:  # discharging
             card = self.discharging_cards.get(parcel_id)
@@ -1043,9 +1044,9 @@ class DiscrepancyWidget(QWidget):
                     'ship_wo_vef': card.ship_figure,
                     'diff_wo_vef': card.ship_figure - card.bl_figure,
                     'diff_pct_wo_vef': ((card.ship_figure - card.bl_figure) / card.bl_figure * 1000) if card.bl_figure else 0,
-                    'ship_with_vef': card.ship_figure * card.vef,
-                    'diff_with_vef': (card.ship_figure * card.vef) - card.bl_figure,
-                    'diff_pct_with_vef': (((card.ship_figure * card.vef) - card.bl_figure) / card.bl_figure * 1000) if card.bl_figure else 0,
+                    'ship_with_vef': card.ship_figure / card.vef if card.vef else card.ship_figure,
+                    'diff_with_vef': (card.ship_figure / card.vef if card.vef else card.ship_figure) - card.bl_figure,
+                    'diff_pct_with_vef': (((card.ship_figure / card.vef if card.vef else card.ship_figure) - card.bl_figure) / card.bl_figure * 1000) if card.bl_figure else 0,
                 }
             else:  # discharging
                 vef = card.vef if card.vef else 1.0

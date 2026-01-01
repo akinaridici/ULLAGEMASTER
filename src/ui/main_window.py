@@ -12,10 +12,11 @@ from datetime import datetime
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QTableWidget, QTableWidgetItem, QHeaderView, QLabel, QLineEdit,
-    QDoubleSpinBox, QComboBox, QPushButton, QMenuBar, QMenu,
+    QComboBox, QPushButton, QMenuBar, QMenu,
     QStatusBar, QMessageBox, QFileDialog, QGroupBox, QFrame,
     QAbstractItemView, QApplication, QInputDialog, QTabWidget, QDateEdit
 )
+from utils.decimal_utils import LocaleIndependentDoubleSpinBox, parse_decimal_or_zero
 from PyQt6.QtCore import Qt, QSize, QSettings
 from PyQt6.QtGui import QColor, QFont, QAction, QKeySequence, QKeyEvent, QBrush
 
@@ -248,28 +249,6 @@ class MainWindow(QMainWindow):
         
         # Export submenu
         export_menu = ullage_menu.addMenu(t("export", "menu"))
-        
-        excel_action = QAction(t("export_excel", "menu"), self)
-        excel_action.triggered.connect(lambda: self._export("excel"))
-        export_menu.addAction(excel_action)
-        
-        pdf_action = QAction(t("export_pdf", "menu"), self)
-        pdf_action.triggered.connect(lambda: self._export("pdf"))
-        export_menu.addAction(pdf_action)
-        
-        ascii_action = QAction(t("export_ascii", "menu"), self)
-        ascii_action.triggered.connect(lambda: self._export("ascii"))
-        export_menu.addAction(ascii_action)
-        
-        json_action = QAction(t("export_json", "menu"), self)
-        json_action.triggered.connect(lambda: self._export("json"))
-        export_menu.addAction(json_action)
-        
-        visual_action = QAction("Visual Stowage Plan (PDF)", self)
-        visual_action.triggered.connect(lambda: self._export("visual"))
-        export_menu.addAction(visual_action)
-        
-        export_menu.addSeparator()
         
         template_action = QAction("Template Report (XLSM)", self)
         template_action.triggered.connect(self._export_template_report)
@@ -705,37 +684,81 @@ class MainWindow(QMainWindow):
         
         capacity = getattr(tank_config, 'capacity_m3', 0)
         
-        # Create assignment (fill tank to capacity or remaining cargo)
+        # Check existing assignment
+        existing = self.stowage_plan.get_assignment(tank_id)
+        current_loaded = 0.0
+        
+        if existing:
+            if existing.cargo.unique_id == cargo_id:
+                # Same cargo - add to existing (but cap at 100%)
+                current_loaded = existing.quantity_loaded
+            else:
+                # Different cargo - clear existing first
+                self.stowage_plan.remove_assignment(tank_id)
+                current_loaded = 0.0
+        
+        # Calculate available space in tank (100% cap)
+        available_space = max(0, capacity - current_loaded)
+        
+        # Calculate remaining cargo to load
         already_loaded = self.stowage_plan.get_cargo_total_loaded(cargo_id)
         remaining = cargo.quantity - already_loaded
-        quantity_to_load = min(capacity, remaining) if remaining > 0 else capacity
+        
+        # Load minimum of: available space or remaining cargo
+        quantity_to_load = min(available_space, remaining) if remaining > 0 else 0
+        
+        if quantity_to_load <= 0:
+            return  # Nothing to load
+        
+        # Create or update assignment
+        total_quantity = current_loaded + quantity_to_load
         
         assignment = TankAssignment(
             tank_id=tank_id,
             cargo=cargo,
-            quantity_loaded=quantity_to_load
+            quantity_loaded=total_quantity
         )
         self.stowage_plan.add_assignment(tank_id, assignment)
         
         self._on_stowage_changed()
     
     def handle_tank_swap(self, source_tank_id: str, target_tank_id: str):
-        """Handle swapping cargo between two tanks."""
+        """Handle swapping/moving cargo between two tanks with 100% capacity cap."""
         if not self.stowage_plan:
             return
+        
+        # Get tank capacities
+        source_capacity = 0.0
+        target_capacity = 0.0
+        for t in self.ship_config.tanks:
+            if t.id == source_tank_id:
+                source_capacity = getattr(t, 'capacity_m3', 0)
+            elif t.id == target_tank_id:
+                target_capacity = getattr(t, 'capacity_m3', 0)
         
         source_assignment = self.stowage_plan.get_assignment(source_tank_id)
         target_assignment = self.stowage_plan.get_assignment(target_tank_id)
         
-        # Swap assignments
+        # Calculate quantities with 100% cap
+        source_qty = source_assignment.quantity_loaded if source_assignment else 0.0
+        target_qty = target_assignment.quantity_loaded if target_assignment else 0.0
+        
+        # After swap: source cargo goes to target, target cargo goes to source
+        # Cap each at the respective tank's capacity
+        new_target_qty = min(source_qty, target_capacity) if source_assignment else 0.0
+        new_source_qty = min(target_qty, source_capacity) if target_assignment else 0.0
+        
+        # Update assignments with capped quantities
         if source_assignment:
             source_assignment.tank_id = target_tank_id
+            source_assignment.quantity_loaded = new_target_qty
             self.stowage_plan.assignments[target_tank_id] = source_assignment
         else:
             self.stowage_plan.remove_assignment(target_tank_id)
         
         if target_assignment:
             target_assignment.tank_id = source_tank_id
+            target_assignment.quantity_loaded = new_source_qty
             self.stowage_plan.assignments[source_tank_id] = target_assignment
         else:
             self.stowage_plan.remove_assignment(source_tank_id)
@@ -1236,7 +1259,7 @@ class MainWindow(QMainWindow):
         
         # Row 2
         layout.addWidget(QLabel(t("vef", "header")), 1, 0)
-        self.vef_spin = QDoubleSpinBox()
+        self.vef_spin = LocaleIndependentDoubleSpinBox()
         self.vef_spin.setDecimals(5)
         self.vef_spin.setRange(0.9, 1.1)
         self.vef_spin.setValue(1.0)
@@ -1245,7 +1268,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.vef_spin, 1, 1)
         
         layout.addWidget(QLabel(t("draft_aft", "header")), 1, 2)
-        self.draft_aft_spin = QDoubleSpinBox()
+        self.draft_aft_spin = LocaleIndependentDoubleSpinBox()
         self.draft_aft_spin.setDecimals(2)
         self.draft_aft_spin.setRange(0, 30)
         self.draft_aft_spin.setSingleStep(0.25)
@@ -1253,7 +1276,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.draft_aft_spin, 1, 3)
         
         layout.addWidget(QLabel(t("draft_fwd", "header")), 1, 4)
-        self.draft_fwd_spin = QDoubleSpinBox()
+        self.draft_fwd_spin = LocaleIndependentDoubleSpinBox()
         self.draft_fwd_spin.setDecimals(2)
         self.draft_fwd_spin.setRange(0, 30)
         self.draft_fwd_spin.setSingleStep(0.25)
@@ -1422,7 +1445,7 @@ class MainWindow(QMainWindow):
             )
             if ok and text:
                 try:
-                    value = float(text)
+                    value = parse_decimal_or_zero(text)
                 except ValueError:
                     QMessageBox.warning(self, "Invalid Input", "Please enter a valid number.")
                     return
@@ -2134,10 +2157,20 @@ class MainWindow(QMainWindow):
     
     def _recalculate_all(self):
         """Recalculate all tanks."""
+        # Sync VEF from spinbox to voyage object
+        if hasattr(self, 'voyage') and self.voyage and hasattr(self, 'vef_spin'):
+            self.voyage.vef = self.vef_spin.value()
+        
         for row in range(self.tank_table.rowCount()):
             tank_id_item = self.tank_table.item(row, 0)
             if tank_id_item:
                 self._recalculate_tank(row, tank_id_item.text())
+        
+        # Also refresh discrepancy tab if it exists (to update VEF in parcel cards)
+        if hasattr(self, 'discrepancy_tab') and self.discrepancy_tab and self.voyage:
+            # Update voyage reference (ensures VEF is synced)
+            self.discrepancy_tab.voyage = self.voyage
+            self.discrepancy_tab.refresh_data()
     
     def _save_officer_names(self):
         """Save officer names to ship config whenever they change."""
@@ -2426,6 +2459,9 @@ class MainWindow(QMainWindow):
         # 4. Tank Data - Filter by selected parcels
         tank_data = []
         
+        # Build map of parcel_id -> parcel for density lookup
+        parcel_map = {p.id: p for p in self.voyage.parcels}
+        
         for tank in self.ship_config.tanks:
             reading = self.voyage.get_reading(tank.id)
             if not reading:
@@ -2453,6 +2489,9 @@ class MainWindow(QMainWindow):
             # Format Data
             fmt = lambda v, p: f"{v:.{p}f}" if v is not None else ""
             
+            # Get density from reading (should be synced from parcel)
+            density_val = reading.density_vac
+            
             row = {
                 'name': display_name,
                 'ullage_actual': fmt(reading.ullage, 1),
@@ -2462,7 +2501,7 @@ class MainWindow(QMainWindow):
                 'temp': fmt(reading.temp_celsius, 1),
                 'vcf': fmt(reading.vcf, 4),
                 'gsv': fmt(reading.gsv, 3),
-                'density': "",  # Empty for manual entry on printed PDF
+                'density': fmt(density_val, 4),  # Now populated from reading
                 'w_vac': fmt(reading.mt_vac, 3),
                 'w_air': fmt(reading.mt_air, 3),
                 'fw_actual': '0.00',
@@ -2474,8 +2513,20 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Uyarı", "Seçilen parsellere ait tank bulunamadı.")
             return
         
-        # 5. Vacuum Density - Leave empty for manual entry on printed PDF
-        density_str = ""
+        # 5. Vacuum Density for Summary
+        # Single parcel: show density value
+        # Multiple parcels: show "Grade - Density" for each
+        selected_parcels = [parcel_map.get(pid) for pid in selected_ids if parcel_map.get(pid)]
+        
+        if len(selected_parcels) == 1:
+            # Single parcel - show density directly
+            parcel = selected_parcels[0]
+            density_str = f"{parcel.density_vac:.4f}" if parcel.density_vac else ""
+        elif len(selected_parcels) > 1:
+            # Multiple parcels - refer to density column in table
+            density_str = "See related column"
+        else:
+            density_str = ""
         
         # 6. Overview/Summary Data
         total_tov = sum(float(t.get('tov', 0) or 0) for t in tank_data)
@@ -2799,6 +2850,10 @@ class MainWindow(QMainWindow):
             self.vef_spin.blockSignals(False)
             self.draft_aft_spin.blockSignals(False)
             self.draft_fwd_spin.blockSignals(False)
+            
+            # Update trim label manually since signals were blocked during draft load
+            trim = self.draft_fwd_spin.value() - self.draft_aft_spin.value()
+            self.trim_label.setText(f"{trim:+.2f} m")
             
             self._populate_grid()
             
@@ -3253,10 +3308,32 @@ class MainWindow(QMainWindow):
         dialog = ParcelSetupDialog(self.voyage.parcels, self)
         if dialog.exec():
             self.voyage.parcels = dialog.get_parcels()
+            
+            # Sync updated parcel properties to all TankReadings using those parcels
+            self._sync_parcel_properties_to_readings()
+            
+            # Recalculate all tanks with new density values
+            self._recalculate_all()
+            
             self._update_parcel_dropdowns()
             # Sync colors to Stowage tab (Ullage → Stowage)
             self._sync_voyage_colors_to_stowage()
             self.status_bar.showMessage(f"Updated {len(self.voyage.parcels)} parcels")
+    
+    def _sync_parcel_properties_to_readings(self):
+        """
+        Sync parcel properties (density, etc.) to all TankReadings using those parcels.
+        
+        Called after editing parcels to ensure density changes propagate to calculations.
+        """
+        if not self.voyage:
+            return
+        
+        for reading in self.voyage.tank_readings.values():
+            if reading.parcel_id:
+                parcel = self._get_parcel(reading.parcel_id)
+                if parcel:
+                    reading.density_vac = parcel.density_vac
     
     def _update_parcel_dropdowns(self):
         """Update parcel display in the grid."""
@@ -3332,7 +3409,7 @@ class MainWindow(QMainWindow):
         for item in selected_items:
             try:
                 # Basic float parsing
-                val = float(item.text())
+                val = parse_decimal_or_zero(item.text())
                 total += val
                 count += 1
             except ValueError:

@@ -6,9 +6,10 @@ Ported from STOWAGEMASTER with simplifications.
 from PyQt6.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QLabel, QScrollArea,
     QFrame, QSizePolicy, QMenu, QPushButton, QDialog,
-    QFormLayout, QLineEdit, QDoubleSpinBox, QDialogButtonBox,
+    QFormLayout, QLineEdit, QDialogButtonBox,
     QColorDialog, QMessageBox
 )
+from utils.decimal_utils import LocaleIndependentDoubleSpinBox
 from PyQt6.QtCore import Qt, QMimeData, QByteArray, pyqtSignal
 from PyQt6.QtGui import QDrag, QPixmap, QPainter, QColor, QFont
 import json
@@ -252,7 +253,7 @@ class CargoInputDialog(QDialog):
         form.addRow("Alıcı:", self.receiver_edit)
         
         # Quantity
-        self.qty_spin = QDoubleSpinBox()
+        self.qty_spin = LocaleIndependentDoubleSpinBox()
         self.qty_spin.setDecimals(0)
         self.qty_spin.setRange(0, 100000)
         self.qty_spin.setSingleStep(100)
@@ -261,7 +262,7 @@ class CargoInputDialog(QDialog):
         form.addRow("Miktar:", self.qty_spin)
         
         # Density
-        self.density_spin = QDoubleSpinBox()
+        self.density_spin = LocaleIndependentDoubleSpinBox()
         self.density_spin.setDecimals(4)
         self.density_spin.setRange(0.5, 1.5)
         self.density_spin.setSingleStep(0.0001)

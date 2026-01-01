@@ -4,6 +4,8 @@ Provides multi-language support (English, Turkish).
 """
 
 import json
+import sys
+import os
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -13,8 +15,19 @@ _translations: Dict[str, dict] = {}
 
 
 def _get_i18n_dir() -> Path:
-    """Get the i18n directory path."""
-    return Path(__file__).parent
+    """
+    Get the i18n directory path.
+    
+    Supports both normal execution and PyInstaller frozen apps.
+    For frozen apps, uses sys._MEIPASS to find bundled resources.
+    """
+    # Check if running as PyInstaller bundle
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        # Running as frozen executable - use _MEIPASS
+        return Path(sys._MEIPASS) / 'i18n'
+    else:
+        # Running as normal Python script
+        return Path(__file__).parent
 
 
 def load_language(lang_code: str) -> bool:
