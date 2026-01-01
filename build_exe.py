@@ -16,6 +16,7 @@ def build():
         ('data/config/company_logo', 'data/config/company_logo'),
         ('template/*.xlsm', 'template'),
         ('template/*.xlsx', 'template'),
+        ('assets/icon.ico', 'assets'),  # Include icon for runtime usage
     ]
     
     # Manual wildcard expansion
@@ -51,6 +52,7 @@ def build():
         '--onefile',            # Single EXE output (all dependencies bundled)
         '--clean',
         '--noconfirm',
+        f'--icon={os.path.join(base_dir, "assets", "icon.ico")}', # EXE Icon
         f'--paths={src_dir}',   # Add src to module search path
         # Hidden imports usually needed for pandas/openpyxl/pyqt
         '--hidden-import=PyQt6',
@@ -74,46 +76,41 @@ def build():
     # Post-build steps
     print("Performing post-build steps...")
     
-    exe_dir = os.path.join(dist_dir, 'UllageMaster')
+    # Create a nice release folder
+    release_dir = os.path.join(dist_dir, 'UllageMaster_Release')
+    if os.path.exists(release_dir):
+        shutil.rmtree(release_dir)
+    os.makedirs(release_dir)
+    
+    # Move EXE to release dir
+    exe_file = os.path.join(dist_dir, 'UllageMaster.exe')
+    if os.path.exists(exe_file):
+        shutil.move(exe_file, os.path.join(release_dir, 'UllageMaster.exe'))
+        print("Moved EXE to release directory")
     
     # 1. Create empty directories
-    for d in ['VOYAGES', 'REPORTS', 'backup']:
-        path = os.path.join(exe_dir, d)
+    for d in ['VOYAGES', 'REPORTS', 'BACKUP']:
+        path = os.path.join(release_dir, d)
         if not os.path.exists(path):
             os.makedirs(path)
             print(f"Created directory: {d}")
 
-    # 2. Ensure config file exists or is copied
-    # We included data/config folder via add-data, but that puts it INSIDE the internal _internal folder usually (for onedir?)
-    # Wait, --add-data with --onedir puts it in the INTERNAL folder? 
-    # Actually, for --onedir, we might want config to be external/editable.
-    
-    # Let's copy 'data' folder to the root of EXE dir for editable config
+    # 2. Copy 'data' folder for external/editable config
     src_data = os.path.join(base_dir, 'data')
-    dst_data = os.path.join(exe_dir, 'data')
-    
-    # If we want editable config, we should copy it manually and NOT bundle it inside the executable 
-    # (or bundle a default and copy if missing).
-    # Since the app usually looks for ./data relative to CWD or __file__.
-    # Note: `src/utils/helpers.py` or similar probably determines paths.
+    dst_data = os.path.join(release_dir, 'data')
     
     if os.path.exists(src_data):
-        if os.path.exists(dst_data):
-             # Remove existing to ensure fresh copy
-             shutil.rmtree(dst_data)
         shutil.copytree(src_data, dst_data)
-        print("Copied external data folder (for editable config)")
+        print("Copied external data folder")
 
-    # 3. Copy templates externally too if we want them editable without digging into _internal
+    # 3. Copy templates externally
     src_tpl = os.path.join(base_dir, 'template')
-    dst_tpl = os.path.join(exe_dir, 'template')
+    dst_tpl = os.path.join(release_dir, 'template')
     if os.path.exists(src_tpl):
-        if os.path.exists(dst_tpl):
-            shutil.rmtree(dst_tpl)
         shutil.copytree(src_tpl, dst_tpl)
         print("Copied external template folder")
 
-    print(f"Build complete. Output in: {exe_dir}")
+    print(f"Build complete. Release ready at: {release_dir}")
 
 if __name__ == "__main__":
     build()

@@ -131,19 +131,49 @@ class MainWindow(QMainWindow):
         self._init_default_data()
     
     def _get_reports_dir(self) -> str:
-        """Get the absolute path to the REPORTS directory."""
-        # src/ui -> src -> root
-        root = Path(__file__).parent.parent.parent
+        """Get the absolute path to the REPORTS directory.
+        
+        Supports PyInstaller frozen EXE and network shares.
+        """
+        import sys
+        if getattr(sys, 'frozen', False):
+            # Running as frozen executable - use EXE location
+            root = Path(sys.executable).parent
+        else:
+            # src/ui -> src -> root
+            root = Path(__file__).parent.parent.parent
+        
         reports_dir = root / "REPORTS"
-        reports_dir.mkdir(exist_ok=True)
+        try:
+            reports_dir.mkdir(exist_ok=True)
+        except Exception:
+            # Fallback to temp if can't create
+            import tempfile
+            reports_dir = Path(tempfile.gettempdir()) / "UllageMaster_Reports"
+            reports_dir.mkdir(exist_ok=True)
         return str(reports_dir)
 
     def _get_voyages_dir(self) -> str:
-        """Get the absolute path to the VOYAGES directory."""
-        # src/ui -> src -> root
-        root = Path(__file__).parent.parent.parent
+        """Get the absolute path to the VOYAGES directory.
+        
+        Supports PyInstaller frozen EXE and network shares.
+        """
+        import sys
+        if getattr(sys, 'frozen', False):
+            # Running as frozen executable - use EXE location
+            root = Path(sys.executable).parent
+        else:
+            # src/ui -> src -> root
+            root = Path(__file__).parent.parent.parent
+        
         voyages_dir = root / "VOYAGES"
-        voyages_dir.mkdir(exist_ok=True)
+        try:
+            voyages_dir.mkdir(exist_ok=True)
+        except Exception:
+            # Fallback to temp if can't create
+            import tempfile
+            voyages_dir = Path(tempfile.gettempdir()) / "UllageMaster_Voyages"
+            voyages_dir.mkdir(exist_ok=True)
         return str(voyages_dir)
 
     def _update_last_dir(self, filepath: str):
@@ -1609,11 +1639,20 @@ class MainWindow(QMainWindow):
             self.ship_config = ShipConfig.create_empty("New Ship")
     
     def _get_config_path(self) -> Path:
-        """Get path to ship config file."""
-        # Get the data/config directory relative to src
-        src_dir = Path(__file__).parent.parent
-        config_dir = src_dir.parent / "data" / "config"
-        config_dir.mkdir(parents=True, exist_ok=True)
+        """Get path to ship config file. Supports PyInstaller EXE."""
+        import sys
+        if getattr(sys, 'frozen', False):
+            root = Path(sys.executable).parent
+        else:
+            # Get the data/config directory relative to src
+            src_dir = Path(__file__).parent.parent
+            root = src_dir.parent
+        
+        config_dir = root / "data" / "config"
+        try:
+            config_dir.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass  # May fail on read-only share
         return config_dir / "ship_config.json"
     
     def _load_tank_tables(self):
@@ -2609,7 +2648,18 @@ class MainWindow(QMainWindow):
                 report = UllagePDFReport(current_path, vessel_data, voyage_data, tank_data, overview_data)
                 report.generate()
                 
-                os.startfile(current_path)
+                # Network share handling: Wait for file to be visible
+                import time
+                for _ in range(10): # Wait up to 2 seconds
+                    if os.path.exists(current_path):
+                        break
+                    time.sleep(0.2)
+                    
+                if os.path.exists(current_path):
+                    os.startfile(os.path.normpath(current_path))
+                else:
+                    raise FileNotFoundError(f"Dosya kaydedildi fakat bulunamadı (Ağ gecikmesi olabilir):\n{current_path}")
+
                 break
                 
             except PermissionError:
@@ -2697,7 +2747,17 @@ class MainWindow(QMainWindow):
                 )
                 
                 if success:
-                    os.startfile(current_path)
+                    # Network share handling: Wait for file to be visible
+                    import time
+                    for _ in range(10): # Wait up to 2 seconds
+                        if os.path.exists(current_path):
+                            break
+                        time.sleep(0.2)
+                        
+                    if os.path.exists(current_path):
+                        os.startfile(os.path.normpath(current_path))
+                    else:
+                        QMessageBox.warning(self, "Hata", "Dosya oluşturuldu fakat bulunamadı (Ağ gecikmesi olabilir).")
                 else:
                     QMessageBox.warning(self, "Hata", "Stowage Plan raporu oluşturulamadı.")
                 break
@@ -3057,16 +3117,60 @@ class MainWindow(QMainWindow):
         # Check if template exists
         template_path = get_template_path()
         if not template_path.exists():
-            QMessageBox.warning(
+            # Ask user if they want to browse for template
+            reply = QMessageBox.question(
                 self, "Template Not Found",
-                f"Template file not found:\n{template_path}\n\n"
-                "Please place your TEMPLATE.XLSM file in the TEMPLATE folder."
+                f"Template file not found at default location:\n{template_path}\n\n"
+                "Would you like to browse for the template file?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
             )
-            return
+            
+            if reply == QMessageBox.StandardButton.Yes:
+                # Open file dialog to select template
+                selected_path, _ = QFileDialog.getOpenFileName(
+                    self, "Select Template File",
+                    str(Path.home()),
+                    "Excel Macro Files (*.xlsm)"
+                )
+                if selected_path:
+                    template_path = Path(selected_path)
+                else:
+                    return  # User cancelled
+            else:
+                return  # User chose not to browse
         
-        # Prompt for save location
+        # Prompt for save location - use REPORTS folder by default
         default_name = f"{self.voyage.voyage_number.replace('/', '-')}_report.xlsm"
-        initial_path = str(Path(self.last_dir) / default_name)
+        
+        # Determine REPORTS folder (relative to EXE or script location)
+        import sys
+        if getattr(sys, 'frozen', False):
+            app_dir = Path(sys.executable).parent
+        else:
+            app_dir = Path(__file__).parent.parent.parent
+        
+        reports_dir = app_dir / "REPORTS"
+        
+        # Check if REPORTS folder exists, if not ask user
+        if not reports_dir.exists():
+            reply = QMessageBox.question(
+                self, "REPORTS Folder Not Found",
+                f"Default REPORTS folder not found:\n{reports_dir}\n\n"
+                "Would you like to select a different folder?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+            if reply == QMessageBox.StandardButton.Yes:
+                selected_dir = QFileDialog.getExistingDirectory(
+                    self, "Select Save Folder", str(Path.home())
+                )
+                if selected_dir:
+                    reports_dir = Path(selected_dir)
+                else:
+                    return  # User cancelled
+            else:
+                return  # User chose not to select folder
+        
+        initial_path = str(reports_dir / default_name)
         
         filepath, _ = QFileDialog.getSaveFileName(
             self, "Export Template Report", 
@@ -3087,11 +3191,29 @@ class MainWindow(QMainWindow):
         draft_aft = self.draft_aft_spin.value()
         draft_fwd = self.draft_fwd_spin.value()
         
-        success = export_template_report(self.voyage, filepath, column_keys, draft_aft, draft_fwd)
+        success = export_template_report(self.voyage, filepath, column_keys, draft_aft, draft_fwd, template_path)
         
         if success:
             self.status_bar.showMessage(f"Exported Template Report: {filepath}")
             QMessageBox.information(self, t("success", "dialog"), f"Exported to {filepath}")
+            # Open the file with system default application
+            # Open the file with system default application
+            import os
+            import time
+            
+            # Network share handling: Wait for file
+            for _ in range(10):
+                if os.path.exists(filepath):
+                    break
+                time.sleep(0.2)
+            
+            if os.path.exists(filepath):
+                try:
+                    os.startfile(os.path.normpath(filepath))
+                except Exception as e:
+                    QMessageBox.warning(self, "Warning", f"Could not open file automatically:\n{e}")
+            else:
+                 QMessageBox.warning(self, "Warning", f"File created but not found (network lag?):\n{filepath}")
         else:
             QMessageBox.warning(self, t("error", "dialog"), "Export failed. Check console for details.")
     

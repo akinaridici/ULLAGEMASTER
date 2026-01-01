@@ -49,7 +49,8 @@ def get_template_path() -> Path:
 
 
 def export_template_report(voyage: 'Voyage', output_path: str, column_keys: list,
-                           draft_aft: float = 0.0, draft_fwd: float = 0.0) -> bool:
+                           draft_aft: float = 0.0, draft_fwd: float = 0.0,
+                           template_path: Path = None) -> bool:
     """
     Export grid data to a copy of the XLSM template.
     
@@ -59,6 +60,7 @@ def export_template_report(voyage: 'Voyage', output_path: str, column_keys: list
         column_keys: List of column keys matching the grid order.
         draft_aft: Draft AFT value in meters.
         draft_fwd: Draft FWD value in meters.
+        template_path: Optional path to template file. If None, uses default location.
         
     Returns:
         True if successful, False otherwise.
@@ -67,7 +69,9 @@ def export_template_report(voyage: 'Voyage', output_path: str, column_keys: list
         print("openpyxl not available. Install with: pip install openpyxl")
         return False
     
-    template_path = get_template_path()
+    # Use provided template_path or get default
+    if template_path is None:
+        template_path = get_template_path()
     
     if not template_path.exists():
         print(f"Template not found: {template_path}")

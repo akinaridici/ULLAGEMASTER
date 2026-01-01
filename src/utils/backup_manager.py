@@ -5,6 +5,7 @@ Handles backing up and restoring critical application configuration files.
 
 import shutil
 import os
+import sys
 from pathlib import Path
 from typing import Tuple, List
 
@@ -12,13 +13,32 @@ from typing import Tuple, List
 BACKUP_PASSWORD = "19771977"
 
 def get_app_root() -> Path:
-    """Get the application root directory."""
-    # src/utils -> src -> root
-    return Path(__file__).parent.parent.parent
+    """
+    Get the application root directory.
+    
+    Supports:
+    - Normal Python execution
+    - PyInstaller frozen EXE
+    - Network share execution
+    """
+    if getattr(sys, 'frozen', False):
+        # Running as frozen executable - use EXE location
+        return Path(sys.executable).parent
+    else:
+        # src/utils -> src -> root
+        return Path(__file__).parent.parent.parent
 
 def get_default_backup_dir() -> Path:
-    """Get the default BACKUP directory path."""
-    return get_app_root() / "BACKUP"
+    """Get the default BACKUP directory path. Creates if doesn't exist."""
+    backup_dir = get_app_root() / "BACKUP"
+    # Create directory if it doesn't exist
+    if not backup_dir.exists():
+        try:
+            backup_dir.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            # If we can't create, return home directory as fallback
+            return Path.home() / "UllageMaster_Backup"
+    return backup_dir
 
 def safe_copy(source: Path, destination: Path):
     """safely copy file, ensuring parent dirs exist."""

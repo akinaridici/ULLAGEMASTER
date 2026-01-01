@@ -208,7 +208,14 @@ class VoyageExplorerWidget(QWidget):
     def __init__(self, ship_config: ShipConfig, parent=None):
         super().__init__(parent)
         self.ship_config = ship_config
-        self.voyage_dir = os.path.join(os.getcwd(), 'VOYAGES')
+        # Determine app root (supports frozen EXE and network shares)
+        import sys
+        from pathlib import Path
+        if getattr(sys, 'frozen', False):
+            app_root = Path(sys.executable).parent
+        else:
+            app_root = Path(__file__).parent.parent.parent.parent  # widgets -> ui -> src -> root
+        self.voyage_dir = str(app_root / 'VOYAGES')
         self.current_path = None
         self._init_ui()
         self.restore_state()
@@ -494,9 +501,15 @@ class VoyageExplorerWidget(QWidget):
 
     def save_state(self):
         """Save UI state"""
-        config_dir = os.path.join(os.getcwd(), 'data', 'config')
+        import sys
+        from pathlib import Path
+        if getattr(sys, 'frozen', False):
+            app_root = Path(sys.executable).parent
+        else:
+            app_root = Path(__file__).parent.parent.parent.parent
+        config_dir = str(app_root / 'data' / 'config')
         os.makedirs(config_dir, exist_ok=True)
-        config_path = os.path.join(config_dir, 'VoyageExplorer.ini')
+        config_path = str(app_root / 'data' / 'config' / 'VoyageExplorer.ini')
         
         settings = QSettings(config_path, QSettings.Format.IniFormat)
         settings.setValue("splitter_state", self.right_splitter.saveState())
@@ -504,7 +517,13 @@ class VoyageExplorerWidget(QWidget):
         
     def restore_state(self):
         """Restore UI state"""
-        config_path = os.path.join(os.getcwd(), 'data', 'config', 'VoyageExplorer.ini')
+        import sys
+        from pathlib import Path
+        if getattr(sys, 'frozen', False):
+            app_root = Path(sys.executable).parent
+        else:
+            app_root = Path(__file__).parent.parent.parent.parent
+        config_path = str(app_root / 'data' / 'config' / 'VoyageExplorer.ini')
         if not os.path.exists(config_path):
             return
             

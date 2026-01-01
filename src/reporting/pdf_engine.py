@@ -75,7 +75,14 @@ class UllagePDFReport:
         title_text = "INTEGRATED MANAGEMENT SYSTEM MANUAL<br/>Chapter 7.5<br/>ULLAGE REPORT & TEMPERATURE LOG"
         doc_info = "Issue No: 02<br/>Issue Date: 01/11/2024<br/>Rev No: 0<br/>Page: 1"
         
-        logo_path = os.path.join(os.getcwd(), 'data', 'config', 'company_logo', 'LOGO.PNG')
+        # Get logo path (supports frozen EXE)
+        import sys
+        from pathlib import Path
+        if getattr(sys, 'frozen', False):
+            app_root = Path(sys.executable).parent
+        else:
+            app_root = Path(__file__).parent.parent.parent  # reporting -> src -> root
+        logo_path = str(app_root / 'data' / 'config' / 'company_logo' / 'LOGO.PNG')
         if os.path.exists(logo_path):
             logo_obj = Image(logo_path)
             # Resize to fit width of 35mm, maintain aspect

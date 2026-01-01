@@ -5,7 +5,7 @@ a = Analysis(
     ['D:\\ULLAGEMASTER\\src\\main.py'],
     pathex=['D:\\ULLAGEMASTER\\src'],
     binaries=[],
-    datas=[('D:\\ULLAGEMASTER\\src\\i18n\\en.json', 'src/i18n'), ('D:\\ULLAGEMASTER\\src\\i18n\\tr.json', 'src/i18n'), ('D:\\ULLAGEMASTER\\data\\config\\company_logo', 'data/config/company_logo'), ('D:\\ULLAGEMASTER\\template\\TEMPLATE - Copy.xlsm', 'template'), ('D:\\ULLAGEMASTER\\template\\TEMPLATE.xlsm', 'template'), ('D:\\ULLAGEMASTER\\template\\TEMPLATE1.xlsm', 'template')],
+    datas=[('D:\\ULLAGEMASTER\\src\\i18n\\en.json', 'i18n'), ('D:\\ULLAGEMASTER\\src\\i18n\\tr.json', 'i18n'), ('D:\\ULLAGEMASTER\\data\\config\\company_logo', 'data/config/company_logo'), ('D:\\ULLAGEMASTER\\template\\TEMPLATE - Copy.xlsm', 'template'), ('D:\\ULLAGEMASTER\\template\\TEMPLATE.xlsm', 'template'), ('D:\\ULLAGEMASTER\\template\\TEMPLATE1.xlsm', 'template'), ('D:\\ULLAGEMASTER\\assets\\icon.ico', 'assets')],
     hiddenimports=['PyQt6', 'openpyxl', 'reportlab', 'ui', 'ui.main_window', 'ui.styles', 'ui.splash_screen', 'ui.widgets', 'models', 'core', 'export', 'reporting', 'utils'],
     hookspath=[],
     hooksconfig={},
@@ -35,4 +35,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['D:\\ULLAGEMASTER\\assets\\icon.ico'],
 )

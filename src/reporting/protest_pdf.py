@@ -183,7 +183,13 @@ class ProtestPDFReport:
         doc_values = "2<br/>1.11.2024<br/>0<br/>00/00/0000<br/>1 of 1"
         
         # Load logo
-        logo_path = os.path.join(os.getcwd(), 'data', 'config', 'company_logo', 'LOGO.PNG')
+        import sys
+        from pathlib import Path
+        if getattr(sys, 'frozen', False):
+            app_root = Path(sys.executable).parent
+        else:
+            app_root = Path(__file__).parent.parent.parent  # reporting -> src -> root
+        logo_path = str(app_root / 'data' / 'config' / 'company_logo' / 'LOGO.PNG')
         if os.path.exists(logo_path):
             logo_obj = Image(logo_path)
             aspect = logo_obj.imageHeight / float(logo_obj.imageWidth)

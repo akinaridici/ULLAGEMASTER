@@ -972,13 +972,37 @@ class DiscrepancyWidget(QWidget):
                     except:
                         pass
         
-        # Generate filename and path
-        reports_dir = os.path.join(os.getcwd(), 'REPORTS')
-        os.makedirs(reports_dir, exist_ok=True)
+        # Generate filename and get save location from user
+        import sys
+        from pathlib import Path
+        from PyQt6.QtWidgets import QFileDialog
+        
+        # Determine REPORTS folder (supports frozen EXE)
+        if getattr(sys, 'frozen', False):
+            app_dir = Path(sys.executable).parent
+        else:
+            app_dir = Path(__file__).parent.parent.parent.parent  # widgets -> ui -> src -> root
+        
+        reports_dir = app_dir / "REPORTS"
+        try:
+            reports_dir.mkdir(exist_ok=True)
+        except Exception:
+            reports_dir = Path.home()
         
         safe_name = f"{parcel.name}_{parcel.receiver}".replace(" ", "_").replace("/", "-")
-        filename = f"{self.voyage.voyage_number}_{safe_name}_{operation_type}_Protest.pdf"
-        output_path = os.path.join(reports_dir, filename)
+        default_filename = f"{self.voyage.voyage_number}_{safe_name}_{operation_type}_Protest.pdf"
+        initial_path = str(reports_dir / default_filename)
+        
+        # Ask user where to save
+        output_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Protest Letter",
+            initial_path,
+            "PDF Files (*.pdf)"
+        )
+        
+        if not output_path:
+            return  # User cancelled
         
         try:
             # Generate the PDF
@@ -986,12 +1010,25 @@ class DiscrepancyWidget(QWidget):
             report.generate()
             
             # Open the PDF
-            if os.name == 'nt':  # Windows
-                os.startfile(output_path)
-            else:  # Linux/Mac
-                subprocess.run(['xdg-open', output_path])
+            import time
+            from pathlib import Path
+            # Wait for file to be visible (for network shares)
+            for _ in range(10):
+                if os.path.exists(output_path):
+                    break
+                time.sleep(0.2)
             
-            QMessageBox.information(self, "Protest Letter", f"Protest letter generated:\n{filename}")
+            if os.path.exists(output_path):
+                # Normalize path for Windows startfile
+                norm_path = os.path.normpath(output_path)
+                if os.name == 'nt':  # Windows
+                    os.startfile(norm_path)
+                else:  # Linux/Mac
+                    subprocess.run(['xdg-open', norm_path])
+                
+                QMessageBox.information(self, "Protest Letter", f"Protest letter generated:\n{Path(output_path).name}")
+            else:
+                QMessageBox.warning(self, "Warning", f"File saved but not found (network lag?):\n{output_path}")
             
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to generate protest letter:\n{e}")
@@ -1112,24 +1149,60 @@ class DiscrepancyWidget(QWidget):
                     except:
                         pass
         
-        # Generate filename and path
-        reports_dir = os.path.join(os.getcwd(), 'REPORTS')
-        os.makedirs(reports_dir, exist_ok=True)
+        # Generate filename and get save location from user
+        import sys
+        from pathlib import Path
+        from PyQt6.QtWidgets import QFileDialog
         
-        filename = f"{self.voyage.voyage_number}_ALL_{operation_type}_Protest.pdf"
-        output_path = os.path.join(reports_dir, filename)
+        # Determine REPORTS folder (supports frozen EXE)
+        if getattr(sys, 'frozen', False):
+            app_dir = Path(sys.executable).parent
+        else:
+            app_dir = Path(__file__).parent.parent.parent.parent  # widgets -> ui -> src -> root
+        
+        reports_dir = app_dir / "REPORTS"
+        try:
+            reports_dir.mkdir(exist_ok=True)
+        except Exception:
+            reports_dir = Path.home()
+        
+        default_filename = f"{self.voyage.voyage_number}_ALL_{operation_type}_Protest.pdf"
+        initial_path = str(reports_dir / default_filename)
+        
+        # Ask user where to save
+        output_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save All Protest Letters",
+            initial_path,
+            "PDF Files (*.pdf)"
+        )
+        
+        if not output_path:
+            return  # User cancelled
         
         try:
             # Generate multi-page PDF
             ProtestPDFReport.generate_multi(output_path, vessel_name, parcel_data_list, operation_type, voyage_data)
             
             # Open the PDF
-            if os.name == 'nt':
-                os.startfile(output_path)
+            import time
+            from pathlib import Path
+            # Wait for file to be visible (for network shares)
+            for _ in range(10):
+                if os.path.exists(output_path):
+                    break
+                time.sleep(0.2)
+                
+            if os.path.exists(output_path):
+                norm_path = os.path.normpath(output_path)
+                if os.name == 'nt':
+                    os.startfile(norm_path)
+                else:
+                    subprocess.run(['xdg-open', norm_path])
+                
+                QMessageBox.information(self, "Protest All", f"Generated protest letters for {len(parcel_data_list)} parcels:\n{Path(output_path).name}")
             else:
-                subprocess.run(['xdg-open', output_path])
-            
-            QMessageBox.information(self, "Protest All", f"Generated protest letters for {len(parcel_data_list)} parcels:\n{filename}")
+                QMessageBox.warning(self, "Warning", f"File saved but not found (network lag?):\n{output_path}")
             
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to generate protest letters:\n{e}")
