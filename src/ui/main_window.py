@@ -98,6 +98,9 @@ class MainWindow(QMainWindow):
         ("tank_id_end", "Tank", 60, False, False),    # Duplicate tank column for visibility
     ]
     
+    # Maximum fill percentage for stowage planning (industry standard safe loading level)
+    MAX_FILL_FACTOR = 0.977  # 97.7%
+    
     def __init__(self):
         super().__init__()
         
@@ -478,16 +481,16 @@ class MainWindow(QMainWindow):
         self.colorize_btn.released.connect(self._restore_colorize)
         buttons_col.addWidget(self.colorize_btn)
         
-        # %100 Yap button
-        self.fill_100_btn = QPushButton("%100")
+        # %97.7 Yap button (industry standard safe loading level)
+        self.fill_100_btn = QPushButton("%97.7")
         self.fill_100_btn.setMinimumHeight(35)
         self.fill_100_btn.setStyleSheet("""
             font-size: 10pt; font-weight: bold;
             background-color: #f59e0b; color: white;
             border-radius: 5px; padding: 8px;
         """)
-        self.fill_100_btn.setToolTip("Tüm yüklü tankları %100 kapasiteye getir")
-        self.fill_100_btn.clicked.connect(self._fill_tanks_to_100)
+        self.fill_100_btn.setToolTip("Tüm yüklü tankları %97.7 kapasiteye getir")
+        self.fill_100_btn.clicked.connect(self._fill_tanks_to_97_7)
         buttons_col.addWidget(self.fill_100_btn)
         
         legend_button_row.addLayout(buttons_col)
@@ -720,15 +723,16 @@ class MainWindow(QMainWindow):
         
         if existing:
             if existing.cargo.unique_id == cargo_id:
-                # Same cargo - add to existing (but cap at 100%)
+                # Same cargo - add to existing (but cap at 97.7%)
                 current_loaded = existing.quantity_loaded
             else:
                 # Different cargo - clear existing first
                 self.stowage_plan.remove_assignment(tank_id)
                 current_loaded = 0.0
         
-        # Calculate available space in tank (100% cap)
-        available_space = max(0, capacity - current_loaded)
+        # Calculate available space in tank (97.7% cap - industry standard)
+        max_capacity = capacity * self.MAX_FILL_FACTOR
+        available_space = max(0, max_capacity - current_loaded)
         
         # Calculate remaining cargo to load
         already_loaded = self.stowage_plan.get_cargo_total_loaded(cargo_id)
@@ -753,7 +757,7 @@ class MainWindow(QMainWindow):
         self._on_stowage_changed()
     
     def handle_tank_swap(self, source_tank_id: str, target_tank_id: str):
-        """Handle swapping/moving cargo between two tanks with 100% capacity cap."""
+        """Handle swapping/moving cargo between two tanks with 97.7% capacity cap."""
         if not self.stowage_plan:
             return
         
@@ -769,14 +773,14 @@ class MainWindow(QMainWindow):
         source_assignment = self.stowage_plan.get_assignment(source_tank_id)
         target_assignment = self.stowage_plan.get_assignment(target_tank_id)
         
-        # Calculate quantities with 100% cap
+        # Calculate quantities with 97.7% cap (industry standard)
         source_qty = source_assignment.quantity_loaded if source_assignment else 0.0
         target_qty = target_assignment.quantity_loaded if target_assignment else 0.0
         
         # After swap: source cargo goes to target, target cargo goes to source
-        # Cap each at the respective tank's capacity
-        new_target_qty = min(source_qty, target_capacity) if source_assignment else 0.0
-        new_source_qty = min(target_qty, source_capacity) if target_assignment else 0.0
+        # Cap each at 97.7% of the respective tank's capacity
+        new_target_qty = min(source_qty, target_capacity * self.MAX_FILL_FACTOR) if source_assignment else 0.0
+        new_source_qty = min(target_qty, source_capacity * self.MAX_FILL_FACTOR) if target_assignment else 0.0
         
         # Update assignments with capped quantities
         if source_assignment:
@@ -838,7 +842,82 @@ class MainWindow(QMainWindow):
         return hasattr(self, 'locked_tanks') and tank_id in self.locked_tanks
     
     def _clear_all_tanks(self):
-        """Clear all tank assignments (CTRL+E)."""
+        """Clear all tank assignments (CTRL+E) - context sensitive based on active tab."""
+        current_tab = self.tab_widget.currentIndex()
+        
+        if current_tab == 2:  # Ullage Calculation tab
+            self._clear_all_parcel_assignments()
+        else:  # Stowage Plan tab (or other tabs default to stowage behavior)
+            self._clear_stowage_assignments()
+    
+    def _clear_all_parcel_assignments(self):
+        """Clear all parcel assignments from tank readings in Ullage tab.
+        
+        Excludes SLOP parcels (parcel_id = "0" or parcel name contains 'slop').
+        """
+        if not self.voyage or not self.voyage.tank_readings:
+            QMessageBox.information(self, "Bilgi", "Silinecek parsel ataması bulunamadı.")
+            return
+        
+        # Build a map of parcel_id -> parcel for SLOP detection
+        parcel_map = {p.id: p for p in self.voyage.parcels}
+        
+        # Check if any non-SLOP tanks have parcel assignments
+        clearable_tanks = []
+        for reading in self.voyage.tank_readings.values():
+            if reading.parcel_id:
+                # Skip SLOP parcel (id "0" is reserved for SLOP)
+                if reading.parcel_id == "0":
+                    continue
+                # Also check by parcel name
+                parcel = parcel_map.get(reading.parcel_id)
+                if parcel and 'slop' in parcel.name.lower():
+                    continue
+                clearable_tanks.append(reading)
+        
+        if not clearable_tanks:
+            QMessageBox.information(self, "Bilgi", "Silinecek parsel ataması bulunamadı.\n(SLOP parselleri hariç)")
+            return
+        
+        # Confirm with user
+        reply = QMessageBox.question(
+            self, "Parsel Atamalarını Sil",
+            f"{len(clearable_tanks)} tank için parsel atamaları iptal edilecek.\n(SLOP hariç)\n\nDevam etmek istiyor musunuz?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        
+        # Clear non-SLOP parcel assignments
+        cleared_count = 0
+        for reading in self.voyage.tank_readings.values():
+            if reading.parcel_id:
+                # Skip SLOP parcel
+                if reading.parcel_id == "0":
+                    continue
+                parcel = parcel_map.get(reading.parcel_id)
+                if parcel and 'slop' in parcel.name.lower():
+                    continue
+                reading.parcel_id = ""
+                cleared_count += 1
+        
+        # Refresh the grid
+        self._populate_grid()
+        
+        # Update Report Functions
+        if hasattr(self, 'report_tab'):
+            self.report_tab.set_parcels(
+                self.voyage.parcels,
+                self.ship_config.tanks if self.ship_config else None,
+                self.voyage.tank_readings
+            )
+        
+        self.status_bar.showMessage(f"{cleared_count} parsel ataması silindi (SLOP hariç)", 3000)
+    
+    def _clear_stowage_assignments(self):
+        """Clear all tank assignments in Stowage Plan."""
         if not hasattr(self, 'stowage_plan') or not self.stowage_plan:
             QMessageBox.information(self, "Bilgi", "Aktif bir plan bulunmuyor.")
             return
@@ -897,39 +976,63 @@ class MainWindow(QMainWindow):
         
         self._on_stowage_changed()
     
-    def _fill_tanks_to_100(self):
-        """Fill all loaded tanks to 100% capacity while preserving cargo type."""
+    def _fill_tanks_to_97_7(self):
+        """Fill all loaded tanks to 97.7% capacity while preserving cargo type.
+        
+        Excludes:
+        - SLOP tanks (cargo_type contains 'SLOP')
+        - Excluded tanks (in stowage_plan.excluded_tanks)
+        """
         from models.stowage_plan import TankAssignment
         
         if not self.stowage_plan or not self.ship_config:
             return
         
-        # Check if there are any loaded tanks
-        has_loaded_tanks = any(
-            self.stowage_plan.get_assignment(tank.id) 
-            for tank in self.ship_config.tanks
-        )
-        
-        if not has_loaded_tanks:
-            QMessageBox.information(
-                self,
-                "Bilgi",
-                "Yüklü tank bulunamadı."
-            )
-            return
-        
-        # Fill each loaded tank to 100%
-        filled_count = 0
+        # Check if there are any loaded tanks (excluding SLOP and excluded)
+        has_fillable_tanks = False
         for tank in self.ship_config.tanks:
             assignment = self.stowage_plan.get_assignment(tank.id)
             if assignment:
+                # Skip excluded tanks
+                if tank.id in self.stowage_plan.excluded_tanks:
+                    continue
+                # Skip SLOP cargo
+                if 'slop' in assignment.cargo.cargo_type.lower():
+                    continue
+                has_fillable_tanks = True
+                break
+        
+        if not has_fillable_tanks:
+            QMessageBox.information(
+                self,
+                "Bilgi",
+                "Doldurulabilir tank bulunamadı.\n(SLOP ve planlama dışı tanklar hariç)"
+            )
+            return
+        
+        # Fill each loaded tank to 97.7% (industry standard)
+        # Skip SLOP and excluded tanks
+        filled_count = 0
+        skipped_slop = 0
+        for tank in self.ship_config.tanks:
+            assignment = self.stowage_plan.get_assignment(tank.id)
+            if assignment:
+                # Skip excluded tanks
+                if tank.id in self.stowage_plan.excluded_tanks:
+                    continue
+                    
+                # Skip SLOP cargo
+                if 'slop' in assignment.cargo.cargo_type.lower():
+                    skipped_slop += 1
+                    continue
+                
                 tank_capacity = getattr(tank, 'capacity_m3', 0)
                 if tank_capacity > 0:
-                    # Update quantity to tank capacity
+                    # Update quantity to 97.7% of tank capacity
                     new_assignment = TankAssignment(
                         tank_id=tank.id,
                         cargo=assignment.cargo,
-                        quantity_loaded=tank_capacity
+                        quantity_loaded=tank_capacity * self.MAX_FILL_FACTOR
                     )
                     self.stowage_plan.assignments[tank.id] = new_assignment
                     filled_count += 1
@@ -938,11 +1041,15 @@ class MainWindow(QMainWindow):
         self._on_stowage_changed()
         
         # Show confirmation
+        msg = f"{filled_count} tank %97.7 kapasiteye getirildi."
+        if skipped_slop > 0:
+            msg += f"\n\n({skipped_slop} SLOP tank atlandı)"
+        msg += "\n\nNot: Bu işlem sipariş miktarını aşabilir."
+        
         QMessageBox.information(
             self,
             "Tamamlandı",
-            f"{filled_count} tank %100 kapasiteye getirildi.\n\n"
-            f"Not: Bu işlem sipariş miktarını aşabilir."
+            msg
         )
     
     def _apply_colorize(self):
@@ -1087,15 +1194,37 @@ class MainWindow(QMainWindow):
             self.voyage.parcels.append(parcel)
             cargo_to_parcel[cargo.unique_id] = parcel_id
         
-        # Apply tank assignments
+        # Default values for transferred tanks
+        DEFAULT_TEMP_CELSIUS = 20.0
+        DEFAULT_FILL_PERCENT = 97.7
+        
+        # Apply tank assignments with default values
+        # Skip SLOP cargo - leave existing values unchanged
         for tank_id, assignment in self.stowage_plan.assignments.items():
             if tank_id in self.voyage.tank_readings:
                 parcel_id = cargo_to_parcel.get(assignment.cargo.unique_id)
                 if parcel_id:
                     reading = self.voyage.tank_readings[tank_id]
                     reading.parcel_id = parcel_id
-                    # Also set the VAC density from the cargo
+                    # Set the VAC density from the cargo
                     reading.density_vac = assignment.cargo.density
+                    
+                    # Skip SLOP cargo - don't set default TEMP/ULLAGE values
+                    if 'slop' in assignment.cargo.cargo_type.lower():
+                        continue
+                    
+                    # Set default temperature
+                    reading.temp_celsius = DEFAULT_TEMP_CELSIUS
+                    
+                    # Calculate ullage from 97.7% fill using tank's capacity and ullage table
+                    tank = self.tanks.get(tank_id)
+                    if tank and tank.has_ullage_table():
+                        reading.ullage = calculate_ullage_from_percent(
+                            DEFAULT_FILL_PERCENT,
+                            tank.capacity_m3,
+                            tank.ullage_table
+                        )
+                        reading.fill_percent = DEFAULT_FILL_PERCENT
 
         
         # Switch to Ullage tab
@@ -1103,6 +1232,14 @@ class MainWindow(QMainWindow):
         
         # Refresh grid
         self._populate_grid()
+        
+        # Sync parcels to Report Functions tab
+        if hasattr(self, 'report_tab'):
+            self.report_tab.set_parcels(
+                self.voyage.parcels,
+                self.ship_config.tanks if self.ship_config else None,
+                self.voyage.tank_readings
+            )
         
         QMessageBox.information(
             self, "Aktarım Tamamlandı",

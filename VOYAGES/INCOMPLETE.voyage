@@ -1,0 +1,218 @@
+{
+  "version": "2.0",
+  "voyage": {
+    "voyage_number": "",
+    "date": "07-01-2026",
+    "port": "",
+    "terminal": "",
+    "vef": 1.0,
+    "drafts": {
+      "aft": 0.0,
+      "fwd": 0.0,
+      "trim": 0.0
+    },
+    "chief_officer": "Harun Kurtuluş",
+    "master": "Akın Arıdıcı",
+    "parcels": [
+      {
+        "id": "1",
+        "name": "KBZ",
+        "receiver": "ANTALYA OPET",
+        "density_vac": 0.73,
+        "color": "#FF6B6B",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      }
+    ],
+    "tank_readings": {
+      "1P": {
+        "tank_id": "1P",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "1S": {
+        "tank_id": "1S",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "2P": {
+        "tank_id": "2P",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "2S": {
+        "tank_id": "2S",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "3P": {
+        "tank_id": "3P",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "3S": {
+        "tank_id": "3S",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "4P": {
+        "tank_id": "4P",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "4S": {
+        "tank_id": "4S",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "5P": {
+        "tank_id": "5P",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "5S": {
+        "tank_id": "5S",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "6P": {
+        "tank_id": "6P",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "6S": {
+        "tank_id": "6S",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "7P": {
+        "tank_id": "7P",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "7S": {
+        "tank_id": "7S",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "8P": {
+        "tank_id": "8P",
+        "parcel_id": "1",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": 0.73
+      },
+      "8S": {
+        "tank_id": "8S",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "SlopP": {
+        "tank_id": "SlopP",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "SlopS": {
+        "tank_id": "SlopS",
+        "parcel_id": "1",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": 0.73
+      }
+    },
+    "totals": {
+      "gsv": 0.0,
+      "mt": 0.0
+    },
+    "notes": ""
+  },
+  "stowage_plan": {
+    "id": "160ea01b-ac56-4a40-a37c-4fef30337500",
+    "plan_name": "Plan_20260107_211121",
+    "ship_name": "MT KUZEY EKİM",
+    "created_date": "2026-01-07T21:11:21.490450",
+    "cargo_requests": [
+      {
+        "unique_id": "d38db13f-ef6c-41ed-a635-ad7c880b2892",
+        "cargo_type": "KBZ",
+        "quantity": 1780.8219178082193,
+        "receivers": [
+          {
+            "name": "ANTALYA OPET"
+          }
+        ],
+        "density": 0.73,
+        "custom_color": "#FF6B6B"
+      }
+    ],
+    "assignments": {
+      "8P": {
+        "tank_id": "8P",
+        "cargo": {
+          "unique_id": "d38db13f-ef6c-41ed-a635-ad7c880b2892",
+          "cargo_type": "KBZ",
+          "quantity": 1780.8219178082193,
+          "receivers": [
+            {
+              "name": "ANTALYA OPET"
+            }
+          ],
+          "density": 0.73,
+          "custom_color": "#FF6B6B"
+        },
+        "quantity_loaded": 1302.6
+      },
+      "SlopS": {
+        "tank_id": "SlopS",
+        "cargo": {
+          "unique_id": "d38db13f-ef6c-41ed-a635-ad7c880b2892",
+          "cargo_type": "KBZ",
+          "quantity": 1780.8219178082193,
+          "receivers": [
+            {
+              "name": "ANTALYA OPET"
+            }
+          ],
+          "density": 0.73,
+          "custom_color": "#FF6B6B"
+        },
+        "quantity_loaded": 398.6
+      }
+    },
+    "excluded_tanks": []
+  }
+}
