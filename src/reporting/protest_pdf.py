@@ -198,21 +198,54 @@ class ProtestPDFReport:
         
         doc_values = f"{issue_no}<br/>{issue_date}<br/>{rev_no}<br/>{rev_date}<br/>1 of 1"
         
-        # Load logo
-        import sys
-        from pathlib import Path
-        if getattr(sys, 'frozen', False):
-            app_root = Path(sys.executable).parent
-        else:
-            app_root = Path(__file__).parent.parent.parent  # reporting -> src -> root
-        logo_path = str(app_root / 'data' / 'config' / 'company_logo' / 'LOGO.PNG')
-        if os.path.exists(logo_path):
-            logo_obj = Image(logo_path)
-            aspect = logo_obj.imageHeight / float(logo_obj.imageWidth)
-            logo_obj.drawWidth = 30 * mm
-            logo_obj.drawHeight = 30 * mm * aspect
-        else:
-            logo_obj = Paragraph("LOGO", self.style_bold_center)
+        # Logo Logic (Image or Text)
+        logo_config = load_header_config().get("LOGO_SETTINGS", {})
+        logo_mode = logo_config.get("mode", "IMAGE")
+        
+        logo_obj = None
+        
+        if logo_mode == "IMAGE":
+            # Get logo path
+            import sys
+            from pathlib import Path
+            if getattr(sys, 'frozen', False):
+                app_root = Path(sys.executable).parent
+            else:
+                app_root = Path(__file__).parent.parent.parent
+            logo_path = str(app_root / 'data' / 'config' / 'company_logo' / 'LOGO.PNG')
+            
+            if os.path.exists(logo_path):
+                try:
+                    logo_obj = Image(logo_path)
+                    
+                    # Resize Logic:
+                    # Target Width: 30mm (Protest uses 30mm)
+                    # Max Height: 30mm
+                    target_w = 30 * mm
+                    max_h = 30 * mm
+                    
+                    aspect = logo_obj.imageHeight / float(logo_obj.imageWidth)
+                    
+                    # 1. Scale to target width
+                    calc_h = target_w * aspect
+                    
+                    if calc_h > max_h:
+                        # If height exceeds max, scale by height
+                        logo_obj.drawHeight = max_h
+                        logo_obj.drawWidth = max_h / aspect
+                    else:
+                        # Otherwise scale by width
+                        logo_obj.drawWidth = target_w
+                        logo_obj.drawHeight = calc_h
+                except Exception as e:
+                    print(f"Error loading logo image: {e}")
+                    logo_obj = None
+        
+        if logo_obj is None:
+            # Fallback to Text or Explicit Text Mode
+            text_content = logo_config.get("text_content", "LOGO")
+            formatted_text = text_content.replace('\n', '<br/>')
+            logo_obj = Paragraph(formatted_text, self.style_bold_center)
         
         # Info table (right side)
         info_table_data = [
@@ -220,7 +253,6 @@ class ProtestPDFReport:
         ]
         info_table = Table(info_table_data, colWidths=[25*mm, 25*mm])
         info_table.setStyle(TableStyle([
-            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ]))
         
@@ -231,7 +263,7 @@ class ProtestPDFReport:
         ]
         title_table = Table(title_table_data, colWidths=[100*mm])
         title_table.setStyle(TableStyle([
-            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+            ('LINEBELOW', (0,0), (-1,0), 0.5, colors.black),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ]))
         

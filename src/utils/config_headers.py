@@ -30,6 +30,11 @@ DEFAULT_CONFIG = {
         "issue_date": "1.11.2024",
         "rev_no": "0",
         "rev_date": "00/00/0000"
+    },
+    "LOGO_SETTINGS": {
+        "mode": "IMAGE",  # IMAGE or TEXT
+        "text_content": "Battal\nMarine",
+        "image_filename": "LOGO.PNG"
     }
 }
 

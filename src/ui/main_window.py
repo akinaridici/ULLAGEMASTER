@@ -259,20 +259,24 @@ class MainWindow(QMainWindow):
         header_config_action.triggered.connect(self._show_header_config)
         settings_menu.addAction(header_config_action)
         
+        logo_config_action = QAction("Company Logo...", self)
+        logo_config_action.triggered.connect(self._show_logo_config)
+        settings_menu.addAction(logo_config_action)
+        
         settings_menu.addSeparator()
 
 
         # Stowage Plan menu
         stowage_menu = menubar.addMenu("Stowage Plan")
         
-        clear_all_action = QAction("Tüm Tankları Boşalt", self)
+        clear_all_action = QAction("Empty All Tanks", self)
         clear_all_action.setShortcut("Ctrl+E")
         clear_all_action.triggered.connect(self._clear_all_tanks)
         stowage_menu.addAction(clear_all_action)
         
         stowage_menu.addSeparator()
         
-        transfer_action = QAction("➡️ Ullage'a Aktar", self)
+        transfer_action = QAction("➡️ Transfer to Ullage", self)
         transfer_action.setShortcut("Ctrl+Shift+T")
         transfer_action.triggered.connect(self._transfer_stowage_to_ullage)
         stowage_menu.addAction(transfer_action)
@@ -295,7 +299,7 @@ class MainWindow(QMainWindow):
         
         ullage_menu.addSeparator()
         
-        transfer_to_stowage_action = QAction("⬅️ Stowage'a Aktar", self)
+        transfer_to_stowage_action = QAction("⬅️ Transfer to Stowage", self)
         transfer_to_stowage_action.setShortcut("Ctrl+Shift+U")
         transfer_to_stowage_action.triggered.connect(self._transfer_ullage_to_stowage)
         ullage_menu.addAction(transfer_to_stowage_action)
@@ -303,7 +307,7 @@ class MainWindow(QMainWindow):
         # Help menu
         help_menu = menubar.addMenu(t("help", "menu"))
 
-        manual_action = QAction("User Manual / Kullanım Kılavuzu", self)
+        manual_action = QAction("User Manual", self)
         manual_action.setShortcut("F1")
         manual_action.triggered.connect(self._show_manual)
         help_menu.addAction(manual_action)
@@ -482,20 +486,20 @@ class MainWindow(QMainWindow):
             background-color: #8b5cf6; color: white;
             border-radius: 5px; padding: 8px;
         """)
-        self.colorize_btn.setToolTip("Basılı tutun: Alıcı adının ilk 4 harfine göre gruplandırır")
+        self.colorize_btn.setToolTip("Hold: Group by first 4 characters of Receiver name")
         self.colorize_btn.pressed.connect(self._apply_colorize)
         self.colorize_btn.released.connect(self._restore_colorize)
         buttons_col.addWidget(self.colorize_btn)
         
         # %97.7 Yap button (industry standard safe loading level)
-        self.fill_100_btn = QPushButton("%97.7")
+        self.fill_100_btn = QPushButton("Set 97.7%")
         self.fill_100_btn.setMinimumHeight(35)
         self.fill_100_btn.setStyleSheet("""
             font-size: 10pt; font-weight: bold;
             background-color: #f59e0b; color: white;
             border-radius: 5px; padding: 8px;
         """)
-        self.fill_100_btn.setToolTip("Tüm yüklü tankları %97.7 kapasiteye getir")
+        self.fill_100_btn.setToolTip("Fill all loaded tanks to 97.7% capacity")
         self.fill_100_btn.clicked.connect(self._fill_tanks_to_97_7)
         buttons_col.addWidget(self.fill_100_btn)
         
@@ -809,6 +813,12 @@ class MainWindow(QMainWindow):
         """Show dialog to configure report headers (company info)."""
         from ui.dialogs.header_setup import HeaderSetupDialog
         dialog = HeaderSetupDialog(self)
+        dialog.exec()
+
+    def _show_logo_config(self):
+        """Show dialog to configure company logo."""
+        from ui.dialogs.logo_setup import LogoSetupDialog
+        dialog = LogoSetupDialog(self)
         dialog.exec()
 
     

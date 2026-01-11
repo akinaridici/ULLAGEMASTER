@@ -92,22 +92,55 @@ class UllagePDFReport:
         
         doc_info = f"Issue No: {issue_no}<br/>Issue Date: {issue_date}<br/>Rev No: {rev_no}<br/>{page_fmt}"
         
-        # Get logo path (supports frozen EXE)
-        import sys
-        from pathlib import Path
-        if getattr(sys, 'frozen', False):
-            app_root = Path(sys.executable).parent
-        else:
-            app_root = Path(__file__).parent.parent.parent  # reporting -> src -> root
-        logo_path = str(app_root / 'data' / 'config' / 'company_logo' / 'LOGO.PNG')
-        if os.path.exists(logo_path):
-            logo_obj = Image(logo_path)
-            # Resize to fit width of 35mm, maintain aspect
-            aspect = logo_obj.imageHeight / float(logo_obj.imageWidth)
-            logo_obj.drawWidth = 35 * mm
-            logo_obj.drawHeight = 35 * mm * aspect
-        else:
-            logo_obj = Paragraph("Battal<br/>Marine", self.style_bold_center)
+        # Logo Logic (Image or Text)
+        logo_config = load_header_config().get("LOGO_SETTINGS", {})
+        logo_mode = logo_config.get("mode", "IMAGE")
+        
+        logo_obj = None
+        
+        if logo_mode == "IMAGE":
+            # Get logo path
+            import sys
+            from pathlib import Path
+            if getattr(sys, 'frozen', False):
+                app_root = Path(sys.executable).parent
+            else:
+                app_root = Path(__file__).parent.parent.parent
+            logo_path = str(app_root / 'data' / 'config' / 'company_logo' / 'LOGO.PNG')
+            
+            if os.path.exists(logo_path):
+                try:
+                    logo_obj = Image(logo_path)
+                    
+                    # Resize Logic:
+                    # Target Width: 35mm
+                    # Max Height: 35mm
+                    target_w = 35 * mm
+                    max_h = 35 * mm
+                    
+                    aspect = logo_obj.imageHeight / float(logo_obj.imageWidth)
+                    
+                    # 1. Scale to target width
+                    calc_h = target_w * aspect
+                    
+                    if calc_h > max_h:
+                        # If height exceeds max, scale by height
+                        logo_obj.drawHeight = max_h
+                        logo_obj.drawWidth = max_h / aspect
+                    else:
+                        # Otherwise scale by width
+                        logo_obj.drawWidth = target_w
+                        logo_obj.drawHeight = calc_h
+                except Exception as e:
+                    print(f"Error loading logo image: {e}")
+                    logo_obj = None
+        
+        if logo_obj is None:
+            # Fallback to Text or Explicit Text Mode
+            text_content = logo_config.get("text_content", "Battal\nMarine")
+            # Replace \n with <br/> for ReportLab
+            formatted_text = text_content.replace('\n', '<br/>')
+            logo_obj = Paragraph(formatted_text, self.style_bold_center)
 
         data = [[
             logo_obj, 

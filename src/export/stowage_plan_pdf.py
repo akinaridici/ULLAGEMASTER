@@ -361,6 +361,11 @@ def generate_stowage_plan_pdf(
         c.setFont(font_bold, 16)
         c.drawCentredString(width/2, height - 2*cm, title)  # 2cm from top
         
+        # Report Date (Top Right)
+        report_date = report_data.get('date', voyage.date)
+        c.setFont(font_bold, 10)
+        c.drawRightString(width - margin_x, height - 2*cm, f"Date: {report_date}")
+        
         # NOTE: Voyage/Port info will be drawn after hull position is calculated for alignment
         
         # =================================================================
@@ -392,7 +397,7 @@ def generate_stowage_plan_pdf(
         # =================================================================
         c.setFont(font_bold, 10)
         info_y = height - 2.8*cm
-        c.drawString(pre_hull_x, info_y, f"VOYAGE/SEFER: {voyage.voyage_number}")
+        c.drawString(pre_hull_x, info_y, f"VOYAGE: {voyage.voyage_number}")
         c.drawString(pre_hull_x, info_y - 0.5*cm, f"PORT/TERMINAL: {report_data.get('port', voyage.port)} / {report_data.get('terminal', voyage.terminal)}")
         
         # =================================================================
