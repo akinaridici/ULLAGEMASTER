@@ -1,0 +1,523 @@
+{
+  "version": "2.0",
+  "voyage": {
+    "voyage_number": "",
+    "date": "12-01-2026",
+    "port": "",
+    "terminal": "",
+    "vef": 1.0,
+    "drafts": {
+      "aft": 0.0,
+      "fwd": 0.0,
+      "trim": 0.0
+    },
+    "chief_officer": "Harun Kurtuluş",
+    "master": "Akın Arıdıcı",
+    "parcels": [
+      {
+        "id": "1",
+        "name": "kbz",
+        "receiver": "antalya opet",
+        "density_vac": 0.7322,
+        "color": "#ffff00",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "2",
+        "name": "meotoin",
+        "receiver": "mersin tğpraş",
+        "density_vac": 0.8311,
+        "color": "#5500ff",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "3",
+        "name": "SLOP",
+        "receiver": "Genel",
+        "density_vac": 0.85,
+        "color": "#9CA3AF",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "4",
+        "name": "beyaz",
+        "receiver": "",
+        "density_vac": 0.0,
+        "color": "#ffffff",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      }
+    ],
+    "tank_readings": {
+      "1P": {
+        "tank_id": "1P",
+        "parcel_id": "1",
+        "ullage": 103.08279569892473,
+        "temp_celsius": 20.0,
+        "density_vac": 0.7322
+      },
+      "1S": {
+        "tank_id": "1S",
+        "parcel_id": "1",
+        "ullage": 103.62527173913043,
+        "temp_celsius": 20.0,
+        "density_vac": 0.7322
+      },
+      "2P": {
+        "tank_id": "2P",
+        "parcel_id": "2",
+        "ullage": 110.28528169014083,
+        "temp_celsius": 20.0,
+        "density_vac": 0.8311
+      },
+      "2S": {
+        "tank_id": "2S",
+        "parcel_id": "2",
+        "ullage": 109.19173144876333,
+        "temp_celsius": 20.0,
+        "density_vac": 0.8311
+      },
+      "3P": {
+        "tank_id": "3P",
+        "parcel_id": "1",
+        "ullage": 110.65455341506122,
+        "temp_celsius": 20.0,
+        "density_vac": 0.7322
+      },
+      "3S": {
+        "tank_id": "3S",
+        "parcel_id": "1",
+        "ullage": 109.60140227870286,
+        "temp_celsius": 20.0,
+        "density_vac": 0.7322
+      },
+      "4P": {
+        "tank_id": "4P",
+        "parcel_id": "2",
+        "ullage": 109.97107800175293,
+        "temp_celsius": 20.0,
+        "density_vac": 0.8311
+      },
+      "4S": {
+        "tank_id": "4S",
+        "parcel_id": "2",
+        "ullage": 108.60990359333908,
+        "temp_celsius": 20.0,
+        "density_vac": 0.8311
+      },
+      "5P": {
+        "tank_id": "5P",
+        "parcel_id": "1",
+        "ullage": 110.42094653812445,
+        "temp_celsius": 20.0,
+        "density_vac": 0.7322
+      },
+      "5S": {
+        "tank_id": "5S",
+        "parcel_id": "1",
+        "ullage": 110.75526315789476,
+        "temp_celsius": 20.0,
+        "density_vac": 0.7322
+      },
+      "6P": {
+        "tank_id": "6P",
+        "parcel_id": "2",
+        "ullage": 109.92038664323375,
+        "temp_celsius": 20.0,
+        "density_vac": 0.8311
+      },
+      "6S": {
+        "tank_id": "6S",
+        "parcel_id": "2",
+        "ullage": 110.26669595782074,
+        "temp_celsius": 20.0,
+        "density_vac": 0.8311
+      },
+      "7P": {
+        "tank_id": "7P",
+        "parcel_id": "1",
+        "ullage": 110.85245614035102,
+        "temp_celsius": 20.0,
+        "density_vac": 0.7322
+      },
+      "7S": {
+        "tank_id": "7S",
+        "parcel_id": "1",
+        "ullage": 110.97315140845083,
+        "temp_celsius": 20.0,
+        "density_vac": 0.7322
+      },
+      "8P": {
+        "tank_id": "8P",
+        "parcel_id": "4",
+        "ullage": 108.02440737489032,
+        "temp_celsius": 20.0,
+        "density_vac": 0.0
+      },
+      "8S": {
+        "tank_id": "8S",
+        "parcel_id": "4",
+        "ullage": 109.8270246478873,
+        "temp_celsius": 20.0,
+        "density_vac": 0.0
+      },
+      "SlopP": {
+        "tank_id": "SlopP",
+        "parcel_id": "3",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": 0.85
+      },
+      "SlopS": {
+        "tank_id": "SlopS",
+        "parcel_id": "1",
+        "ullage": 104.12545931758528,
+        "temp_celsius": 20.0,
+        "density_vac": 0.7322
+      }
+    },
+    "totals": {
+      "gsv": 21064.66600705,
+      "mt": 16497.2063039234
+    },
+    "notes": ""
+  },
+  "stowage_plan": {
+    "id": "914524af-23a5-4a8d-8268-407323197b6b",
+    "plan_name": "Plan_20260112_002948",
+    "ship_name": "MT KUZEY EKİM",
+    "created_date": "2026-01-12T00:29:48.043550",
+    "cargo_requests": [
+      {
+        "unique_id": "405a651a-2426-469b-8126-90a7e289ce5b",
+        "cargo_type": "kbz",
+        "quantity": 9974.38303264,
+        "receivers": [
+          {
+            "name": "antalya opet"
+          }
+        ],
+        "density": 0.7322,
+        "custom_color": "#ffff00"
+      },
+      {
+        "unique_id": "9c3d2125-e0a0-47e6-ab33-917eeb1ab910",
+        "cargo_type": "meotoin",
+        "quantity": 8556.06971314,
+        "receivers": [
+          {
+            "name": "mersin tğpraş"
+          }
+        ],
+        "density": 0.8311,
+        "custom_color": "#5500ff"
+      },
+      {
+        "unique_id": "d5156539-5095-4f33-8ae4-d85429c9f7d3",
+        "cargo_type": "SLOP",
+        "quantity": 0.0,
+        "receivers": [],
+        "density": 0.85,
+        "custom_color": "#9CA3AF"
+      }
+    ],
+    "assignments": {
+      "1P": {
+        "tank_id": "1P",
+        "cargo": {
+          "unique_id": "405a651a-2426-469b-8126-90a7e289ce5b",
+          "cargo_type": "kbz",
+          "quantity": 9974.38303264,
+          "receivers": [
+            {
+              "name": "antalya opet"
+            }
+          ],
+          "density": 0.7322,
+          "custom_color": "#ffff00"
+        },
+        "quantity_loaded": 779.8414
+      },
+      "1S": {
+        "tank_id": "1S",
+        "cargo": {
+          "unique_id": "405a651a-2426-469b-8126-90a7e289ce5b",
+          "cargo_type": "kbz",
+          "quantity": 9974.38303264,
+          "receivers": [
+            {
+              "name": "antalya opet"
+            }
+          ],
+          "density": 0.7322,
+          "custom_color": "#ffff00"
+        },
+        "quantity_loaded": 774.1748
+      },
+      "2P": {
+        "tank_id": "2P",
+        "cargo": {
+          "unique_id": "9c3d2125-e0a0-47e6-ab33-917eeb1ab910",
+          "cargo_type": "meotoin",
+          "quantity": 8556.06971314,
+          "receivers": [
+            {
+              "name": "mersin tğpraş"
+            }
+          ],
+          "density": 0.8311,
+          "custom_color": "#5500ff"
+        },
+        "quantity_loaded": 1598.0789
+      },
+      "2S": {
+        "tank_id": "2S",
+        "cargo": {
+          "unique_id": "9c3d2125-e0a0-47e6-ab33-917eeb1ab910",
+          "cargo_type": "meotoin",
+          "quantity": 8556.06971314,
+          "receivers": [
+            {
+              "name": "mersin tğpraş"
+            }
+          ],
+          "density": 0.8311,
+          "custom_color": "#5500ff"
+        },
+        "quantity_loaded": 1597.4926999999998
+      },
+      "3P": {
+        "tank_id": "3P",
+        "cargo": {
+          "unique_id": "405a651a-2426-469b-8126-90a7e289ce5b",
+          "cargo_type": "kbz",
+          "quantity": 9974.38303264,
+          "receivers": [
+            {
+              "name": "antalya opet"
+            }
+          ],
+          "density": 0.7322,
+          "custom_color": "#ffff00"
+        },
+        "quantity_loaded": 1349.7255
+      },
+      "3S": {
+        "tank_id": "3S",
+        "cargo": {
+          "unique_id": "405a651a-2426-469b-8126-90a7e289ce5b",
+          "cargo_type": "kbz",
+          "quantity": 9974.38303264,
+          "receivers": [
+            {
+              "name": "antalya opet"
+            }
+          ],
+          "density": 0.7322,
+          "custom_color": "#ffff00"
+        },
+        "quantity_loaded": 1350.6048
+      },
+      "4P": {
+        "tank_id": "4P",
+        "cargo": {
+          "unique_id": "9c3d2125-e0a0-47e6-ab33-917eeb1ab910",
+          "cargo_type": "meotoin",
+          "quantity": 8556.06971314,
+          "receivers": [
+            {
+              "name": "mersin tğpraş"
+            }
+          ],
+          "density": 0.8311,
+          "custom_color": "#5500ff"
+        },
+        "quantity_loaded": 1350.214
+      },
+      "4S": {
+        "tank_id": "4S",
+        "cargo": {
+          "unique_id": "9c3d2125-e0a0-47e6-ab33-917eeb1ab910",
+          "cargo_type": "meotoin",
+          "quantity": 8556.06971314,
+          "receivers": [
+            {
+              "name": "mersin tğpraş"
+            }
+          ],
+          "density": 0.8311,
+          "custom_color": "#5500ff"
+        },
+        "quantity_loaded": 1350.5071
+      },
+      "5P": {
+        "tank_id": "5P",
+        "cargo": {
+          "unique_id": "405a651a-2426-469b-8126-90a7e289ce5b",
+          "cargo_type": "kbz",
+          "quantity": 9974.38303264,
+          "receivers": [
+            {
+              "name": "antalya opet"
+            }
+          ],
+          "density": 0.7322,
+          "custom_color": "#ffff00"
+        },
+        "quantity_loaded": 1350.3117
+      },
+      "5S": {
+        "tank_id": "5S",
+        "cargo": {
+          "unique_id": "405a651a-2426-469b-8126-90a7e289ce5b",
+          "cargo_type": "kbz",
+          "quantity": 9974.38303264,
+          "receivers": [
+            {
+              "name": "antalya opet"
+            }
+          ],
+          "density": 0.7322,
+          "custom_color": "#ffff00"
+        },
+        "quantity_loaded": 1350.214
+      },
+      "6P": {
+        "tank_id": "6P",
+        "cargo": {
+          "unique_id": "9c3d2125-e0a0-47e6-ab33-917eeb1ab910",
+          "cargo_type": "meotoin",
+          "quantity": 8556.06971314,
+          "receivers": [
+            {
+              "name": "mersin tğpraş"
+            }
+          ],
+          "density": 0.8311,
+          "custom_color": "#5500ff"
+        },
+        "quantity_loaded": 1348.0646
+      },
+      "6S": {
+        "tank_id": "6S",
+        "cargo": {
+          "unique_id": "9c3d2125-e0a0-47e6-ab33-917eeb1ab910",
+          "cargo_type": "meotoin",
+          "quantity": 8556.06971314,
+          "receivers": [
+            {
+              "name": "mersin tğpraş"
+            }
+          ],
+          "density": 0.8311,
+          "custom_color": "#5500ff"
+        },
+        "quantity_loaded": 1348.7485
+      },
+      "7P": {
+        "tank_id": "7P",
+        "cargo": {
+          "unique_id": "405a651a-2426-469b-8126-90a7e289ce5b",
+          "cargo_type": "kbz",
+          "quantity": 9974.38303264,
+          "receivers": [
+            {
+              "name": "antalya opet"
+            }
+          ],
+          "density": 0.7322,
+          "custom_color": "#ffff00"
+        },
+        "quantity_loaded": 1346.8921999999998
+      },
+      "7S": {
+        "tank_id": "7S",
+        "cargo": {
+          "unique_id": "405a651a-2426-469b-8126-90a7e289ce5b",
+          "cargo_type": "kbz",
+          "quantity": 9974.38303264,
+          "receivers": [
+            {
+              "name": "antalya opet"
+            }
+          ],
+          "density": 0.7322,
+          "custom_color": "#ffff00"
+        },
+        "quantity_loaded": 1345.8174999999999
+      },
+      "8P": {
+        "tank_id": "8P",
+        "cargo": {
+          "unique_id": "9c3d2125-e0a0-47e6-ab33-917eeb1ab910",
+          "cargo_type": "meotoin",
+          "quantity": 8556.06971314,
+          "receivers": [
+            {
+              "name": "mersin tğpraş"
+            }
+          ],
+          "density": 0.8311,
+          "custom_color": "#5500ff"
+        },
+        "quantity_loaded": 1272.6401999999998
+      },
+      "8S": {
+        "tank_id": "8S",
+        "cargo": {
+          "unique_id": "9c3d2125-e0a0-47e6-ab33-917eeb1ab910",
+          "cargo_type": "meotoin",
+          "quantity": 8556.06971314,
+          "receivers": [
+            {
+              "name": "mersin tğpraş"
+            }
+          ],
+          "density": 0.8311,
+          "custom_color": "#5500ff"
+        },
+        "quantity_loaded": 1272.5425
+      },
+      "SlopP": {
+        "tank_id": "SlopP",
+        "cargo": {
+          "unique_id": "d5156539-5095-4f33-8ae4-d85429c9f7d3",
+          "cargo_type": "SLOP",
+          "quantity": 0.0,
+          "receivers": [],
+          "density": 0.85,
+          "custom_color": "#9CA3AF"
+        },
+        "quantity_loaded": 0.0
+      },
+      "SlopS": {
+        "tank_id": "SlopS",
+        "cargo": {
+          "unique_id": "405a651a-2426-469b-8126-90a7e289ce5b",
+          "cargo_type": "kbz",
+          "quantity": 9974.38303264,
+          "receivers": [
+            {
+              "name": "antalya opet"
+            }
+          ],
+          "density": 0.7322,
+          "custom_color": "#ffff00"
+        },
+        "quantity_loaded": 389.4322
+      }
+    },
+    "excluded_tanks": []
+  }
+}

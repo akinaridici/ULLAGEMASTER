@@ -1,0 +1,524 @@
+{
+  "version": "2.0",
+  "voyage": {
+    "voyage_number": "01/26",
+    "date": "12-01-2026",
+    "port": "ALİAĞA",
+    "terminal": "TÜPRAŞ",
+    "vef": 1.0,
+    "drafts": {
+      "aft": 9.0,
+      "fwd": 8.7,
+      "trim": 0.3000000000000007
+    },
+    "chief_officer": "Harun Kurtuluş",
+    "master": "Akın Arıdıcı",
+    "parcels": [
+      {
+        "id": "1",
+        "name": "KBZ",
+        "receiver": "ANLTAYA OPET",
+        "density_vac": 0.791,
+        "color": "#ff0000",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "2",
+        "name": "MOTORİN",
+        "receiver": "ANTALYA POAŞ",
+        "density_vac": 0.829,
+        "color": "#10B981",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "3",
+        "name": "JET",
+        "receiver": "MERSİN TĞPRAŞ",
+        "density_vac": 0.81,
+        "color": "#F59E0B",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      }
+    ],
+    "tank_readings": {
+      "1P": {
+        "tank_id": "1P",
+        "parcel_id": "1",
+        "ullage": 104.15543624161063,
+        "temp_celsius": 20.0,
+        "density_vac": 0.791
+      },
+      "1S": {
+        "tank_id": "1S",
+        "parcel_id": "1",
+        "ullage": 104.70094979647227,
+        "temp_celsius": 20.0,
+        "density_vac": 0.791
+      },
+      "2P": {
+        "tank_id": "2P",
+        "parcel_id": "2",
+        "ullage": 111.43718309859163,
+        "temp_celsius": 20.0,
+        "density_vac": 0.829
+      },
+      "2S": {
+        "tank_id": "2S",
+        "parcel_id": "2",
+        "ullage": 110.34727915194355,
+        "temp_celsius": 20.0,
+        "density_vac": 0.829
+      },
+      "3P": {
+        "tank_id": "3P",
+        "parcel_id": "3",
+        "ullage": 111.86351706036747,
+        "temp_celsius": 20.0,
+        "density_vac": 0.81
+      },
+      "3S": {
+        "tank_id": "3S",
+        "parcel_id": "3",
+        "ullage": 110.81368421052623,
+        "temp_celsius": 20.0,
+        "density_vac": 0.81
+      },
+      "4P": {
+        "tank_id": "4P",
+        "parcel_id": "1",
+        "ullage": 111.18126094570937,
+        "temp_celsius": 20.0,
+        "density_vac": 0.791
+      },
+      "4S": {
+        "tank_id": "4S",
+        "parcel_id": "1",
+        "ullage": 109.82138475021928,
+        "temp_celsius": 20.0,
+        "density_vac": 0.791
+      },
+      "5P": {
+        "tank_id": "5P",
+        "parcel_id": "2",
+        "ullage": 111.63225241016659,
+        "temp_celsius": 20.0,
+        "density_vac": 0.829
+      },
+      "5S": {
+        "tank_id": "5S",
+        "parcel_id": "2",
+        "ullage": 111.96754385964928,
+        "temp_celsius": 20.0,
+        "density_vac": 0.829
+      },
+      "6P": {
+        "tank_id": "6P",
+        "parcel_id": "2",
+        "ullage": 111.13374340949034,
+        "temp_celsius": 20.0,
+        "density_vac": 0.829
+      },
+      "6S": {
+        "tank_id": "6S",
+        "parcel_id": "3",
+        "ullage": 111.47978910369076,
+        "temp_celsius": 20.0,
+        "density_vac": 0.81
+      },
+      "7P": {
+        "tank_id": "7P",
+        "parcel_id": "3",
+        "ullage": 112.0626315789476,
+        "temp_celsius": 20.0,
+        "density_vac": 0.81
+      },
+      "7S": {
+        "tank_id": "7S",
+        "parcel_id": "1",
+        "ullage": 112.18557607739665,
+        "temp_celsius": 20.0,
+        "density_vac": 0.791
+      },
+      "8P": {
+        "tank_id": "8P",
+        "parcel_id": "1",
+        "ullage": 109.16818980667853,
+        "temp_celsius": 20.0,
+        "density_vac": 0.791
+      },
+      "8S": {
+        "tank_id": "8S",
+        "parcel_id": "2",
+        "ullage": 110.97273526824982,
+        "temp_celsius": 20.0,
+        "density_vac": 0.829
+      },
+      "SlopP": {
+        "tank_id": "SlopP",
+        "parcel_id": "0",
+        "ullage": 893.7623762376237,
+        "temp_celsius": 20.0,
+        "density_vac": 0.9
+      },
+      "SlopS": {
+        "tank_id": "SlopS",
+        "parcel_id": "3",
+        "ullage": 183.61282051282046,
+        "temp_celsius": 20.0,
+        "density_vac": 0.81
+      }
+    },
+    "totals": {
+      "gsv": 21030.51076358,
+      "mt": 17042.72748716764
+    },
+    "notes": ""
+  },
+  "stowage_plan": {
+    "id": "26f2d49b-5b2d-4c83-8537-61717a1bac70",
+    "plan_name": "Plan_20260112_001642",
+    "ship_name": "MT KUZEY EKİM",
+    "created_date": "2026-01-12T00:16:42.339365",
+    "cargo_requests": [
+      {
+        "unique_id": "588166d3-08df-4302-90c6-07065bd6b406",
+        "cargo_type": "KBZ",
+        "quantity": 6833.65721684,
+        "receivers": [
+          {
+            "name": "ANLTAYA OPET"
+          }
+        ],
+        "density": 0.791,
+        "custom_color": "#ff0000"
+      },
+      {
+        "unique_id": "2c743d98-37d6-48dd-9532-f06b70be89af",
+        "cargo_type": "MOTORİN",
+        "quantity": 8472.990401460002,
+        "receivers": [
+          {
+            "name": "ANTALYA POAŞ"
+          }
+        ],
+        "density": 0.829,
+        "custom_color": "#10B981"
+      },
+      {
+        "unique_id": "18b56e0c-3c2a-4c41-97fc-a61aa39d9521",
+        "cargo_type": "JET",
+        "quantity": 5723.86314528,
+        "receivers": [
+          {
+            "name": "MERSİN TĞPRAŞ"
+          }
+        ],
+        "density": 0.81,
+        "custom_color": "#F59E0B"
+      },
+      {
+        "unique_id": "4602beed-c804-4569-a655-f6f8b3d68524",
+        "cargo_type": "SLOP",
+        "quantity": 76.52908000000002,
+        "receivers": [],
+        "density": 0.85,
+        "custom_color": "#9CA3AF"
+      }
+    ],
+    "assignments": {
+      "1P": {
+        "tank_id": "1P",
+        "cargo": {
+          "unique_id": "588166d3-08df-4302-90c6-07065bd6b406",
+          "cargo_type": "KBZ",
+          "quantity": 6833.65721684,
+          "receivers": [
+            {
+              "name": "ANLTAYA OPET"
+            }
+          ],
+          "density": 0.791,
+          "custom_color": "#ff0000"
+        },
+        "quantity_loaded": 778.7750000000001
+      },
+      "1S": {
+        "tank_id": "1S",
+        "cargo": {
+          "unique_id": "588166d3-08df-4302-90c6-07065bd6b406",
+          "cargo_type": "KBZ",
+          "quantity": 6833.65721684,
+          "receivers": [
+            {
+              "name": "ANLTAYA OPET"
+            }
+          ],
+          "density": 0.791,
+          "custom_color": "#ff0000"
+        },
+        "quantity_loaded": 773.29396
+      },
+      "2P": {
+        "tank_id": "2P",
+        "cargo": {
+          "unique_id": "2c743d98-37d6-48dd-9532-f06b70be89af",
+          "cargo_type": "MOTORİN",
+          "quantity": 8472.990401460002,
+          "receivers": [
+            {
+              "name": "ANTALYA POAŞ"
+            }
+          ],
+          "density": 0.829,
+          "custom_color": "#10B981"
+        },
+        "quantity_loaded": 1596.926
+      },
+      "2S": {
+        "tank_id": "2S",
+        "cargo": {
+          "unique_id": "2c743d98-37d6-48dd-9532-f06b70be89af",
+          "cargo_type": "MOTORİN",
+          "quantity": 8472.990401460002,
+          "receivers": [
+            {
+              "name": "ANTALYA POAŞ"
+            }
+          ],
+          "density": 0.829,
+          "custom_color": "#10B981"
+        },
+        "quantity_loaded": 1596.6782999999998
+      },
+      "3P": {
+        "tank_id": "3P",
+        "cargo": {
+          "unique_id": "18b56e0c-3c2a-4c41-97fc-a61aa39d9521",
+          "cargo_type": "JET",
+          "quantity": 5723.86314528,
+          "receivers": [
+            {
+              "name": "MERSİN TĞPRAŞ"
+            }
+          ],
+          "density": 0.81,
+          "custom_color": "#F59E0B"
+        },
+        "quantity_loaded": 1348.3227000000002
+      },
+      "3S": {
+        "tank_id": "3S",
+        "cargo": {
+          "unique_id": "18b56e0c-3c2a-4c41-97fc-a61aa39d9521",
+          "cargo_type": "JET",
+          "quantity": 5723.86314528,
+          "receivers": [
+            {
+              "name": "MERSİN TĞPRAŞ"
+            }
+          ],
+          "density": 0.81,
+          "custom_color": "#F59E0B"
+        },
+        "quantity_loaded": 1349.6100000000001
+      },
+      "4P": {
+        "tank_id": "4P",
+        "cargo": {
+          "unique_id": "588166d3-08df-4302-90c6-07065bd6b406",
+          "cargo_type": "KBZ",
+          "quantity": 6833.65721684,
+          "receivers": [
+            {
+              "name": "ANLTAYA OPET"
+            }
+          ],
+          "density": 0.791,
+          "custom_color": "#ff0000"
+        },
+        "quantity_loaded": 1348.8319999999999
+      },
+      "4S": {
+        "tank_id": "4S",
+        "cargo": {
+          "unique_id": "588166d3-08df-4302-90c6-07065bd6b406",
+          "cargo_type": "KBZ",
+          "quantity": 6833.65721684,
+          "receivers": [
+            {
+              "name": "ANLTAYA OPET"
+            }
+          ],
+          "density": 0.791,
+          "custom_color": "#ff0000"
+        },
+        "quantity_loaded": 1349.39864
+      },
+      "5P": {
+        "tank_id": "5P",
+        "cargo": {
+          "unique_id": "2c743d98-37d6-48dd-9532-f06b70be89af",
+          "cargo_type": "MOTORİN",
+          "quantity": 8472.990401460002,
+          "receivers": [
+            {
+              "name": "ANTALYA POAŞ"
+            }
+          ],
+          "density": 0.829,
+          "custom_color": "#10B981"
+        },
+        "quantity_loaded": 1348.9296
+      },
+      "5S": {
+        "tank_id": "5S",
+        "cargo": {
+          "unique_id": "2c743d98-37d6-48dd-9532-f06b70be89af",
+          "cargo_type": "MOTORİN",
+          "quantity": 8472.990401460002,
+          "receivers": [
+            {
+              "name": "ANTALYA POAŞ"
+            }
+          ],
+          "density": 0.829,
+          "custom_color": "#10B981"
+        },
+        "quantity_loaded": 1349.1055999999999
+      },
+      "6P": {
+        "tank_id": "6P",
+        "cargo": {
+          "unique_id": "2c743d98-37d6-48dd-9532-f06b70be89af",
+          "cargo_type": "MOTORİN",
+          "quantity": 8472.990401460002,
+          "receivers": [
+            {
+              "name": "ANTALYA POAŞ"
+            }
+          ],
+          "density": 0.829,
+          "custom_color": "#10B981"
+        },
+        "quantity_loaded": 1346.6848
+      },
+      "6S": {
+        "tank_id": "6S",
+        "cargo": {
+          "unique_id": "18b56e0c-3c2a-4c41-97fc-a61aa39d9521",
+          "cargo_type": "JET",
+          "quantity": 5723.86314528,
+          "receivers": [
+            {
+              "name": "MERSİN TĞPRAŞ"
+            }
+          ],
+          "density": 0.81,
+          "custom_color": "#F59E0B"
+        },
+        "quantity_loaded": 1347.64112
+      },
+      "7P": {
+        "tank_id": "7P",
+        "cargo": {
+          "unique_id": "18b56e0c-3c2a-4c41-97fc-a61aa39d9521",
+          "cargo_type": "JET",
+          "quantity": 5723.86314528,
+          "receivers": [
+            {
+              "name": "MERSİN TĞPRAŞ"
+            }
+          ],
+          "density": 0.81,
+          "custom_color": "#F59E0B"
+        },
+        "quantity_loaded": 1345.5135999999998
+      },
+      "7S": {
+        "tank_id": "7S",
+        "cargo": {
+          "unique_id": "588166d3-08df-4302-90c6-07065bd6b406",
+          "cargo_type": "KBZ",
+          "quantity": 6833.65721684,
+          "receivers": [
+            {
+              "name": "ANLTAYA OPET"
+            }
+          ],
+          "density": 0.791,
+          "custom_color": "#ff0000"
+        },
+        "quantity_loaded": 1344.7128255760774
+      },
+      "8P": {
+        "tank_id": "8P",
+        "cargo": {
+          "unique_id": "588166d3-08df-4302-90c6-07065bd6b406",
+          "cargo_type": "KBZ",
+          "quantity": 6833.65721684,
+          "receivers": [
+            {
+              "name": "ANLTAYA OPET"
+            }
+          ],
+          "density": 0.791,
+          "custom_color": "#ff0000"
+        },
+        "quantity_loaded": 1271.3281339999999
+      },
+      "8S": {
+        "tank_id": "8S",
+        "cargo": {
+          "unique_id": "2c743d98-37d6-48dd-9532-f06b70be89af",
+          "cargo_type": "MOTORİN",
+          "quantity": 8472.990401460002,
+          "receivers": [
+            {
+              "name": "ANTALYA POAŞ"
+            }
+          ],
+          "density": 0.829,
+          "custom_color": "#10B981"
+        },
+        "quantity_loaded": 1271.51288
+      },
+      "SlopP": {
+        "tank_id": "SlopP",
+        "cargo": {
+          "unique_id": "4602beed-c804-4569-a655-f6f8b3d68524",
+          "cargo_type": "SLOP",
+          "quantity": 76.52908000000002,
+          "receivers": [],
+          "density": 0.85,
+          "custom_color": "#9CA3AF"
+        },
+        "quantity_loaded": 76.52908000000002
+      },
+      "SlopS": {
+        "tank_id": "SlopS",
+        "cargo": {
+          "unique_id": "18b56e0c-3c2a-4c41-97fc-a61aa39d9521",
+          "cargo_type": "JET",
+          "quantity": 5723.86314528,
+          "receivers": [
+            {
+              "name": "MERSİN TĞPRAŞ"
+            }
+          ],
+          "density": 0.81,
+          "custom_color": "#F59E0B"
+        },
+        "quantity_loaded": 358.8804
+      }
+    },
+    "excluded_tanks": []
+  }
+}

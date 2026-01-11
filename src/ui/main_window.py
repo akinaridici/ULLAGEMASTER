@@ -477,6 +477,16 @@ class MainWindow(QMainWindow):
             fwd = self.draft_fwd_spin.value() if hasattr(self, 'draft_fwd_spin') else 0.0
             aft = self.draft_aft_spin.value() if hasattr(self, 'draft_aft_spin') else 0.0
             self.report_tab.update_drafts(fwd, aft)
+            
+            # Refresh parcel list from current voyage data
+            # This ensures parcels created via Edit Parcels or Transfer are visible
+            if hasattr(self, 'voyage') and self.voyage:
+                tanks = self.ship_config.tanks if self.ship_config else None
+                self.report_tab.set_parcels(
+                    self.voyage.parcels,
+                    tanks,
+                    self.voyage.tank_readings
+                )
         
         # Update Discrepancy tab if selected (Index 4)
         if index == 4 and hasattr(self, 'discrepancy_tab') and hasattr(self, 'voyage'):
@@ -2298,6 +2308,10 @@ class MainWindow(QMainWindow):
                 # Update background color based on parcel (for ALL cells)
                 parcel_color = self._get_parcel_bg_color(reading.parcel_id, is_input and key != "parcel")
                 item.setData(Qt.ItemDataRole.BackgroundRole, QBrush(parcel_color))
+                
+                # Set contrasting text color based on background brightness
+                text_color = self._contrast_color(parcel_color)
+                item.setData(Qt.ItemDataRole.ForegroundRole, QBrush(QColor(text_color)))
                 
                 # Only update text for non-input columns (except ullage, fill_percent, parcel)
                 # AND update inputs if they are calculated/derived to keep UI in sync
