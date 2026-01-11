@@ -78,6 +78,13 @@ def main():
     
     def start_loading():
         """Initialize the main window after the event loop has started."""
+        # Load saved language preference from portable config
+        from utils.config_manager import get_config
+        from i18n import load_language
+        config = get_config()
+        saved_lang = config.get_str("General", "language", "en")
+        load_language(saved_lang)
+        
         # The MainWindow class acts as the central controller for the application
         context["window"] = MainWindow()
         # Connect splash screen finish signal to main window show

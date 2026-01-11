@@ -105,5 +105,58 @@
     "mt": "MT",
     "celsius": "°C",
     "kg_m3": "kg/m³"
+  },
+  "tabs": {
+    "voyages": "Voyages",
+    "stowage": "Stowage Plan",
+    "ullage": "Ullage Calculation",
+    "reports": "Report Functions",
+    "discrepancy": "Discrepancy / Protests"
+  },
+  "stowage": {
+    "control_panel": "Control Panel",
+    "colorize": "Colorize",
+    "colorize_tooltip": "Hold: Group by first 4 characters of Receiver name",
+    "set_97": "Set 97.7%",
+    "fill_tooltip": "Fill all loaded tanks to 97.7% capacity",
+    "charterer_order": "Charterer Order",
+    "loading_plan": "Loading Plan",
+    "empty_all": "Empty All Tanks",
+    "transfer_ullage": "Transfer to Ullage"
+  },
+  "ullage": {
+    "edit_parcels": "Edit Parcels",
+    "transfer_stowage": "Transfer to Stowage"
+  },
+  "report": {
+    "headers": "Report Headers",
+    "port": "Actual Port",
+    "terminal": "Actual Terminal",
+    "mmc": "MMC NO",
+    "type": "Report Type",
+    "cargo": "Product (Cargo)",
+    "receiver": "Receiver",
+    "date": "Report Date",
+    "slop_label": "SLOP Label",
+    "remarks": "Remarks",
+    "select_parcels": "Select Parcels",
+    "all_parcels": "ALL PARCELS",
+    "btn_selected": "SELECTED PARCELS REPORT",
+    "stowage_group": "Stowage Plan",
+    "btn_stowage": "STOWAGE PLAN REPORT"
+  },
+  "disc": {
+    "loading_ops": "LOADING OPS",
+    "discharging_ops": "DISCHARGING OPS",
+    "bl_figure": "B/L Figure",
+    "ship_wo_vef": "Ship Figure W/O VEF",
+    "diff_wo_vef": "Quantity Diff W/O VEF",
+    "ship_vef": "Ship Figure with VEF",
+    "diff_vef": "Quantity Diff with VEF",
+    "protest": "Protest"
+  },
+  "msg": {
+    "restart_title": "Restart Required",
+    "restart_text": "Language change requires application restart."
   }
 }

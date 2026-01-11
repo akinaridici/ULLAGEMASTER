@@ -1,0 +1,711 @@
+{
+  "version": "2.0",
+  "voyage": {
+    "voyage_number": "01/26",
+    "date": "11-01-2026",
+    "port": "ALİAĞA",
+    "terminal": "TÜPRAŞ",
+    "vef": 0.9993,
+    "drafts": {
+      "aft": 9.0,
+      "fwd": 8.5,
+      "trim": 0.5
+    },
+    "chief_officer": "Harun Kurtuluş",
+    "master": "Akın Arıdıcı",
+    "parcels": [
+      {
+        "id": "1",
+        "name": "A",
+        "receiver": "ANTALYA",
+        "density_vac": 0.85,
+        "color": "#FF6B6B",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "2",
+        "name": "B",
+        "receiver": "BANTALYA",
+        "density_vac": 0.85,
+        "color": "#4ECDC4",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "3",
+        "name": "C",
+        "receiver": "CANTALYA",
+        "density_vac": 0.85,
+        "color": "#45B7D1",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "4",
+        "name": "D",
+        "receiver": "DANTALYA",
+        "density_vac": 0.85,
+        "color": "#96CEB4",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "5",
+        "name": "F",
+        "receiver": "FANTALYA",
+        "density_vac": 0.85,
+        "color": "#FFEAA7",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "6",
+        "name": "G",
+        "receiver": "GANTALYA",
+        "density_vac": 0.85,
+        "color": "#DDA0DD",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "7",
+        "name": "H",
+        "receiver": "HANTALYA",
+        "density_vac": 0.85,
+        "color": "#F7DC6F",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "8",
+        "name": "J",
+        "receiver": "JANTALYA",
+        "density_vac": 0.85,
+        "color": "#BB8FCE",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "9",
+        "name": "K",
+        "receiver": "KANTALYA",
+        "density_vac": 0.85,
+        "color": "#85C1E9",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "10",
+        "name": "L",
+        "receiver": "LANTALYA",
+        "density_vac": 0.85,
+        "color": "#F8B500",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "11",
+        "name": "M",
+        "receiver": "MANTALYA",
+        "density_vac": 0.85,
+        "color": "#E74C3C",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "12",
+        "name": "N",
+        "receiver": "NANTALYA",
+        "density_vac": 0.85,
+        "color": "#1ABC9C",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      }
+    ],
+    "tank_readings": {
+      "1P": {
+        "tank_id": "1P",
+        "parcel_id": "1",
+        "ullage": 104.15543624161063,
+        "temp_celsius": 20.0,
+        "density_vac": 0.85
+      },
+      "1S": {
+        "tank_id": "1S",
+        "parcel_id": "2",
+        "ullage": 104.70094979647227,
+        "temp_celsius": 20.0,
+        "density_vac": 0.85
+      },
+      "2P": {
+        "tank_id": "2P",
+        "parcel_id": "3",
+        "ullage": 111.43718309859163,
+        "temp_celsius": 20.0,
+        "density_vac": 0.85
+      },
+      "2S": {
+        "tank_id": "2S",
+        "parcel_id": "4",
+        "ullage": 110.34727915194355,
+        "temp_celsius": 20.0,
+        "density_vac": 0.85
+      },
+      "3P": {
+        "tank_id": "3P",
+        "parcel_id": "5",
+        "ullage": 111.86351706036747,
+        "temp_celsius": 20.0,
+        "density_vac": 0.85
+      },
+      "3S": {
+        "tank_id": "3S",
+        "parcel_id": "6",
+        "ullage": 110.81368421052623,
+        "temp_celsius": 20.0,
+        "density_vac": 0.85
+      },
+      "4P": {
+        "tank_id": "4P",
+        "parcel_id": "7",
+        "ullage": 111.18126094570937,
+        "temp_celsius": 20.0,
+        "density_vac": 0.85
+      },
+      "4S": {
+        "tank_id": "4S",
+        "parcel_id": "8",
+        "ullage": 109.82138475021928,
+        "temp_celsius": 20.0,
+        "density_vac": 0.85
+      },
+      "5P": {
+        "tank_id": "5P",
+        "parcel_id": "9",
+        "ullage": 111.63225241016659,
+        "temp_celsius": 20.0,
+        "density_vac": 0.85
+      },
+      "5S": {
+        "tank_id": "5S",
+        "parcel_id": "10",
+        "ullage": 111.96754385964928,
+        "temp_celsius": 20.0,
+        "density_vac": 0.85
+      },
+      "6P": {
+        "tank_id": "6P",
+        "parcel_id": "11",
+        "ullage": 111.13374340949034,
+        "temp_celsius": 20.0,
+        "density_vac": 0.85
+      },
+      "6S": {
+        "tank_id": "6S",
+        "parcel_id": "12",
+        "ullage": 111.47978910369076,
+        "temp_celsius": 20.0,
+        "density_vac": 0.85
+      },
+      "7P": {
+        "tank_id": "7P",
+        "parcel_id": "1",
+        "ullage": 112.0626315789476,
+        "temp_celsius": 20.0,
+        "density_vac": 0.85
+      },
+      "7S": {
+        "tank_id": "7S",
+        "parcel_id": "2",
+        "ullage": 112.18557607739665,
+        "temp_celsius": 20.0,
+        "density_vac": 0.85
+      },
+      "8P": {
+        "tank_id": "8P",
+        "parcel_id": "3",
+        "ullage": 109.16818980667853,
+        "temp_celsius": 20.0,
+        "density_vac": 0.85
+      },
+      "8S": {
+        "tank_id": "8S",
+        "parcel_id": "4",
+        "ullage": 110.97273526824982,
+        "temp_celsius": 20.0,
+        "density_vac": 0.85
+      },
+      "SlopP": {
+        "tank_id": "SlopP",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": null,
+        "density_vac": null
+      },
+      "SlopS": {
+        "tank_id": "SlopS",
+        "parcel_id": "5",
+        "ullage": 183.61282051282046,
+        "temp_celsius": 20.0,
+        "density_vac": 0.85
+      }
+    },
+    "totals": {
+      "gsv": 21039.883456,
+      "mt": 17860.7570657984
+    },
+    "notes": ""
+  },
+  "stowage_plan": {
+    "id": "20440e82-48e0-47f3-8fda-f8212a7d485a",
+    "plan_name": "Plan_20260111_233313",
+    "ship_name": "MT KUZEY EKİM",
+    "created_date": "2026-01-11T23:33:13.120261",
+    "cargo_requests": [
+      {
+        "unique_id": "5c77fb73-b14e-45dd-beb0-2b4dc8288586",
+        "cargo_type": "A",
+        "quantity": 2115.2737024,
+        "receivers": [
+          {
+            "name": "ANTALYA"
+          }
+        ],
+        "density": 0.85,
+        "custom_color": "#FF6B6B"
+      },
+      {
+        "unique_id": "b8337946-e1d4-4895-bc28-35b2bfa5ef06",
+        "cargo_type": "B",
+        "quantity": 2109.3185792,
+        "receivers": [
+          {
+            "name": "BANTALYA"
+          }
+        ],
+        "density": 0.85,
+        "custom_color": "#4ECDC4"
+      },
+      {
+        "unique_id": "d636bbbd-c8c9-4a6f-bc72-05929eda998f",
+        "cargo_type": "C",
+        "quantity": 2856.5481190399996,
+        "receivers": [
+          {
+            "name": "CANTALYA"
+          }
+        ],
+        "density": 0.85,
+        "custom_color": "#45B7D1"
+      },
+      {
+        "unique_id": "01c6e3c6-a3b8-48fb-8ffd-7ea069fc362a",
+        "cargo_type": "D",
+        "quantity": 2856.89168384,
+        "receivers": [
+          {
+            "name": "DANTALYA"
+          }
+        ],
+        "density": 0.85,
+        "custom_color": "#96CEB4"
+      },
+      {
+        "unique_id": "cfd72132-7c4e-4c06-bafd-04a331f3c505",
+        "cargo_type": "F",
+        "quantity": 1700.19464448,
+        "receivers": [
+          {
+            "name": "FANTALYA"
+          }
+        ],
+        "density": 0.85,
+        "custom_color": "#FFEAA7"
+      },
+      {
+        "unique_id": "744b458f-1b8f-40ff-acfd-d9365acbf885",
+        "cargo_type": "G",
+        "quantity": 1344.17686528,
+        "receivers": [
+          {
+            "name": "GANTALYA"
+          }
+        ],
+        "density": 0.85,
+        "custom_color": "#DDA0DD"
+      },
+      {
+        "unique_id": "83ea27f8-7557-4988-a0f4-05bc717070ba",
+        "cargo_type": "H",
+        "quantity": 1343.22085888,
+        "receivers": [
+          {
+            "name": "HANTALYA"
+          }
+        ],
+        "density": 0.85,
+        "custom_color": "#F7DC6F"
+      },
+      {
+        "unique_id": "9d58dad4-e34e-4ba0-8427-4a4a7fb05bf6",
+        "cargo_type": "J",
+        "quantity": 1343.9667430399998,
+        "receivers": [
+          {
+            "name": "JANTALYA"
+          }
+        ],
+        "density": 0.85,
+        "custom_color": "#BB8FCE"
+      },
+      {
+        "unique_id": "542812ec-398a-43b9-87a0-7ed53fe44de3",
+        "cargo_type": "K",
+        "quantity": 1343.3184512,
+        "receivers": [
+          {
+            "name": "KANTALYA"
+          }
+        ],
+        "density": 0.85,
+        "custom_color": "#85C1E9"
+      },
+      {
+        "unique_id": "d096db69-c554-4af0-965c-0674b24f2abe",
+        "cargo_type": "L",
+        "quantity": 1343.6749619199998,
+        "receivers": [
+          {
+            "name": "LANTALYA"
+          }
+        ],
+        "density": 0.85,
+        "custom_color": "#F8B500"
+      },
+      {
+        "unique_id": "1be7d8ec-6a70-4a8f-8a34-1c137dd37694",
+        "cargo_type": "M",
+        "quantity": 1341.0827903999998,
+        "receivers": [
+          {
+            "name": "MANTALYA"
+          }
+        ],
+        "density": 0.85,
+        "custom_color": "#E74C3C"
+      },
+      {
+        "unique_id": "e107a218-5425-4e1f-a9d3-b66bc84e9084",
+        "cargo_type": "N",
+        "quantity": 1342.2160563199998,
+        "receivers": [
+          {
+            "name": "NANTALYA"
+          }
+        ],
+        "density": 0.85,
+        "custom_color": "#1ABC9C"
+      }
+    ],
+    "assignments": {
+      "1P": {
+        "tank_id": "1P",
+        "cargo": {
+          "unique_id": "01c6e3c6-a3b8-48fb-8ffd-7ea069fc362a",
+          "cargo_type": "D",
+          "quantity": 2856.89168384,
+          "receivers": [
+            {
+              "name": "DANTALYA"
+            }
+          ],
+          "density": 0.85,
+          "custom_color": "#96CEB4"
+        },
+        "quantity_loaded": 779.0432000000001
+      },
+      "1S": {
+        "tank_id": "1S",
+        "cargo": {
+          "unique_id": "e107a218-5425-4e1f-a9d3-b66bc84e9084",
+          "cargo_type": "N",
+          "quantity": 1342.2160563199998,
+          "receivers": [
+            {
+              "name": "NANTALYA"
+            }
+          ],
+          "density": 0.85,
+          "custom_color": "#1ABC9C"
+        },
+        "quantity_loaded": 773.3824
+      },
+      "2P": {
+        "tank_id": "2P",
+        "cargo": {
+          "unique_id": "b8337946-e1d4-4895-bc28-35b2bfa5ef06",
+          "cargo_type": "B",
+          "quantity": 2109.3185792,
+          "receivers": [
+            {
+              "name": "BANTALYA"
+            }
+          ],
+          "density": 0.85,
+          "custom_color": "#4ECDC4"
+        },
+        "quantity_loaded": 1596.4432
+      },
+      "2S": {
+        "tank_id": "2S",
+        "cargo": {
+          "unique_id": "5c77fb73-b14e-45dd-beb0-2b4dc8288586",
+          "cargo_type": "A",
+          "quantity": 2115.2737024,
+          "receivers": [
+            {
+              "name": "ANTALYA"
+            }
+          ],
+          "density": 0.85,
+          "custom_color": "#FF6B6B"
+        },
+        "quantity_loaded": 1595.8575999999998
+      },
+      "3P": {
+        "tank_id": "3P",
+        "cargo": {
+          "unique_id": "1be7d8ec-6a70-4a8f-8a34-1c137dd37694",
+          "cargo_type": "M",
+          "quantity": 1341.0827903999998,
+          "receivers": [
+            {
+              "name": "MANTALYA"
+            }
+          ],
+          "density": 0.85,
+          "custom_color": "#E74C3C"
+        },
+        "quantity_loaded": 1348.344
+      },
+      "3S": {
+        "tank_id": "3S",
+        "cargo": {
+          "unique_id": "e107a218-5425-4e1f-a9d3-b66bc84e9084",
+          "cargo_type": "N",
+          "quantity": 1342.2160563199998,
+          "receivers": [
+            {
+              "name": "NANTALYA"
+            }
+          ],
+          "density": 0.85,
+          "custom_color": "#1ABC9C"
+        },
+        "quantity_loaded": 1349.2224
+      },
+      "4P": {
+        "tank_id": "4P",
+        "cargo": {
+          "unique_id": "542812ec-398a-43b9-87a0-7ed53fe44de3",
+          "cargo_type": "K",
+          "quantity": 1343.3184512,
+          "receivers": [
+            {
+              "name": "KANTALYA"
+            }
+          ],
+          "density": 0.85,
+          "custom_color": "#85C1E9"
+        },
+        "quantity_loaded": 1348.8319999999999
+      },
+      "4S": {
+        "tank_id": "4S",
+        "cargo": {
+          "unique_id": "d096db69-c554-4af0-965c-0674b24f2abe",
+          "cargo_type": "L",
+          "quantity": 1343.6749619199998,
+          "receivers": [
+            {
+              "name": "LANTALYA"
+            }
+          ],
+          "density": 0.85,
+          "custom_color": "#F8B500"
+        },
+        "quantity_loaded": 1349.1247999999998
+      },
+      "5P": {
+        "tank_id": "5P",
+        "cargo": {
+          "unique_id": "83ea27f8-7557-4988-a0f4-05bc717070ba",
+          "cargo_type": "H",
+          "quantity": 1343.22085888,
+          "receivers": [
+            {
+              "name": "HANTALYA"
+            }
+          ],
+          "density": 0.85,
+          "custom_color": "#F7DC6F"
+        },
+        "quantity_loaded": 1348.9296
+      },
+      "5S": {
+        "tank_id": "5S",
+        "cargo": {
+          "unique_id": "9d58dad4-e34e-4ba0-8427-4a4a7fb05bf6",
+          "cargo_type": "J",
+          "quantity": 1343.9667430399998,
+          "receivers": [
+            {
+              "name": "JANTALYA"
+            }
+          ],
+          "density": 0.85,
+          "custom_color": "#BB8FCE"
+        },
+        "quantity_loaded": 1348.8319999999999
+      },
+      "6P": {
+        "tank_id": "6P",
+        "cargo": {
+          "unique_id": "cfd72132-7c4e-4c06-bafd-04a331f3c505",
+          "cargo_type": "F",
+          "quantity": 1700.19464448,
+          "receivers": [
+            {
+              "name": "FANTALYA"
+            }
+          ],
+          "density": 0.85,
+          "custom_color": "#FFEAA7"
+        },
+        "quantity_loaded": 1346.6848
+      },
+      "6S": {
+        "tank_id": "6S",
+        "cargo": {
+          "unique_id": "744b458f-1b8f-40ff-acfd-d9365acbf885",
+          "cargo_type": "G",
+          "quantity": 1344.17686528,
+          "receivers": [
+            {
+              "name": "GANTALYA"
+            }
+          ],
+          "density": 0.85,
+          "custom_color": "#DDA0DD"
+        },
+        "quantity_loaded": 1347.368
+      },
+      "7P": {
+        "tank_id": "7P",
+        "cargo": {
+          "unique_id": "d636bbbd-c8c9-4a6f-bc72-05929eda998f",
+          "cargo_type": "C",
+          "quantity": 2856.5481190399996,
+          "receivers": [
+            {
+              "name": "CANTALYA"
+            }
+          ],
+          "density": 0.85,
+          "custom_color": "#45B7D1"
+        },
+        "quantity_loaded": 1345.5135999999998
+      },
+      "7S": {
+        "tank_id": "7S",
+        "cargo": {
+          "unique_id": "01c6e3c6-a3b8-48fb-8ffd-7ea069fc362a",
+          "cargo_type": "D",
+          "quantity": 2856.89168384,
+          "receivers": [
+            {
+              "name": "DANTALYA"
+            }
+          ],
+          "density": 0.85,
+          "custom_color": "#96CEB4"
+        },
+        "quantity_loaded": 1344.44
+      },
+      "8P": {
+        "tank_id": "8P",
+        "cargo": {
+          "unique_id": "5c77fb73-b14e-45dd-beb0-2b4dc8288586",
+          "cargo_type": "A",
+          "quantity": 2115.2737024,
+          "receivers": [
+            {
+              "name": "ANTALYA"
+            }
+          ],
+          "density": 0.85,
+          "custom_color": "#FF6B6B"
+        },
+        "quantity_loaded": 1271.3375999999998
+      },
+      "8S": {
+        "tank_id": "8S",
+        "cargo": {
+          "unique_id": "b8337946-e1d4-4895-bc28-35b2bfa5ef06",
+          "cargo_type": "B",
+          "quantity": 2109.3185792,
+          "receivers": [
+            {
+              "name": "BANTALYA"
+            }
+          ],
+          "density": 0.85,
+          "custom_color": "#4ECDC4"
+        },
+        "quantity_loaded": 1271.24
+      },
+      "SlopS": {
+        "tank_id": "SlopS",
+        "cargo": {
+          "unique_id": "b8337946-e1d4-4895-bc28-35b2bfa5ef06",
+          "cargo_type": "B",
+          "quantity": 2109.3185792,
+          "receivers": [
+            {
+              "name": "BANTALYA"
+            }
+          ],
+          "density": 0.85,
+          "custom_color": "#4ECDC4"
+        },
+        "quantity_loaded": 358.74
+      }
+    },
+    "excluded_tanks": []
+  }
+}

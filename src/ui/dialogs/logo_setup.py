@@ -2,37 +2,38 @@
 Company Logo Setup Dialog.
 """
 
-import os
 import shutil
 from pathlib import Path
 from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
-    QRadioButton, QLineEdit, QPushButton, QFileDialog, 
-    QGroupBox, QPlainTextEdit, QMessageBox, QWidget
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel,
+    QPushButton, QRadioButton, QWidget, QFileDialog, QMessageBox,
+    QGroupBox, QPlainTextEdit
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
 
-from utils.config_headers import load_header_config, save_header_config
+from utils.config_manager import get_config
 from utils.data_manager import get_data_dir
+from i18n import t
 
 class LogoSetupDialog(QDialog):
+    """
+    Dialog to configure Company Logo (Image vs Text).
+    PERSISTENCE: Stores settings in 'data/config/UllageMaster.ini' via ConfigManager.
+    """
+    
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Company Logo Settings")
-        self.setMinimumWidth(500)
-        self.setMinimumHeight(450)
+        self.setWindowTitle(t("logo", "menu"))
+        self.setMinimumSize(450, 400)
         
-        self.config_data = load_header_config()
-        self.logo_settings = self.config_data.get("LOGO_SETTINGS", {})
-        
-        # Paths
+        self.config = get_config()
         self.logo_dir = get_data_dir() / "config" / "company_logo"
         self.logo_dir.mkdir(parents=True, exist_ok=True)
         self.current_logo_path = self.logo_dir / "LOGO.PNG"
         
         self.init_ui()
-        self.load_state()
+        self.load_data()
         
     def init_ui(self):
         main_layout = QVBoxLayout(self)
@@ -90,7 +91,7 @@ class LogoSetupDialog(QDialog):
         # Bottom Buttons
         btn_layout = QHBoxLayout()
         save_btn = QPushButton("Save Settings")
-        save_btn.clicked.connect(self._save)
+        save_btn.clicked.connect(self.save_data)
         save_btn.setStyleSheet("background-color: #0d9488; color: white; font-weight: bold; padding: 6px;")
         
         cancel_btn = QPushButton("Cancel")
@@ -102,27 +103,44 @@ class LogoSetupDialog(QDialog):
         
         main_layout.addStretch()
         main_layout.addLayout(btn_layout)
-        
-    def load_state(self):
-        """Load current settings into UI."""
-        mode = self.logo_settings.get("mode", "IMAGE")
-        text_content = self.logo_settings.get("text_content", "Battal\nMarine")
-        
-        if mode == "TEXT":
-            self.radio_text.setChecked(True)
-        else:
-            self.radio_image.setChecked(True)
-            
-        self.text_input.setPlainText(text_content)
-        self._refresh_preview()
-        self._toggle_mode()
-        
+
     def _toggle_mode(self):
+        """Toggle visibility between image and text widgets."""
         is_image = self.radio_image.isChecked()
         self.image_widget.setVisible(is_image)
         self.text_widget.setVisible(not is_image)
+
+    def _browse_image(self):
+        """Browse for logo image file."""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Select Logo Image", "", "Images (*.png *.jpg *.jpeg *.bmp)"
+        )
+        if file_path:
+            try:
+                shutil.copy2(file_path, self.current_logo_path)
+                self.update_image_preview()
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to import logo: {e}")
         
-    def _refresh_preview(self):
+    def load_data(self):
+        """Load settings from ConfigManager."""
+        section = self.config.get_section("LOGO_SETTINGS")
+        mode = section.get("mode", "IMAGE")
+        text_content = section.get("text_content", "Battal\\nMarine").replace("\\n", "\n")
+        
+        if mode == "IMAGE":
+            self.radio_image.setChecked(True)
+        else:
+            self.radio_text.setChecked(True)
+            
+        self.text_input.setPlainText(text_content)
+        
+        # Load image preview if exists
+        self.update_image_preview()
+        self._toggle_mode()
+
+    def update_image_preview(self):
+        """Update logo image preview."""
         if self.current_logo_path.exists():
             pixmap = QPixmap(str(self.current_logo_path))
             if not pixmap.isNull():
@@ -134,36 +152,19 @@ class LogoSetupDialog(QDialog):
             else:
                 self.preview_lbl.setText("Invalid Image")
         else:
-            self.preview_lbl.setText("No Logo Found")
+            self.preview_lbl.setText("No Image Selected")
 
-    def _browse_image(self):
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Select Logo", "", "PNG Files (*.png)"
-        )
-        if file_path:
-            # Copy to temp location or just show preview? 
-            # For simplicity, we just copy immediately to overwrite, 
-            # but usually it's better to verify first.
-            # Here we will copy to LOGO.PNG directly.
-            try:
-                shutil.copy2(file_path, self.current_logo_path)
-                self._refresh_preview()
-                QMessageBox.information(self, "Image Updated", "New logo loaded successfully.")
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to load image: {e}")
-
-    def _save(self):
-        # Update config dict
-        if "LOGO_SETTINGS" not in self.config_data:
-            self.config_data["LOGO_SETTINGS"] = {}
-            
+    def save_data(self):
+        """Save settings to ConfigManager."""
         mode = "IMAGE" if self.radio_image.isChecked() else "TEXT"
-        text_content = self.text_input.toPlainText()
+        text_content = self.text_input.toPlainText().replace("\n", "\\n")
         
-        self.config_data["LOGO_SETTINGS"]["mode"] = mode
-        self.config_data["LOGO_SETTINGS"]["text_content"] = text_content
+        self.config.set_section("LOGO_SETTINGS", {
+            "mode": mode,
+            "text_content": text_content,
+            "image_filename": "LOGO.PNG"
+        })
         
-        if save_header_config(self.config_data):
-            self.accept()
-        else:
-            QMessageBox.critical(self, "Error", "Failed to save configuration.")
+        QMessageBox.information(self, "Saved", "Logo settings saved successfully.")
+        self.accept()
+

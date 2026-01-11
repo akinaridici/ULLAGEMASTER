@@ -73,28 +73,27 @@ class UllagePDFReport:
 
     def _build_header(self):
         # Load config
-        from utils.config_headers import load_header_config
-        config = load_header_config().get("ULLAGE_REPORT", {})
-        
-        # Build Title
+        from utils.config_manager import get_config
+        config = get_config()
+        header_data = config.get_section("ULLAGE_REPORT")
+        logo_data = config.get_section("LOGO_SETTINGS")
         title_lines = [
-            config.get("title_line_1", "INTEGRATED MANAGEMENT SYSTEM MANUAL"),
-            config.get("title_line_2", "Chapter 7.5"),
-            config.get("title_line_3", "ULLAGE REPORT & TEMPERATURE LOG")
+            header_data.get("title_line_1", "INTEGRATED MANAGEMENT SYSTEM MANUAL"),
+            header_data.get("title_line_2", "Chapter 7.5"),
+            header_data.get("title_line_3", "ULLAGE REPORT & TEMPERATURE LOG")
         ]
         title_text = "<br/>".join(title_lines)
         
         # Build Doc Info
-        issue_no = config.get("issue_no", "02")
-        issue_date = config.get("issue_date", "01/11/2024")
-        rev_no = config.get("rev_no", "0")
-        page_fmt = config.get("page_format", "Page: 1")
+        issue_no = header_data.get("issue_no", "02")
+        issue_date = header_data.get("issue_date", "01/11/2024")
+        rev_no = header_data.get("rev_no", "0")
+        page_fmt = header_data.get("page_format", "Page: 1")
         
         doc_info = f"Issue No: {issue_no}<br/>Issue Date: {issue_date}<br/>Rev No: {rev_no}<br/>{page_fmt}"
         
         # Logo Logic (Image or Text)
-        logo_config = load_header_config().get("LOGO_SETTINGS", {})
-        logo_mode = logo_config.get("mode", "IMAGE")
+        logo_mode = logo_data.get("mode", "IMAGE")
         
         logo_obj = None
         
@@ -137,7 +136,7 @@ class UllagePDFReport:
         
         if logo_obj is None:
             # Fallback to Text or Explicit Text Mode
-            text_content = logo_config.get("text_content", "Battal\nMarine")
+            text_content = logo_data.get("text_content", "Battal\\nMarine")
             # Replace \n with <br/> for ReportLab
             formatted_text = text_content.replace('\n', '<br/>')
             logo_obj = Paragraph(formatted_text, self.style_bold_center)

@@ -18,18 +18,28 @@ from typing import Optional, List
 from models.stowage_plan import StowageCargo, StowagePlan, Receiver
 
 
-# Vibrant cargo color palette
+# Vibrant cargo color palette (20 distinct colors)
 CARGO_COLORS = [
-    "#FF6B6B",  # Red
-    "#4ECDC4",  # Teal
-    "#45B7D1",  # Blue
-    "#96CEB4",  # Green
-    "#FFEAA7",  # Yellow
-    "#DDA0DD",  # Plum
-    "#F7DC6F",  # Gold
-    "#BB8FCE",  # Purple
-    "#85C1E9",  # Light Blue
-    "#F8B500",  # Orange
+    "#FF6B6B",  # 1 - Red
+    "#4ECDC4",  # 2 - Teal
+    "#45B7D1",  # 3 - Sky Blue
+    "#96CEB4",  # 4 - Sage Green
+    "#FFEAA7",  # 5 - Yellow
+    "#DDA0DD",  # 6 - Plum
+    "#F7DC6F",  # 7 - Gold
+    "#BB8FCE",  # 8 - Lavender
+    "#85C1E9",  # 9 - Light Blue
+    "#F8B500",  # 10 - Orange
+    "#E74C3C",  # 11 - Dark Red
+    "#1ABC9C",  # 12 - Emerald
+    "#3498DB",  # 13 - Blue
+    "#9B59B6",  # 14 - Amethyst
+    "#F39C12",  # 15 - Honey
+    "#16A085",  # 16 - Sea Green
+    "#E91E63",  # 17 - Pink
+    "#00BCD4",  # 18 - Cyan
+    "#8BC34A",  # 19 - Lime
+    "#FF5722",  # 20 - Deep Orange
 ]
 
 

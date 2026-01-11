@@ -9,12 +9,15 @@ from pathlib import Path
 from typing import Dict, Optional, List
 from datetime import datetime
 
+from PyQt6.QtCore import Qt, QSize, QTimer, QSettings, QEvent
+from PyQt6.QtGui import QAction, QIcon, QKeySequence, QColor
 from PyQt6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
-    QTableWidget, QTableWidgetItem, QHeaderView, QLabel, QLineEdit,
-    QComboBox, QPushButton, QMenuBar, QMenu,
-    QStatusBar, QMessageBox, QFileDialog, QGroupBox, QFrame,
-    QAbstractItemView, QApplication, QInputDialog, QTabWidget, QDateEdit
+    QMainWindow, QWidget, QVBoxLayout, QTabWidget, 
+    QMessageBox, QFileDialog, QSplitter, QLabel, QInputDialog,
+    QMenuBar, QMenu, QApplication, QTableWidget, QTableWidgetItem,
+    QHeaderView, QLineEdit, QComboBox, QPushButton, QStatusBar,
+    QGroupBox, QFrame, QAbstractItemView, QDateEdit, QHBoxLayout,
+    QGridLayout
 )
 from utils.decimal_utils import LocaleIndependentDoubleSpinBox, parse_decimal_or_zero
 from PyQt6.QtCore import Qt, QSize, QSettings
@@ -110,7 +113,11 @@ class MainWindow(QMainWindow):
         self.voyage: Optional[Voyage] = None
         self.tank_table = None
         
-        # Persistence
+        # ConfigManager for portable settings
+        from utils.config_manager import get_config
+        self.config = get_config()
+        
+        # Persistence (legacy QSettings - kept for backward compatibility during transition)
         self.settings = QSettings("UllageMaster", "UllageMaster")
         self.last_dir = self.settings.value("last_dir", "")
         
@@ -186,6 +193,22 @@ class MainWindow(QMainWindow):
         self.last_dir = str(Path(filepath).parent)
         self.settings.setValue("last_dir", self.last_dir)
 
+    def load_settings(self):
+        """Load settings from ConfigManager."""
+        # Restore window state is not fully supported in simple INI, skipping geometry for now
+        # or implementing custom geometry saving if needed.
+        pass
+
+    def closeEvent(self, event):
+        """Save settings on exit."""
+        # Save last tab
+        self.config.set_int("General", "last_tab", self.tabs.currentIndex())
+        
+        # Widgets save their own state via ConfigManager now
+        if hasattr(self, 'history_tab'):
+            self.history_tab.save_state() # Assuming it has this method
+            
+        event.accept()
     
     def _create_menu(self):
         """Create menu bar."""
@@ -264,6 +287,18 @@ class MainWindow(QMainWindow):
         settings_menu.addAction(logo_config_action)
         
         settings_menu.addSeparator()
+        
+        # Language Submenu
+        lang_menu = settings_menu.addMenu(t("language", "settings"))
+        
+        en_action = QAction("English", self)
+        en_action.triggered.connect(lambda: self._change_language("en"))
+        lang_menu.addAction(en_action)
+        
+        tr_action = QAction("Türkçe", self)
+        tr_action.triggered.connect(lambda: self._change_language("tr"))
+        lang_menu.addAction(tr_action)
+    
 
 
         # Stowage Plan menu
@@ -325,6 +360,20 @@ class MainWindow(QMainWindow):
             self.explorer_tab.save_state()
             
         super().closeEvent(event)
+
+    def _change_language(self, lang_code):
+        """Change application language and request restart."""
+        current = self.config.get_str("General", "language", "en")
+        if current == lang_code:
+            return
+            
+        self.config.set_str("General", "language", lang_code)
+        
+        QMessageBox.information(
+            self,
+            t("restart_title", "msg"),
+            t("restart_text", "msg")
+        )
     
     def _calculate_column_min_widths(self):
         """Calculate minimum column widths based on content."""
@@ -744,15 +793,22 @@ class MainWindow(QMainWindow):
         max_capacity = capacity * self.MAX_FILL_FACTOR
         available_space = max(0, max_capacity - current_loaded)
         
-        # Calculate remaining cargo to load
+        # Calculate remaining cargo to load (can be negative if over-planned)
         already_loaded = self.stowage_plan.get_cargo_total_loaded(cargo_id)
         remaining = cargo.quantity - already_loaded
         
-        # Load minimum of: available space or remaining cargo
-        quantity_to_load = min(available_space, remaining) if remaining > 0 else 0
+        # Allow loading even if cargo is completed/over-planned
+        # This enables users to plan beyond charterer order for new offers
+        if remaining > 0:
+            # Load minimum of: available space or remaining cargo
+            quantity_to_load = min(available_space, remaining)
+        else:
+            # Cargo is completed/over-planned, but user wants to plan more
+            # Fill to available space in the tank
+            quantity_to_load = available_space
         
         if quantity_to_load <= 0:
-            return  # Nothing to load
+            return  # No space in tank
         
         # Create or update assignment
         total_quantity = current_loaded + quantity_to_load
@@ -2863,6 +2919,15 @@ class MainWindow(QMainWindow):
             return
         
         from export.stowage_plan_pdf import generate_stowage_plan_pdf
+        
+        # Sync voyage data from UI header before report generation
+        # This ensures unsaved voyage numbers still appear in reports
+        if hasattr(self, 'voyage_edit'):
+            self.voyage.voyage_number = self.voyage_edit.text()
+        if hasattr(self, 'port_edit'):
+            self.voyage.port = self.port_edit.text()
+        if hasattr(self, 'terminal_edit'):
+            self.voyage.terminal = self.terminal_edit.text()
         
         # Get report data from UI
         ui_data = self.report_tab.get_report_data()

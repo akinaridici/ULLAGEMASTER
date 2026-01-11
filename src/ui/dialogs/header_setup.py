@@ -8,28 +8,31 @@ from PyQt6.QtWidgets import (
     QMessageBox
 )
 from PyQt6.QtCore import Qt
-import os
-from utils.config_headers import load_header_config, save_header_config, get_header_config_path
+from utils.config_manager import get_config
+from i18n import t
 
 class HeaderSetupDialog(QDialog):
+    """
+    Dialog to configure Report Headers (Ullage Report & Protest Letter).
+    PERSISTENCE: Stores data in 'data/config/UllageMaster.ini' via ConfigManager.
+    """
+    
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Report Header Configuration")
-        self.setMinimumWidth(500)
-        self.setMinimumHeight(400)
+        self.setWindowTitle(t("headers", "menu"))
+        self.setMinimumSize(500, 400)
         
-        self.data = load_header_config()
-        self.inputs = {}
+        self.config = get_config()
         
         self.init_ui()
+        self.load_data()
         
     def init_ui(self):
         layout = QVBoxLayout(self)
         
         # Explanation
         info_label = QLabel(
-            "Configure header information for generating PDF reports.\n"
-            f"Config File: {get_header_config_path()}"
+            "Configure header information for generating PDF reports."
         )
         info_label.setWordWrap(True)
         info_label.setStyleSheet("color: #94a3b8; font-style: italic;")
@@ -37,92 +40,116 @@ class HeaderSetupDialog(QDialog):
         
         # Tabs
         tabs = QTabWidget()
-        tabs.addTab(self.create_ullage_tab(), "Ullage Report")
-        tabs.addTab(self.create_protest_tab(), "Protest Letter")
+        tabs.addTab(self._create_ullage_tab(), "Ullage Report")
+        tabs.addTab(self._create_protest_tab(), "Protest Letter")
         layout.addWidget(tabs)
         
         # Buttons
         btn_layout = QHBoxLayout()
         
-        open_folder_btn = QPushButton("📂 Open Config Folder")
-        open_folder_btn.clicked.connect(self.open_config_folder)
-        
         save_btn = QPushButton("Save Changes")
-        save_btn.clicked.connect(self.save_config)
+        save_btn.clicked.connect(self.save_data)
         save_btn.setStyleSheet("background-color: #0d9488; color: white; font-weight: bold;")
         
         cancel_btn = QPushButton("Cancel")
         cancel_btn.clicked.connect(self.reject)
         
-        btn_layout.addWidget(open_folder_btn)
         btn_layout.addStretch()
         btn_layout.addWidget(save_btn)
         btn_layout.addWidget(cancel_btn)
         
         layout.addLayout(btn_layout)
         
-    def create_ullage_tab(self):
+    def _create_ullage_tab(self):
         widget = QWidget()
         form = QFormLayout(widget)
-        self.inputs['ULLAGE_REPORT'] = {}
         
-        section = self.data.get('ULLAGE_REPORT', {})
+        self.ullage_line1 = QLineEdit()
+        self.ullage_line2 = QLineEdit()
+        self.ullage_line3 = QLineEdit()
+        self.ullage_issue_no = QLineEdit()
+        self.ullage_issue_date = QLineEdit()
+        self.ullage_rev_no = QLineEdit()
+        self.ullage_page_fmt = QLineEdit()
         
-        fields = [
-            ("title_line_1", "Title Line 1"),
-            ("title_line_2", "Title Line 2"),
-            ("title_line_3", "Title Line 3"),
-            ("issue_no", "Issue No"),
-            ("issue_date", "Issue Date"),
-            ("rev_no", "Rev No"),
-            ("page_format", "Page Format")
-        ]
-        
-        for key, label in fields:
-            inp = QLineEdit(section.get(key, ""))
-            form.addRow(label + ":", inp)
-            self.inputs['ULLAGE_REPORT'][key] = inp
+        form.addRow("Title Line 1:", self.ullage_line1)
+        form.addRow("Title Line 2:", self.ullage_line2)
+        form.addRow("Title Line 3:", self.ullage_line3)
+        form.addRow("Issue No:", self.ullage_issue_no)
+        form.addRow("Issue Date:", self.ullage_issue_date)
+        form.addRow("Rev No:", self.ullage_rev_no)
+        form.addRow("Page Format:", self.ullage_page_fmt)
             
         return widget
         
-    def create_protest_tab(self):
+    def _create_protest_tab(self):
         widget = QWidget()
         form = QFormLayout(widget)
-        self.inputs['PROTEST_REPORT'] = {}
         
-        section = self.data.get('PROTEST_REPORT', {})
+        self.protest_line1 = QLineEdit()
+        self.protest_line2 = QLineEdit()
+        self.protest_doc_title = QLineEdit()
+        self.protest_issue_no = QLineEdit()
+        self.protest_issue_date = QLineEdit()
+        self.protest_rev_no = QLineEdit()
+        self.protest_rev_date = QLineEdit()
         
-        fields = [
-            ("title_line_1", "Title Line 1"),
-            ("title_line_2", "Title Line 2"),
-            ("doc_title", "Doc Title"),
-            ("issue_no", "Issue No"),
-            ("issue_date", "Issue Date"),
-            ("rev_no", "Rev No"),
-            ("rev_date", "Rev Date")
-        ]
-        
-        for key, label in fields:
-            inp = QLineEdit(section.get(key, ""))
-            form.addRow(label + ":", inp)
-            self.inputs['PROTEST_REPORT'][key] = inp
+        form.addRow("Title Line 1:", self.protest_line1)
+        form.addRow("Title Line 2:", self.protest_line2)
+        form.addRow("Doc Title:", self.protest_doc_title)
+        form.addRow("Issue No:", self.protest_issue_no)
+        form.addRow("Issue Date:", self.protest_issue_date)
+        form.addRow("Rev No:", self.protest_rev_no)
+        form.addRow("Rev Date:", self.protest_rev_date)
             
         return widget
         
-    def open_config_folder(self):
-        path = get_header_config_path().parent
-        os.startfile(path)
+    def load_data(self):
+        """Load data from ConfigManager into fields."""
+        # Ullage Report
+        ullage_data = self.config.get_section("ULLAGE_REPORT")
+        self.ullage_line1.setText(ullage_data.get("title_line_1", ""))
+        self.ullage_line2.setText(ullage_data.get("title_line_2", ""))
+        self.ullage_line3.setText(ullage_data.get("title_line_3", ""))
+        self.ullage_issue_no.setText(ullage_data.get("issue_no", ""))
+        self.ullage_issue_date.setText(ullage_data.get("issue_date", ""))
+        self.ullage_rev_no.setText(ullage_data.get("rev_no", ""))
+        self.ullage_page_fmt.setText(ullage_data.get("page_format", ""))
         
-    def save_config(self):
-        # Update data from inputs
-        for section, fields in self.inputs.items():
-            if section not in self.data:
-                self.data[section] = {}
-            for key, inp in fields.items():
-                self.data[section][key] = inp.text()
-                
-        if save_header_config(self.data):
-            QMessageBox.information(self, "Success", "Configuration saved successfully!")
-            self.accept()
-        else:
-            QMessageBox.critical(self, "Error", "Failed to save configuration.")
+        # Protest Letter
+        protest_data = self.config.get_section("PROTEST_REPORT")
+        self.protest_line1.setText(protest_data.get("title_line_1", ""))
+        self.protest_line2.setText(protest_data.get("title_line_2", ""))
+        self.protest_doc_title.setText(protest_data.get("doc_title", ""))
+        self.protest_issue_no.setText(protest_data.get("issue_no", ""))
+        self.protest_issue_date.setText(protest_data.get("issue_date", ""))
+        self.protest_rev_no.setText(protest_data.get("rev_no", ""))
+        self.protest_rev_date.setText(protest_data.get("rev_date", ""))
+
+    def save_data(self):
+        """Save data to ConfigManager."""
+        
+        # Ullage Report Section
+        self.config.set_section("ULLAGE_REPORT", {
+            "title_line_1": self.ullage_line1.text(),
+            "title_line_2": self.ullage_line2.text(),
+            "title_line_3": self.ullage_line3.text(),
+            "issue_no": self.ullage_issue_no.text(),
+            "issue_date": self.ullage_issue_date.text(),
+            "rev_no": self.ullage_rev_no.text(),
+            "page_format": self.ullage_page_fmt.text()
+        })
+        
+        # Protest Report Section
+        self.config.set_section("PROTEST_REPORT", {
+            "title_line_1": self.protest_line1.text(),
+            "title_line_2": self.protest_line2.text(),
+            "doc_title": self.protest_doc_title.text(),
+            "issue_no": self.protest_issue_no.text(),
+            "issue_date": self.protest_issue_date.text(),
+            "rev_no": self.protest_rev_no.text(),
+            "rev_date": self.protest_rev_date.text()
+        })
+        
+        QMessageBox.information(self, "Saved", "Configuration saved successfully.")
+        self.accept()

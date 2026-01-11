@@ -177,13 +177,15 @@ class ProtestPDFReport:
     def _build_header(self):
         """Build the header with logo, title, and document info."""
         # Load config
-        from utils.config_headers import load_header_config
-        config = load_header_config().get("PROTEST_REPORT", {})
+        from utils.config_manager import get_config
+        config = get_config()
+        header_data = config.get_section("PROTEST_REPORT")
+        logo_data = config.get_section("LOGO_SETTINGS")
         
         # Title Data
-        title_line_1 = config.get("title_line_1", "INTEGRATED MANAGEMENT SYSTEM MANUAL")
-        title_line_2 = config.get("title_line_2", "Chapter 7.5")
-        doc_title = config.get("doc_title", "LETTER OF PROTEST")
+        title_line_1 = header_data.get("title_line_1", "INTEGRATED MANAGEMENT SYSTEM MANUAL")
+        title_line_2 = header_data.get("title_line_2", "Chapter 7.5")
+        doc_title = header_data.get("doc_title", "LETTER OF PROTEST")
         
         title_text = f"{title_line_1}<br/>{title_line_2}"
         
@@ -191,16 +193,15 @@ class ProtestPDFReport:
         doc_info = "Issue No.:<br/>Issue Date:<br/>Rev. No.:<br/>Rev. Date:<br/>Page:"
         
         # Doc Info Values
-        issue_no = config.get("issue_no", "2")
-        issue_date = config.get("issue_date", "1.11.2024")
-        rev_no = config.get("rev_no", "0")
-        rev_date = config.get("rev_date", "00/00/0000")
+        issue_no = header_data.get("issue_no", "2")
+        issue_date = header_data.get("issue_date", "1.11.2024")
+        rev_no = header_data.get("rev_no", "0")
+        rev_date = header_data.get("rev_date", "00/00/0000")
         
         doc_values = f"{issue_no}<br/>{issue_date}<br/>{rev_no}<br/>{rev_date}<br/>1 of 1"
         
         # Logo Logic (Image or Text)
-        logo_config = load_header_config().get("LOGO_SETTINGS", {})
-        logo_mode = logo_config.get("mode", "IMAGE")
+        logo_mode = logo_data.get("mode", "IMAGE")
         
         logo_obj = None
         
@@ -243,7 +244,7 @@ class ProtestPDFReport:
         
         if logo_obj is None:
             # Fallback to Text or Explicit Text Mode
-            text_content = logo_config.get("text_content", "LOGO")
+            text_content = logo_data.get("text_content", "LOGO")
             formatted_text = text_content.replace('\n', '<br/>')
             logo_obj = Paragraph(formatted_text, self.style_bold_center)
         

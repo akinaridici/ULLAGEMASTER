@@ -105,5 +105,58 @@
         "mt": "MT",
         "celsius": "°C",
         "kg_m3": "kg/m³"
+    },
+    "tabs": {
+        "voyages": "Seferler",
+        "stowage": "Yük Planı",
+        "ullage": "Ullage Hesabı",
+        "reports": "Rapor İşlemleri",
+        "discrepancy": "Farklar / Protestolar"
+    },
+    "stowage": {
+        "control_panel": "Kontrol Paneli",
+        "colorize": "Renklendir",
+        "colorize_tooltip": "Basılı tut: Alıcı adının ilk 4 harfine göre grupla",
+        "set_97": "%97.7 Yap",
+        "fill_tooltip": "Yüklü tankları %97.7 doldur",
+        "charterer_order": "Yükleme Talimatı",
+        "loading_plan": "Yükleme Planı",
+        "empty_all": "Tüm Tankları Boşalt",
+        "transfer_ullage": "Ullage'a Aktar"
+    },
+    "ullage": {
+        "edit_parcels": "Parselleri Düzenle",
+        "transfer_stowage": "Stowage'a Aktar"
+    },
+    "report": {
+        "headers": "Rapor Başlıkları",
+        "port": "Liman",
+        "terminal": "Terminal",
+        "mmc": "MMC NO",
+        "type": "Rapor Tipi",
+        "cargo": "Ürün (Yük)",
+        "receiver": "Alıcı",
+        "date": "Rapor Tarihi",
+        "slop_label": "SLOP Etiketi",
+        "remarks": "Açıklamalar",
+        "select_parcels": "Parsel Seçimi",
+        "all_parcels": "TÜM PARSELLER",
+        "btn_selected": "SEÇİLİ PARSEL RAPORU",
+        "stowage_group": "Yük Planı",
+        "btn_stowage": "YÜK PLANI RAPORU"
+    },
+    "disc": {
+        "loading_ops": "YÜKLEME OPERASYONU",
+        "discharging_ops": "TAHLİYE OPERASYONU",
+        "bl_figure": "Konşimento (B/L)",
+        "ship_wo_vef": "Gemi (VEF'siz)",
+        "diff_wo_vef": "Fark (VEF'siz)",
+        "ship_vef": "Gemi (VEF'li)",
+        "diff_vef": "Fark (VEF'li)",
+        "protest": "Protesto"
+    },
+    "msg": {
+        "restart_title": "Yeniden Başlatma Gerekli",
+        "restart_text": "Dil değişikliğinin etkili olması için uygulama yeniden başlatılmalıdır."
     }
 }

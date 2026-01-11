@@ -397,7 +397,9 @@ def generate_stowage_plan_pdf(
         # =================================================================
         c.setFont(font_bold, 10)
         info_y = height - 2.8*cm
-        c.drawString(pre_hull_x, info_y, f"VOYAGE: {voyage.voyage_number}")
+        # Use report_data first (live UI values), fallback to voyage object
+        voyage_no = report_data.get('voyage_number', voyage.voyage_number)
+        c.drawString(pre_hull_x, info_y, f"VOYAGE: {voyage_no}")
         c.drawString(pre_hull_x, info_y - 0.5*cm, f"PORT/TERMINAL: {report_data.get('port', voyage.port)} / {report_data.get('terminal', voyage.terminal)}")
         
         # =================================================================

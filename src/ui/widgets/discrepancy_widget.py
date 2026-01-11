@@ -736,25 +736,20 @@ class DiscrepancyWidget(QWidget):
         # Restore saved splitter state
         self._restore_splitter_state()
     
-    def _get_settings_path(self) -> str:
-        """Get path to VoyageExplorer.ini settings file."""
-        import os
-        return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), 
-                           'data', 'config', 'VoyageExplorer.ini')
-    
     def _save_splitter_state(self):
-        """Save splitter state to VoyageExplorer.ini."""
-        from PyQt6.QtCore import QSettings
-        settings = QSettings(self._get_settings_path(), QSettings.Format.IniFormat)
-        settings.setValue("discrepancy_splitter_state", self.splitter.saveState())
+        """Save splitter state to ConfigManager."""
+        from utils.config_manager import get_config
+        config = get_config()
+        config.set_str("Discrepancy", "splitter_state", bytes(self.splitter.saveState()).hex())
     
     def _restore_splitter_state(self):
-        """Restore splitter state from VoyageExplorer.ini."""
-        from PyQt6.QtCore import QSettings
-        settings = QSettings(self._get_settings_path(), QSettings.Format.IniFormat)
-        state = settings.value("discrepancy_splitter_state")
-        if state:
-            self.splitter.restoreState(state)
+        """Restore splitter state from ConfigManager."""
+        from utils.config_manager import get_config
+        from PyQt6.QtCore import QByteArray
+        config = get_config()
+        state_hex = config.get_str("Discrepancy", "splitter_state", "")
+        if state_hex:
+            self.splitter.restoreState(QByteArray.fromHex(state_hex.encode()))
     
     def set_voyage(self, voyage: 'Voyage'):
         """Set the voyage and refresh parcel cards."""

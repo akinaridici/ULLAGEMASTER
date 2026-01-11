@@ -500,43 +500,27 @@ class VoyageExplorerWidget(QWidget):
             self.voyage_loaded.emit(self.current_path)
 
     def save_state(self):
-        """Save UI state"""
-        import sys
-        from pathlib import Path
-        if getattr(sys, 'frozen', False):
-            app_root = Path(sys.executable).parent
-        else:
-            app_root = Path(__file__).parent.parent.parent.parent
-        config_dir = str(app_root / 'data' / 'config')
-        os.makedirs(config_dir, exist_ok=True)
-        config_path = str(app_root / 'data' / 'config' / 'VoyageExplorer.ini')
+        """Save UI state using ConfigManager."""
+        from utils.config_manager import get_config
+        config = get_config()
         
-        settings = QSettings(config_path, QSettings.Format.IniFormat)
-        settings.setValue("splitter_state", self.right_splitter.saveState())
-        settings.setValue("main_splitter_state", self.splitter.saveState())
+        config.set_section("VoyageExplorer", {
+            "splitter_state": bytes(self.right_splitter.saveState()).hex(),
+            "main_splitter_state": bytes(self.splitter.saveState()).hex()
+        })
         
     def restore_state(self):
-        """Restore UI state"""
-        import sys
-        from pathlib import Path
-        if getattr(sys, 'frozen', False):
-            app_root = Path(sys.executable).parent
-        else:
-            app_root = Path(__file__).parent.parent.parent.parent
-        config_path = str(app_root / 'data' / 'config' / 'VoyageExplorer.ini')
-        if not os.path.exists(config_path):
-            return
+        """Restore UI state using ConfigManager."""
+        from utils.config_manager import get_config
+        from PyQt6.QtCore import QByteArray
+        config = get_config()
+        section = config.get_section("VoyageExplorer")
+        
+        if "splitter_state" in section and section["splitter_state"]:
+            self.right_splitter.restoreState(QByteArray.fromHex(section["splitter_state"].encode()))
             
-        settings = QSettings(config_path, QSettings.Format.IniFormat)
-        state = settings.value("splitter_state")
-        if state:
-            self.right_splitter.restoreState(state)
-            
-        main_state = settings.value("main_splitter_state")
-        if main_state:
-            self.splitter.restoreState(main_state)
-        if main_state:
-            self.splitter.restoreState(main_state)
+        if "main_splitter_state" in section and section["main_splitter_state"]:
+            self.splitter.restoreState(QByteArray.fromHex(section["main_splitter_state"].encode()))
             
     def _show_context_menu(self, pos):
         """Show context menu for list items."""
