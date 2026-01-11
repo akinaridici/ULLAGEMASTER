@@ -176,11 +176,27 @@ class ProtestPDFReport:
         
     def _build_header(self):
         """Build the header with logo, title, and document info."""
-        title_text = "INTEGRATED MANAGEMENT SYSTEM MANUAL<br/>Chapter 7.5"
-        doc_code = "CBO 082"
-        doc_title = "LETTER OF PROTEST"
+        # Load config
+        from utils.config_headers import load_header_config
+        config = load_header_config().get("PROTEST_REPORT", {})
+        
+        # Title Data
+        title_line_1 = config.get("title_line_1", "INTEGRATED MANAGEMENT SYSTEM MANUAL")
+        title_line_2 = config.get("title_line_2", "Chapter 7.5")
+        doc_title = config.get("doc_title", "LETTER OF PROTEST")
+        
+        title_text = f"{title_line_1}<br/>{title_line_2}"
+        
+        # Doc Info Labels
         doc_info = "Issue No.:<br/>Issue Date:<br/>Rev. No.:<br/>Rev. Date:<br/>Page:"
-        doc_values = "2<br/>1.11.2024<br/>0<br/>00/00/0000<br/>1 of 1"
+        
+        # Doc Info Values
+        issue_no = config.get("issue_no", "2")
+        issue_date = config.get("issue_date", "1.11.2024")
+        rev_no = config.get("rev_no", "0")
+        rev_date = config.get("rev_date", "00/00/0000")
+        
+        doc_values = f"{issue_no}<br/>{issue_date}<br/>{rev_no}<br/>{rev_date}<br/>1 of 1"
         
         # Load logo
         import sys
@@ -211,7 +227,7 @@ class ProtestPDFReport:
         # Title table (center)
         title_table_data = [
             [Paragraph(title_text, self.style_title)],
-            [Table([[Paragraph(doc_code, self.style_bold_center), Paragraph(doc_title, self.style_bold_center)]], colWidths=[30*mm, 70*mm])]
+            [Table([[Paragraph(doc_title, self.style_bold_center)]], colWidths=[100*mm])]
         ]
         title_table = Table(title_table_data, colWidths=[100*mm])
         title_table.setStyle(TableStyle([

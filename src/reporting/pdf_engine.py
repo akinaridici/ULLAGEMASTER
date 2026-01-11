@@ -72,8 +72,25 @@ class UllagePDFReport:
         print(f"PDF generated: {self.output_path}")
 
     def _build_header(self):
-        title_text = "INTEGRATED MANAGEMENT SYSTEM MANUAL<br/>Chapter 7.5<br/>ULLAGE REPORT & TEMPERATURE LOG"
-        doc_info = "Issue No: 02<br/>Issue Date: 01/11/2024<br/>Rev No: 0<br/>Page: 1"
+        # Load config
+        from utils.config_headers import load_header_config
+        config = load_header_config().get("ULLAGE_REPORT", {})
+        
+        # Build Title
+        title_lines = [
+            config.get("title_line_1", "INTEGRATED MANAGEMENT SYSTEM MANUAL"),
+            config.get("title_line_2", "Chapter 7.5"),
+            config.get("title_line_3", "ULLAGE REPORT & TEMPERATURE LOG")
+        ]
+        title_text = "<br/>".join(title_lines)
+        
+        # Build Doc Info
+        issue_no = config.get("issue_no", "02")
+        issue_date = config.get("issue_date", "01/11/2024")
+        rev_no = config.get("rev_no", "0")
+        page_fmt = config.get("page_format", "Page: 1")
+        
+        doc_info = f"Issue No: {issue_no}<br/>Issue Date: {issue_date}<br/>Rev No: {rev_no}<br/>{page_fmt}"
         
         # Get logo path (supports frozen EXE)
         import sys
@@ -96,7 +113,6 @@ class UllagePDFReport:
             logo_obj, 
             Table([
                 [Paragraph(title_text, self.style_title)],
-                [Paragraph("CBO 07", self.style_bold_center)]
             ], colWidths=[180*mm]),
             Paragraph(doc_info, ParagraphStyle('Small', parent=self.style_center, alignment=0, fontSize=7))
         ]]

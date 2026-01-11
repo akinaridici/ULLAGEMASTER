@@ -255,6 +255,12 @@ class MainWindow(QMainWindow):
         
         settings_menu.addSeparator()
 
+        header_config_action = QAction("Report Headers...", self)
+        header_config_action.triggered.connect(self._show_header_config)
+        settings_menu.addAction(header_config_action)
+        
+        settings_menu.addSeparator()
+
 
         # Stowage Plan menu
         stowage_menu = menubar.addMenu("Stowage Plan")
@@ -798,6 +804,13 @@ class MainWindow(QMainWindow):
             self.stowage_plan.remove_assignment(source_tank_id)
         
         self._on_stowage_changed()
+
+    def _show_header_config(self):
+        """Show dialog to configure report headers (company info)."""
+        from ui.dialogs.header_setup import HeaderSetupDialog
+        dialog = HeaderSetupDialog(self)
+        dialog.exec()
+
     
     def handle_empty_tank(self, tank_id: str):
         """Handle emptying a tank (removing its assignment)."""
