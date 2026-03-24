@@ -27,6 +27,7 @@ class Parcel:
     receiver: str = ""
     density_vac: float = 0.0
     color: str = "#3B82F6"  # Default blue
+    cargo_unique_id: str = ""  # Links back to StowageCargo.unique_id
     bl_loading: float = 0.0  # B/L figure for loading
     bl_discharging: float = 0.0  # B/L figure for discharging (kept for backward compat)
     ship_figure_loading: float = 0.0  # Ship figure at loading port (for discharging ops)
@@ -34,7 +35,7 @@ class Parcel:
     
     def to_dict(self) -> dict:
         """Convert parcel to dictionary for JSON serialization."""
-        return {
+        result = {
             'id': self.id,
             'name': self.name,
             'receiver': self.receiver,
@@ -45,6 +46,9 @@ class Parcel:
             'ship_figure_loading': self.ship_figure_loading,
             'outturn_figure': self.outturn_figure,
         }
+        if self.cargo_unique_id:
+            result['cargo_unique_id'] = self.cargo_unique_id
+        return result
     
     @classmethod
     def from_dict(cls, data: dict) -> 'Parcel':
@@ -55,6 +59,7 @@ class Parcel:
             receiver=data.get('receiver', ''),
             density_vac=data.get('density_vac', 0.0),
             color=data.get('color', '#3B82F6'),
+            cargo_unique_id=data.get('cargo_unique_id', ''),
             bl_loading=data.get('bl_loading', 0.0),
             bl_discharging=data.get('bl_discharging', 0.0),
             ship_figure_loading=data.get('ship_figure_loading', 0.0),

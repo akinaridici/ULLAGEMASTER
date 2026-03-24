@@ -1278,7 +1278,8 @@ class MainWindow(QMainWindow):
                 name=cargo.cargo_type,
                 receiver=cargo.get_receiver_names(),
                 density_vac=cargo.density,
-                color=color
+                color=color,
+                cargo_unique_id=cargo.unique_id
             )
             self.voyage.parcels.append(parcel)
             cargo_to_parcel[cargo.unique_id] = parcel_id
@@ -1378,53 +1379,79 @@ class MainWindow(QMainWindow):
         if reply != QMessageBox.StandardButton.Yes:
             return
         
-        # Clear existing stowage plan
-        self.stowage_plan.clear()
+        # Build lookup of existing Charterer Order cargos by unique_id
+        # These must NOT be modified — they represent the customer's order
+        cargo_by_id = {}  # cargo.unique_id → StowageCargo
+        for cargo in self.stowage_plan.cargo_requests:
+            cargo_by_id[cargo.unique_id] = cargo
         
-        # Group tank readings by parcel_id and calculate totals
-        parcel_tanks = {}  # {parcel_id: [tank_readings]}
-        parcel_totals = {}  # {parcel_id: total_gov}
+        # Clear ONLY assignments — keep cargo_requests (Charterer Order) intact
+        self.stowage_plan.assignments.clear()
         
-        for tank_id, reading in self.voyage.tank_readings.items():
-            if reading.parcel_id:
-                pid = reading.parcel_id
-                if pid not in parcel_tanks:
-                    parcel_tanks[pid] = []
-                    parcel_totals[pid] = 0.0
-                parcel_tanks[pid].append(reading)
-                parcel_totals[pid] += reading.gov if reading.gov else 0.0
-        
-        # Create StowageCargo for each parcel that has tank assignments
+        # Match parcels to their source Charterer Order cargos via cargo_unique_id
         parcel_to_cargo = {}  # {parcel_id: StowageCargo}
         
-        # Handle regular parcels
         for parcel in self.voyage.parcels:
-            if parcel.id in parcel_tanks:
-                # Create receivers list
-                receivers = []
-                if parcel.receiver:
-                    receivers = [Receiver(name=parcel.receiver)]
+            if parcel.cargo_unique_id and parcel.cargo_unique_id in cargo_by_id:
+                # Exact match via unique_id — use the original Charterer Order cargo
+                parcel_to_cargo[parcel.id] = cargo_by_id[parcel.cargo_unique_id]
+            else:
+                # Parcel has no cargo_unique_id (legacy data or manual creation)
+                # Try name-based fallback — find first unmatched cargo with same name
+                matched = False
+                for cargo in self.stowage_plan.cargo_requests:
+                    if cargo.unique_id not in [c.unique_id for c in parcel_to_cargo.values()]:
+                        pname = (parcel.name or "").upper().strip()
+                        cname = cargo.cargo_type.upper().strip()
+                        if pname == cname:
+                            parcel_to_cargo[parcel.id] = cargo
+                            matched = True
+                            break
                 
-                cargo = StowageCargo(
-                    cargo_type=parcel.name or f"Parcel {parcel.id}",
-                    quantity=parcel_totals.get(parcel.id, 0.0),
-                    receivers=receivers,
-                    density=parcel.density_vac or 0.85,
-                    custom_color=parcel.color or "#3B82F6"
-                )
-                self.stowage_plan.add_cargo(cargo)
-                parcel_to_cargo[parcel.id] = cargo
+                if not matched:
+                    # Truly new cargo not in Charterer Order — create it
+                    from models.stowage_plan import Receiver
+                    receivers = []
+                    if parcel.receiver:
+                        receivers = [Receiver(name=parcel.receiver)]
+                    
+                    # Calculate loaded total
+                    loaded_total = sum(
+                        r.gov for r in self.voyage.tank_readings.values()
+                        if r.parcel_id == parcel.id and r.gov
+                    )
+                    
+                    cargo = StowageCargo(
+                        cargo_type=parcel.name or f"Parcel {parcel.id}",
+                        quantity=loaded_total,
+                        receivers=receivers,
+                        density=parcel.density_vac or 0.85,
+                        custom_color=parcel.color or "#3B82F6"
+                    )
+                    self.stowage_plan.add_cargo(cargo)
+                    parcel_to_cargo[parcel.id] = cargo
         
-        # Handle SLOP (parcel_id = "0") if any tanks are assigned
-        if "0" in parcel_tanks:
-            slop_cargo = StowageCargo(
-                cargo_type="SLOP",
-                quantity=parcel_totals.get("0", 0.0),
-                receivers=[],
-                density=0.85,
-                custom_color="#9CA3AF"  # Gray for SLOP
-            )
-            self.stowage_plan.add_cargo(slop_cargo)
+        # Handle SLOP (parcel_id = "0") if any tanks are assigned to it
+        slop_readings = [r for r in self.voyage.tank_readings.values() if r.parcel_id == "0"]
+        if slop_readings and "0" not in parcel_to_cargo:
+            # Check if SLOP already exists in cargo_requests
+            slop_cargo = None
+            for cargo in self.stowage_plan.cargo_requests:
+                if cargo.cargo_type.upper() == "SLOP":
+                    slop_cargo = cargo
+                    break
+            
+            if not slop_cargo:
+                slop_total = sum(r.gov for r in slop_readings if r.gov)
+                slop_cargo = StowageCargo(
+                    cargo_type="SLOP",
+                    quantity=slop_total,
+                    receivers=[],
+                    density=0.85,
+                    custom_color="#9CA3AF"
+                )
+                self.stowage_plan.add_cargo(slop_cargo)
+            
             parcel_to_cargo["0"] = slop_cargo
         
         # Create TankAssignments
@@ -1440,10 +1467,7 @@ class MainWindow(QMainWindow):
                 self.stowage_plan.add_assignment(tank_id, assignment)
                 assignment_count += 1
         
-        # Update Stowage Plan UI components
-        if hasattr(self, 'cargo_input_widget'):
-            self.cargo_input_widget.set_cargo_list(self.stowage_plan.cargo_requests)
-        
+        # Update Stowage Plan UI visuals — cargo_input_widget is NEVER touched
         if hasattr(self, 'cargo_legend'):
             self.cargo_legend.set_stowage_plan(self.stowage_plan)
         
@@ -2453,7 +2477,7 @@ class MainWindow(QMainWindow):
         if self.ship_config.chief_officer != chief_officer or self.ship_config.master != master:
             self.ship_config.chief_officer = chief_officer
             self.ship_config.master = master
-            from core.config import save_config
+            from utils import save_config
             save_config(self.ship_config)
 
     def _generate_total_ullage_report(self):
@@ -2913,18 +2937,7 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "Hata", f"Rapor oluşturulurken hata oluştu:\n{str(e)}")
                 break
-        if not self.ship_config:
-            return
-        
-        chief_officer = self.chief_officer_edit.text().strip()
-        master = self.master_edit.text().strip()
-        
-        # Only save if changed
-        if self.ship_config.chief_officer != chief_officer or self.ship_config.master != master:
-            self.ship_config.chief_officer = chief_officer
-            self.ship_config.master = master
-            save_config(self.ship_config)
-            self.status_bar.showMessage("Officer names saved", 2000)
+
 
     def _generate_stowage_plan_report(self):
         """Generate the Stowage Plan PDF report."""
