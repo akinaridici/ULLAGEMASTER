@@ -3272,8 +3272,9 @@ class MainWindow(QMainWindow):
         if not filepath.endswith('.voyage'):
             filepath += '.voyage'
         
-        # Sync calculated MT AIR from voyage tank readings to stowage plan
-        self._sync_stowage_plan_quantities()
+        # NOTE: _sync_stowage_plan_quantities() was previously called here,
+        # but it overwrites Charterer Order quantities with loaded values.
+        # Charterer Order (cargo_requests) must remain immutable during save.
         
         # Create unified save structure
         save_data = {

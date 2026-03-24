@@ -1,0 +1,573 @@
+{
+  "version": "2.0",
+  "voyage": {
+    "voyage_number": "09-2006",
+    "date": "24-03-2026",
+    "port": "Tütünçiftlik",
+    "terminal": "Tüpraş",
+    "vef": 0.9996,
+    "drafts": {
+      "aft": 9.0,
+      "fwd": 9.0,
+      "trim": 0.0
+    },
+    "chief_officer": "Şule Güner",
+    "master": "Akın Arıdıcı",
+    "parcels": [
+      {
+        "id": "1",
+        "name": "MOTORİN",
+        "receiver": "MDH",
+        "density_vac": 0.83,
+        "color": "#55557f",
+        "bl_loading": 6283.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "2",
+        "name": "MOTORİN",
+        "receiver": "MERSIN SHELL",
+        "density_vac": 0.83,
+        "color": "#2f2f2f",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "3",
+        "name": "KBZ",
+        "receiver": "MERSIN SHELL",
+        "density_vac": 0.73,
+        "color": "#aa0000",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "4",
+        "name": "KBZ",
+        "receiver": "MERSIN POAS",
+        "density_vac": 0.73,
+        "color": "#ff5500",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "5",
+        "name": "KBZ",
+        "receiver": "ANTALYA OPET",
+        "density_vac": 0.73,
+        "color": "#aa00ff",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      },
+      {
+        "id": "6",
+        "name": "KBZ",
+        "receiver": "ANTALYA POAS",
+        "density_vac": 0.73,
+        "color": "#DDA0DD",
+        "bl_loading": 0.0,
+        "bl_discharging": 0.0,
+        "ship_figure_loading": 0.0,
+        "outturn_figure": 0.0
+      }
+    ],
+    "tank_readings": {
+      "1P": {
+        "tank_id": "1P",
+        "parcel_id": "6",
+        "ullage": 104.15543624161063,
+        "temp_celsius": 21.0,
+        "density_vac": 0.73
+      },
+      "1S": {
+        "tank_id": "1S",
+        "parcel_id": "5",
+        "ullage": 104.70094979647227,
+        "temp_celsius": 21.0,
+        "density_vac": 0.73
+      },
+      "2P": {
+        "tank_id": "2P",
+        "parcel_id": "1",
+        "ullage": 111.43718309859163,
+        "temp_celsius": 21.0,
+        "density_vac": 0.83
+      },
+      "2S": {
+        "tank_id": "2S",
+        "parcel_id": "1",
+        "ullage": 110.34727915194355,
+        "temp_celsius": 21.0,
+        "density_vac": 0.83
+      },
+      "3P": {
+        "tank_id": "3P",
+        "parcel_id": "3",
+        "ullage": 111.86351706036747,
+        "temp_celsius": 21.0,
+        "density_vac": 0.73
+      },
+      "3S": {
+        "tank_id": "3S",
+        "parcel_id": "4",
+        "ullage": 110.81368421052623,
+        "temp_celsius": 21.0,
+        "density_vac": 0.73
+      },
+      "4P": {
+        "tank_id": "4P",
+        "parcel_id": "1",
+        "ullage": 111.18126094570937,
+        "temp_celsius": 21.0,
+        "density_vac": 0.83
+      },
+      "4S": {
+        "tank_id": "4S",
+        "parcel_id": "1",
+        "ullage": 109.82138475021928,
+        "temp_celsius": 21.0,
+        "density_vac": 0.83
+      },
+      "5P": {
+        "tank_id": "5P",
+        "parcel_id": "3",
+        "ullage": 111.63225241016659,
+        "temp_celsius": 21.0,
+        "density_vac": 0.73
+      },
+      "5S": {
+        "tank_id": "5S",
+        "parcel_id": "3",
+        "ullage": 111.96754385964928,
+        "temp_celsius": 21.0,
+        "density_vac": 0.73
+      },
+      "6P": {
+        "tank_id": "6P",
+        "parcel_id": "2",
+        "ullage": 111.13374340949034,
+        "temp_celsius": 21.0,
+        "density_vac": 0.83
+      },
+      "6S": {
+        "tank_id": "6S",
+        "parcel_id": "2",
+        "ullage": 111.47978910369076,
+        "temp_celsius": 21.0,
+        "density_vac": 0.83
+      },
+      "7P": {
+        "tank_id": "7P",
+        "parcel_id": "1",
+        "ullage": 112.0626315789476,
+        "temp_celsius": 21.0,
+        "density_vac": 0.83
+      },
+      "7S": {
+        "tank_id": "7S",
+        "parcel_id": "3",
+        "ullage": 112.18557607739665,
+        "temp_celsius": 21.0,
+        "density_vac": 0.73
+      },
+      "8P": {
+        "tank_id": "8P",
+        "parcel_id": "2",
+        "ullage": 109.16818980667853,
+        "temp_celsius": 21.0,
+        "density_vac": 0.83
+      },
+      "8S": {
+        "tank_id": "8S",
+        "parcel_id": "2",
+        "ullage": 110.97273526824982,
+        "temp_celsius": 21.0,
+        "density_vac": 0.83
+      },
+      "SlopP": {
+        "tank_id": "SlopP",
+        "parcel_id": "",
+        "ullage": null,
+        "temp_celsius": 21.0,
+        "density_vac": null
+      },
+      "SlopS": {
+        "tank_id": "SlopS",
+        "parcel_id": "1",
+        "ullage": 183.61282051282046,
+        "temp_celsius": 21.0,
+        "density_vac": 0.83
+      }
+    },
+    "totals": {
+      "gsv": 20995.07682581,
+      "mt": 16579.80841609791
+    },
+    "notes": "Tütünçiftlik-Mdh+mersin+antalya \nMdh \nShell 6000 mton motorin\n\nMersin\nShell 4000 mton motorin\nShell 3500 mton Kbz\nPo 1200 mton Kbz\n\nAntalya\nOpet 750 mton Kbz\nPo 750 mton Kbz"
+  },
+  "stowage_plan": {
+    "id": "d7268f20-af62-4259-a8b5-8edf31922703",
+    "plan_name": "Plan_20260324_214430",
+    "ship_name": "MT KUZEY EKİM",
+    "created_date": "2026-03-24T21:44:30.374202",
+    "cargo_requests": [
+      {
+        "unique_id": "97d63ddf-e4e6-4a64-aced-7392b8f20971",
+        "cargo_type": "MOTORİN",
+        "quantity": 7231.32530120482,
+        "receivers": [
+          {
+            "name": "MDH"
+          }
+        ],
+        "density": 0.83,
+        "custom_color": "#55557f"
+      },
+      {
+        "unique_id": "b46f91c1-bc77-4191-b24f-01014a18e74b",
+        "cargo_type": "MOTORİN",
+        "quantity": 4819.2771084337355,
+        "receivers": [
+          {
+            "name": "MERSIN SHELL"
+          }
+        ],
+        "density": 0.83,
+        "custom_color": "#2f2f2f"
+      },
+      {
+        "unique_id": "e49d7a5c-c16b-44a5-b61d-64ce231a903b",
+        "cargo_type": "KBZ",
+        "quantity": 4794.520547945205,
+        "receivers": [
+          {
+            "name": "MERSIN SHELL"
+          }
+        ],
+        "density": 0.73,
+        "custom_color": "#aa0000"
+      },
+      {
+        "unique_id": "096a5a8e-fb9d-46cc-a80c-9fee1e9f1302",
+        "cargo_type": "KBZ",
+        "quantity": 1643.8356164383563,
+        "receivers": [
+          {
+            "name": "MERSIN POAS"
+          }
+        ],
+        "density": 0.73,
+        "custom_color": "#ff5500"
+      },
+      {
+        "unique_id": "2cfef308-a2bf-408c-83f2-12c9d20e059a",
+        "cargo_type": "KBZ",
+        "quantity": 1027.3972602739727,
+        "receivers": [
+          {
+            "name": "ANTALYA OPET"
+          }
+        ],
+        "density": 0.73,
+        "custom_color": "#aa00ff"
+      },
+      {
+        "unique_id": "10b05f1f-d33a-4b3d-b420-7feca9d779af",
+        "cargo_type": "KBZ",
+        "quantity": 1027.3972602739727,
+        "receivers": [
+          {
+            "name": "ANTALYA POAS"
+          }
+        ],
+        "density": 0.73,
+        "custom_color": "#DDA0DD"
+      }
+    ],
+    "assignments": {
+      "1P": {
+        "tank_id": "1P",
+        "cargo": {
+          "unique_id": "10b05f1f-d33a-4b3d-b420-7feca9d779af",
+          "cargo_type": "KBZ",
+          "quantity": 1027.3972602739727,
+          "receivers": [
+            {
+              "name": "ANTALYA POAS"
+            }
+          ],
+          "density": 0.73,
+          "custom_color": "#DDA0DD"
+        },
+        "quantity_loaded": 779.0689084256001
+      },
+      "1S": {
+        "tank_id": "1S",
+        "cargo": {
+          "unique_id": "2cfef308-a2bf-408c-83f2-12c9d20e059a",
+          "cargo_type": "KBZ",
+          "quantity": 1027.3972602739727,
+          "receivers": [
+            {
+              "name": "ANTALYA OPET"
+            }
+          ],
+          "density": 0.73,
+          "custom_color": "#aa00ff"
+        },
+        "quantity_loaded": 773.4079216191999
+      },
+      "2P": {
+        "tank_id": "2P",
+        "cargo": {
+          "unique_id": "97d63ddf-e4e6-4a64-aced-7392b8f20971",
+          "cargo_type": "MOTORİN",
+          "quantity": 7228.915662650603,
+          "receivers": [
+            {
+              "name": "MDH"
+            }
+          ],
+          "density": 0.83,
+          "custom_color": "#55557f"
+        },
+        "quantity_loaded": 1596.4958826256
+      },
+      "2S": {
+        "tank_id": "2S",
+        "cargo": {
+          "unique_id": "97d63ddf-e4e6-4a64-aced-7392b8f20971",
+          "cargo_type": "MOTORİN",
+          "quantity": 7228.915662650603,
+          "receivers": [
+            {
+              "name": "MDH"
+            }
+          ],
+          "density": 0.83,
+          "custom_color": "#55557f"
+        },
+        "quantity_loaded": 1595.9102633007997
+      },
+      "3P": {
+        "tank_id": "3P",
+        "cargo": {
+          "unique_id": "e49d7a5c-c16b-44a5-b61d-64ce231a903b",
+          "cargo_type": "KBZ",
+          "quantity": 4794.520547945205,
+          "receivers": [
+            {
+              "name": "MERSIN SHELL"
+            }
+          ],
+          "density": 0.73,
+          "custom_color": "#aa0000"
+        },
+        "quantity_loaded": 1348.388495352
+      },
+      "3S": {
+        "tank_id": "3S",
+        "cargo": {
+          "unique_id": "096a5a8e-fb9d-46cc-a80c-9fee1e9f1302",
+          "cargo_type": "KBZ",
+          "quantity": 1643.8356164383563,
+          "receivers": [
+            {
+              "name": "MERSIN POAS"
+            }
+          ],
+          "density": 0.73,
+          "custom_color": "#ff5500"
+        },
+        "quantity_loaded": 1349.2669243392
+      },
+      "4P": {
+        "tank_id": "4P",
+        "cargo": {
+          "unique_id": "97d63ddf-e4e6-4a64-aced-7392b8f20971",
+          "cargo_type": "MOTORİN",
+          "quantity": 7228.915662650603,
+          "receivers": [
+            {
+              "name": "MDH"
+            }
+          ],
+          "density": 0.83,
+          "custom_color": "#55557f"
+        },
+        "quantity_loaded": 1348.876511456
+      },
+      "4S": {
+        "tank_id": "4S",
+        "cargo": {
+          "unique_id": "97d63ddf-e4e6-4a64-aced-7392b8f20971",
+          "cargo_type": "MOTORİN",
+          "quantity": 7228.915662650603,
+          "receivers": [
+            {
+              "name": "MDH"
+            }
+          ],
+          "density": 0.83,
+          "custom_color": "#55557f"
+        },
+        "quantity_loaded": 1349.1693211183997
+      },
+      "5P": {
+        "tank_id": "5P",
+        "cargo": {
+          "unique_id": "e49d7a5c-c16b-44a5-b61d-64ce231a903b",
+          "cargo_type": "KBZ",
+          "quantity": 4794.520547945205,
+          "receivers": [
+            {
+              "name": "MERSIN SHELL"
+            }
+          ],
+          "density": 0.73,
+          "custom_color": "#aa0000"
+        },
+        "quantity_loaded": 1348.9741146768
+      },
+      "5S": {
+        "tank_id": "5S",
+        "cargo": {
+          "unique_id": "e49d7a5c-c16b-44a5-b61d-64ce231a903b",
+          "cargo_type": "KBZ",
+          "quantity": 4794.520547945205,
+          "receivers": [
+            {
+              "name": "MERSIN SHELL"
+            }
+          ],
+          "density": 0.73,
+          "custom_color": "#aa0000"
+        },
+        "quantity_loaded": 1348.876511456
+      },
+      "6P": {
+        "tank_id": "6P",
+        "cargo": {
+          "unique_id": "b46f91c1-bc77-4191-b24f-01014a18e74b",
+          "cargo_type": "MOTORİN",
+          "quantity": 4819.2771084337355,
+          "receivers": [
+            {
+              "name": "MERSIN SHELL"
+            }
+          ],
+          "density": 0.83,
+          "custom_color": "#2f2f2f"
+        },
+        "quantity_loaded": 1346.7292405983999
+      },
+      "6S": {
+        "tank_id": "6S",
+        "cargo": {
+          "unique_id": "b46f91c1-bc77-4191-b24f-01014a18e74b",
+          "cargo_type": "MOTORİN",
+          "quantity": 4819.2771084337355,
+          "receivers": [
+            {
+              "name": "MERSIN SHELL"
+            }
+          ],
+          "density": 0.83,
+          "custom_color": "#2f2f2f"
+        },
+        "quantity_loaded": 1347.412463144
+      },
+      "7P": {
+        "tank_id": "7P",
+        "cargo": {
+          "unique_id": "97d63ddf-e4e6-4a64-aced-7392b8f20971",
+          "cargo_type": "MOTORİN",
+          "quantity": 7228.915662650603,
+          "receivers": [
+            {
+              "name": "MDH"
+            }
+          ],
+          "density": 0.83,
+          "custom_color": "#55557f"
+        },
+        "quantity_loaded": 1345.5580019487998
+      },
+      "7S": {
+        "tank_id": "7S",
+        "cargo": {
+          "unique_id": "e49d7a5c-c16b-44a5-b61d-64ce231a903b",
+          "cargo_type": "KBZ",
+          "quantity": 4794.520547945205,
+          "receivers": [
+            {
+              "name": "MERSIN SHELL"
+            }
+          ],
+          "density": 0.73,
+          "custom_color": "#aa0000"
+        },
+        "quantity_loaded": 1344.48436652
+      },
+      "8P": {
+        "tank_id": "8P",
+        "cargo": {
+          "unique_id": "b46f91c1-bc77-4191-b24f-01014a18e74b",
+          "cargo_type": "MOTORİN",
+          "quantity": 4819.2771084337355,
+          "receivers": [
+            {
+              "name": "MERSIN SHELL"
+            }
+          ],
+          "density": 0.83,
+          "custom_color": "#2f2f2f"
+        },
+        "quantity_loaded": 1271.3795541407999
+      },
+      "8S": {
+        "tank_id": "8S",
+        "cargo": {
+          "unique_id": "b46f91c1-bc77-4191-b24f-01014a18e74b",
+          "cargo_type": "MOTORİN",
+          "quantity": 4819.2771084337355,
+          "receivers": [
+            {
+              "name": "MERSIN SHELL"
+            }
+          ],
+          "density": 0.83,
+          "custom_color": "#2f2f2f"
+        },
+        "quantity_loaded": 1271.2819509199999
+      },
+      "SlopS": {
+        "tank_id": "SlopS",
+        "cargo": {
+          "unique_id": "97d63ddf-e4e6-4a64-aced-7392b8f20971",
+          "cargo_type": "MOTORİN",
+          "quantity": 7228.915662650603,
+          "receivers": [
+            {
+              "name": "MDH"
+            }
+          ],
+          "density": 0.83,
+          "custom_color": "#55557f"
+        },
+        "quantity_loaded": 358.75183842
+      }
+    },
+    "excluded_tanks": []
+  }
+}
