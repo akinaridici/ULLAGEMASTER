@@ -208,14 +208,9 @@ class VoyageExplorerWidget(QWidget):
     def __init__(self, ship_config: ShipConfig, parent=None):
         super().__init__(parent)
         self.ship_config = ship_config
-        # Determine app root (supports frozen EXE and network shares)
-        import sys
-        from pathlib import Path
-        if getattr(sys, 'frozen', False):
-            app_root = Path(sys.executable).parent
-        else:
-            app_root = Path(__file__).parent.parent.parent.parent  # widgets -> ui -> src -> root
-        self.voyage_dir = str(app_root / 'VOYAGES')
+        # Use centralized path resolution
+        from utils.paths import get_voyages_dir
+        self.voyage_dir = str(get_voyages_dir())
         self.current_path = None
         self._init_ui()
         self.restore_state()

@@ -128,9 +128,61 @@ class Voyage:
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(self.to_dict(), f, indent=2, ensure_ascii=False)
     
+    @staticmethod
+    def _validate_dict(data: dict) -> None:
+        """Validate voyage dictionary structure before deserialization.
+        
+        Raises:
+            ValueError: If required fields are missing or values are out of range.
+        """
+        if not isinstance(data, dict):
+            raise ValueError("Voyage data must be a dictionary")
+        
+        # Required string fields
+        for field_name in ('voyage_number', 'date', 'port', 'terminal'):
+            if field_name not in data:
+                raise ValueError(f"Missing required field: '{field_name}'")
+            if not isinstance(data[field_name], str):
+                raise ValueError(f"Field '{field_name}' must be a string, got {type(data[field_name]).__name__}")
+        
+        # VEF range check (if present)
+        vef = data.get('vef', 1.0)
+        try:
+            vef = float(vef)
+        except (TypeError, ValueError):
+            raise ValueError(f"VEF must be a number, got: {vef!r}")
+        if not (0.5 <= vef <= 2.0):
+            raise ValueError(f"VEF {vef} is outside valid range [0.5, 2.0]")
+        
+        # Drafts range check (if present)
+        if 'drafts' in data:
+            drafts = data['drafts']
+            if not isinstance(drafts, dict):
+                raise ValueError(f"Drafts must be a dictionary, got {type(drafts).__name__}")
+            for draft_key in ('aft', 'fwd'):
+                val = drafts.get(draft_key, 0.0)
+                try:
+                    val = float(val)
+                except (TypeError, ValueError):
+                    raise ValueError(f"Draft '{draft_key}' must be a number, got: {val!r}")
+                if not (0.0 <= val <= 30.0):
+                    raise ValueError(f"Draft '{draft_key}' value {val} is outside valid range [0.0, 30.0]")
+        
+        # Type checks for collections
+        if 'tank_readings' in data and not isinstance(data['tank_readings'], dict):
+            raise ValueError(f"'tank_readings' must be a dictionary, got {type(data['tank_readings']).__name__}")
+        if 'parcels' in data and not isinstance(data['parcels'], list):
+            raise ValueError(f"'parcels' must be a list, got {type(data['parcels']).__name__}")
+    
     @classmethod
     def from_dict(cls, data: dict) -> 'Voyage':
-        """Create voyage from dictionary."""
+        """Create voyage from dictionary.
+        
+        Raises:
+            ValueError: If data fails schema validation.
+        """
+        cls._validate_dict(data)
+        
         voyage = cls(
             voyage_number=data['voyage_number'],
             date=data['date'],

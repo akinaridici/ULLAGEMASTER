@@ -1,6 +1,12 @@
 """
 Interpolation utilities for ullage and trim table lookups.
 Provides linear and bi-linear interpolation functions.
+
+Performance notes:
+- linear_interpolate uses np.searchsorted for O(log n) lookups.
+  Tables are assumed pre-sorted ascending at load time.
+- bilinear_interpolate pre-builds a {(x, y): z} dict for O(1) corner lookups
+  instead of 4 full DataFrame scans per call.
 """
 
 import numpy as np
@@ -13,7 +19,7 @@ def linear_interpolate(table: pd.DataFrame, x_col: str, y_col: str, x_value: flo
     Perform linear interpolation on a table.
     
     Args:
-        table: DataFrame with at least two columns
+        table: DataFrame with at least two columns (must be sorted ascending by x_col)
         x_col: Column name for x values (e.g., 'ullage_cm')
         y_col: Column name for y values (e.g., 'volume_m3')
         x_value: The x value to interpolate
@@ -27,42 +33,44 @@ def linear_interpolate(table: pd.DataFrame, x_col: str, y_col: str, x_value: flo
     x_arr = table[x_col].values
     y_arr = table[y_col].values
     
-    # Sort by x_arr to ensure binary search logic (np.where/searchsorted) works correctly
-    # This handles descending data (e.g. Reverse lookup: Volume -> Ullage)
+    # Ensure ascending order for searchsorted.
+    # Tables should be pre-sorted at load time, but reverse_interpolate
+    # swaps columns which may produce descending x values.
     if len(x_arr) > 1 and x_arr[0] > x_arr[-1]:
-        # If strictly descending, simple reversal is faster than full sort
-        # But argsort is safer for mixed/unsorted data
-        idx = np.argsort(x_arr)
-        x_arr = x_arr[idx]
-        y_arr = y_arr[idx]
-    elif len(x_arr) > 1 and x_arr.min() < x_arr[0]: 
-        # Detect unsorted data generally and sort it
-        idx = np.argsort(x_arr)
-        x_arr = x_arr[idx]
-        y_arr = y_arr[idx]
+        x_arr = x_arr[::-1]
+        y_arr = y_arr[::-1]
     
-    # Check bounds - Extrapolation is NOT supported for safety
-    if x_value < x_arr.min() or x_value > x_arr.max():
-        raise ValueError(f"Value {x_value} is outside table range [{x_arr.min()}, {x_arr.max()}]")
+    x_min, x_max = x_arr[0], x_arr[-1]
     
-    # Find exact match
-    if x_value in x_arr:
-        idx = np.where(x_arr == x_value)[0][0]
+    # Check bounds — extrapolation is NOT supported for safety
+    if x_value < x_min or x_value > x_max:
+        raise ValueError(f"Value {x_value} is outside table range [{x_min}, {x_max}]")
+    
+    # Use searchsorted to find insertion point in O(log n)
+    idx = np.searchsorted(x_arr, x_value, side='right')
+    
+    # Exact match at the last element
+    if idx >= len(x_arr):
+        return float(y_arr[-1])
+    
+    # Exact match check
+    if idx > 0 and x_arr[idx - 1] == x_value:
+        return float(y_arr[idx - 1])
+    if x_arr[idx] == x_value:
         return float(y_arr[idx])
     
-    # Find surrounding values (lower and upper bounds)
-    lower_idx = np.where(x_arr <= x_value)[0][-1]
-    upper_idx = np.where(x_arr >= x_value)[0][0]
+    # Interpolate between x_arr[idx-1] and x_arr[idx]
+    lower_idx = idx - 1
+    upper_idx = idx
     
     x0, x1 = x_arr[lower_idx], x_arr[upper_idx]
     y0, y1 = y_arr[lower_idx], y_arr[upper_idx]
     
-    # Linear interpolation formula: y = y0 + (x - x0) * (y1 - y0) / (x1 - x0)
     # Avoid division by zero
     if x1 == x0:
         return float(y0)
     
-    # Calculate interpolated value
+    # Linear interpolation formula: y = y0 + (x - x0) * (y1 - y0) / (x1 - x0)
     y_value = y0 + (x_value - x0) * (y1 - y0) / (x1 - x0)
     return float(y_value)
 
@@ -117,39 +125,38 @@ def bilinear_interpolate(
         - If y_value is outside the table range, it uses the nearest boundary y.
         This ensures the function always returns a safe approximation rather than raising an error.
     """
-    x_arr = table[x_col].unique()
-    y_arr = table[y_col].unique()
+    # Build sorted unique arrays and a lookup dict for O(1) corner access.
+    # This replaces 4 full DataFrame boolean mask scans per call.
+    x_arr = np.sort(table[x_col].unique())
+    y_arr = np.sort(table[y_col].unique())
     
-    x_arr = np.sort(x_arr)
-    y_arr = np.sort(y_arr)
+    # Pre-build {(x, y): z} lookup dict
+    z_lookup = {}
+    for row in table.itertuples(index=False):
+        z_lookup[(getattr(row, x_col), getattr(row, y_col))] = getattr(row, z_col)
     
     # Clamp to bounds
-    x_value = np.clip(x_value, x_arr.min(), x_arr.max())
-    y_value = np.clip(y_value, y_arr.min(), y_arr.max())
+    x_value = np.clip(x_value, x_arr[0], x_arr[-1])
+    y_value = np.clip(y_value, y_arr[0], y_arr[-1])
     
-    # Find surrounding x values
-    x_lower_vals = x_arr[x_arr <= x_value]
-    x_upper_vals = x_arr[x_arr >= x_value]
-    x0 = x_lower_vals[-1] if len(x_lower_vals) > 0 else x_arr[0]
-    x1 = x_upper_vals[0] if len(x_upper_vals) > 0 else x_arr[-1]
+    # Find surrounding x values using searchsorted O(log n)
+    x_idx = np.searchsorted(x_arr, x_value, side='right')
+    x_idx = min(x_idx, len(x_arr) - 1)
+    x1 = x_arr[x_idx]
+    x0 = x_arr[max(x_idx - 1, 0)]
+    # If exact match, x0 == x1 is fine (t will be 0)
     
-    # Find surrounding y values
-    y_lower_vals = y_arr[y_arr <= y_value]
-    y_upper_vals = y_arr[y_arr >= y_value]
-    y0 = y_lower_vals[-1] if len(y_lower_vals) > 0 else y_arr[0]
-    y1 = y_upper_vals[0] if len(y_upper_vals) > 0 else y_arr[-1]
+    # Find surrounding y values using searchsorted O(log n)
+    y_idx = np.searchsorted(y_arr, y_value, side='right')
+    y_idx = min(y_idx, len(y_arr) - 1)
+    y1 = y_arr[y_idx]
+    y0 = y_arr[max(y_idx - 1, 0)]
     
-    # Get the four corner values
-    def get_z(x, y):
-        mask = (table[x_col] == x) & (table[y_col] == y)
-        if mask.any():
-            return table.loc[mask, z_col].values[0]
-        return 0.0
-    
-    z00 = get_z(x0, y0)
-    z01 = get_z(x0, y1)
-    z10 = get_z(x1, y0)
-    z11 = get_z(x1, y1)
+    # Get the four corner values via O(1) dict lookup
+    z00 = z_lookup.get((x0, y0), 0.0)
+    z01 = z_lookup.get((x0, y1), 0.0)
+    z10 = z_lookup.get((x1, y0), 0.0)
+    z11 = z_lookup.get((x1, y1), 0.0)
     
     # Bilinear interpolation
     if x1 == x0:
@@ -165,3 +172,4 @@ def bilinear_interpolate(
     z = (1 - t) * (1 - u) * z00 + t * (1 - u) * z10 + (1 - t) * u * z01 + t * u * z11
     
     return float(z)
+

@@ -141,50 +141,14 @@ class MainWindow(QMainWindow):
         self._init_default_data()
     
     def _get_reports_dir(self) -> str:
-        """Get the absolute path to the REPORTS directory.
-        
-        Supports PyInstaller frozen EXE and network shares.
-        """
-        import sys
-        if getattr(sys, 'frozen', False):
-            # Running as frozen executable - use EXE location
-            root = Path(sys.executable).parent
-        else:
-            # src/ui -> src -> root
-            root = Path(__file__).parent.parent.parent
-        
-        reports_dir = root / "REPORTS"
-        try:
-            reports_dir.mkdir(exist_ok=True)
-        except Exception:
-            # Fallback to temp if can't create
-            import tempfile
-            reports_dir = Path(tempfile.gettempdir()) / "UllageMaster_Reports"
-            reports_dir.mkdir(exist_ok=True)
-        return str(reports_dir)
+        """Get the absolute path to the REPORTS directory."""
+        from utils.paths import get_reports_dir
+        return str(get_reports_dir())
 
     def _get_voyages_dir(self) -> str:
-        """Get the absolute path to the VOYAGES directory.
-        
-        Supports PyInstaller frozen EXE and network shares.
-        """
-        import sys
-        if getattr(sys, 'frozen', False):
-            # Running as frozen executable - use EXE location
-            root = Path(sys.executable).parent
-        else:
-            # src/ui -> src -> root
-            root = Path(__file__).parent.parent.parent
-        
-        voyages_dir = root / "VOYAGES"
-        try:
-            voyages_dir.mkdir(exist_ok=True)
-        except Exception:
-            # Fallback to temp if can't create
-            import tempfile
-            voyages_dir = Path(tempfile.gettempdir()) / "UllageMaster_Voyages"
-            voyages_dir.mkdir(exist_ok=True)
-        return str(voyages_dir)
+        """Get the absolute path to the VOYAGES directory."""
+        from utils.paths import get_voyages_dir
+        return str(get_voyages_dir())
 
     def _update_last_dir(self, filepath: str):
         """Update last used directory in settings."""
@@ -199,16 +163,6 @@ class MainWindow(QMainWindow):
         # or implementing custom geometry saving if needed.
         pass
 
-    def closeEvent(self, event):
-        """Save settings on exit."""
-        # Save last tab
-        self.config.set_int("General", "last_tab", self.tabs.currentIndex())
-        
-        # Widgets save their own state via ConfigManager now
-        if hasattr(self, 'history_tab'):
-            self.history_tab.save_state() # Assuming it has this method
-            
-        event.accept()
     
     def _create_menu(self):
         """Create menu bar."""
@@ -354,8 +308,12 @@ class MainWindow(QMainWindow):
         help_menu.addAction(about_action)
 
     def closeEvent(self, event):
-        """Handle close event."""
-        # Save explorer state
+        """Save all application state on exit."""
+        # Save last active tab
+        if hasattr(self, 'tab_widget'):
+            self.config.set_int("General", "last_tab", self.tab_widget.currentIndex())
+        
+        # Save widget states
         if hasattr(self, 'explorer_tab'):
             self.explorer_tab.save_state()
             
@@ -660,18 +618,19 @@ class MainWindow(QMainWindow):
                 total_capacity
             )
         
-        # Sync colors to Voyage.parcels (Stowage → Ullage)
-        self._sync_stowage_colors_to_voyage()
+        # Sync colors and density to Voyage.parcels (Stowage → Ullage)
+        self._sync_stowage_to_voyage()
     
-    def _sync_stowage_colors_to_voyage(self):
+    def _sync_stowage_to_voyage(self):
         """
-        Sync cargo colors from StowagePlan to Voyage parcels.
+        Sync cargo data from StowagePlan to Voyage parcels.
         
-        Maps StowageCargo.custom_color → Parcel.color by matching:
-        - cargo_type → parcel.name
-        - receiver → parcel.receiver
+        Maps StowageCargo → Parcel by matching (cargo_type, receiver):
+        - custom_color → Parcel.color
+        - density → Parcel.density_vac → TankReading.density_vac
         
-        This ensures color changes in Stowage tab reflect in Ullage tab.
+        When density changes, also triggers recalculation on affected tanks
+        so VCF/GSV/MT cascade correctly.
         """
         if not hasattr(self, 'stowage_plan') or not self.stowage_plan:
             return
@@ -683,26 +642,59 @@ class MainWindow(QMainWindow):
         # Get current colors from cargo legend (always accurate)
         cargo_colors = self.cargo_legend.get_cargo_colors() if hasattr(self, 'cargo_legend') else []
         
-        # Build a map: (cargo_type, receiver) -> color
-        cargo_color_map = {}
+        # Build a map: (cargo_type, receiver) -> {color, density}
+        cargo_data_map = {}
         for i, cargo in enumerate(self.stowage_plan.cargo_requests):
             color = cargo_colors[i] if i < len(cargo_colors) else cargo.custom_color
-            if color:
-                key = (cargo.cargo_type.upper().strip(), cargo.get_receiver_names().upper().strip())
-                cargo_color_map[key] = color
+            key = (cargo.cargo_type.upper().strip(), cargo.get_receiver_names().upper().strip())
+            cargo_data_map[key] = {
+                'color': color,
+                'density': cargo.density,
+            }
         
         # Update matching parcels
-        updated = False
+        color_updated = False
+        density_updated_parcels = []  # Track which parcel IDs had density changes
+        
         for parcel in self.voyage.parcels:
             key = (parcel.name.upper().strip(), parcel.receiver.upper().strip())
-            if key in cargo_color_map:
-                new_color = cargo_color_map[key]
-                if parcel.color != new_color:
-                    parcel.color = new_color
-                    updated = True
+            if key not in cargo_data_map:
+                continue
+            
+            cargo_info = cargo_data_map[key]
+            
+            # Sync color
+            if cargo_info['color'] and parcel.color != cargo_info['color']:
+                parcel.color = cargo_info['color']
+                color_updated = True
+            
+            # Sync density
+            new_density = cargo_info['density']
+            if new_density and new_density > 0 and parcel.density_vac != new_density:
+                parcel.density_vac = new_density
+                density_updated_parcels.append(parcel.id)
         
-        # Refresh Ullage grid if colors changed
-        if updated and hasattr(self, 'tank_table'):
+        # Propagate density to TankReadings and recalculate
+        if density_updated_parcels:
+            for tank_id, reading in self.voyage.tank_readings.items():
+                if reading.parcel_id in density_updated_parcels:
+                    parcel = self._get_parcel(reading.parcel_id)
+                    if parcel:
+                        reading.density_vac = parcel.density_vac
+            
+            # Recalculate all affected rows and refresh grid
+            if hasattr(self, 'tank_table'):
+                self._populate_grid()
+                # Trigger recalculation for each affected row
+                for row in range(self.tank_table.rowCount()):
+                    tank_id_item = self.tank_table.item(row, 0)
+                    if tank_id_item:
+                        tid = tank_id_item.data(Qt.ItemDataRole.UserRole)
+                        reading = self.voyage.tank_readings.get(tid)
+                        if reading and reading.parcel_id in density_updated_parcels:
+                            self._recalculate_tank(row, tid)
+        elif color_updated and hasattr(self, 'tank_table'):
+            # Only colors changed, just refresh grid (no recalc needed)
             self._populate_grid()
     
     def _sync_voyage_colors_to_stowage(self):
@@ -1889,21 +1881,9 @@ class MainWindow(QMainWindow):
             self.ship_config = ShipConfig.create_empty("New Ship")
     
     def _get_config_path(self) -> Path:
-        """Get path to ship config file. Supports PyInstaller EXE."""
-        import sys
-        if getattr(sys, 'frozen', False):
-            root = Path(sys.executable).parent
-        else:
-            # Get the data/config directory relative to src
-            src_dir = Path(__file__).parent.parent
-            root = src_dir.parent
-        
-        config_dir = root / "data" / "config"
-        try:
-            config_dir.mkdir(parents=True, exist_ok=True)
-        except Exception:
-            pass  # May fail on read-only share
-        return config_dir / "ship_config.json"
+        """Get path to ship config file."""
+        from utils.paths import get_config_dir
+        return get_config_dir() / "ship_config.json"
     
     def _load_tank_tables(self):
         """Load ullage and trim tables for all tanks from embedded JSON data."""
@@ -3395,12 +3375,9 @@ class MainWindow(QMainWindow):
         # Prompt for save location - use REPORTS folder by default
         default_name = f"{self.voyage.voyage_number.replace('/', '-')}_report.xlsm"
         
-        # Determine REPORTS folder (relative to EXE or script location)
-        import sys
-        if getattr(sys, 'frozen', False):
-            app_dir = Path(sys.executable).parent
-        else:
-            app_dir = Path(__file__).parent.parent.parent
+        # Determine REPORTS folder
+        from utils.paths import get_app_root
+        app_dir = get_app_root()
         
         reports_dir = app_dir / "REPORTS"
         

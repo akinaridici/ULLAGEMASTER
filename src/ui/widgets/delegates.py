@@ -13,7 +13,7 @@ from PyQt6.QtCore import Qt, QTimer
 class TankGridDelegate(QStyledItemDelegate):
     """
     Delegate for the main tank grid to draw separators between tank pairs.
-    Draws a thick bottom border every 2 rows.
+    Draws a thick bottom border every 2 rows to group P+S tanks visually.
     """
     def paint(self, painter, option, index):
         # Manually paint background if it exists in data
@@ -26,15 +26,14 @@ class TankGridDelegate(QStyledItemDelegate):
         
         super().paint(painter, option, index)
         
-        # Draw thick bottom line every 2 rows (at index 1, 3, 5...)
-        # Assuming 0-based index: 0,1 is first pair. So draw after index 1.
+        # Draw thick bottom line every 2 rows to separate tank pairs.
+        # Row pairs: (0,1)=Tank1, (2,3)=Tank2, etc.
+        # Draw separator AFTER the S tank (odd rows: 1, 3, 5, ...)
         if (index.row() + 1) % 2 == 0:
             painter.save()
-            # Draw line at bottom
-            # Use a dark gray/black color for visibility
-            painter.setPen(QPen(QColor("#475569"), 2)) 
+            # Bright silver line, 3px thick — clearly separates groups
+            painter.setPen(QPen(QColor("#94A3B8"), 3))
             rect = option.rect
-            # Draw line on the bottom edge
             painter.drawLine(rect.bottomLeft(), rect.bottomRight())
             painter.restore()
 

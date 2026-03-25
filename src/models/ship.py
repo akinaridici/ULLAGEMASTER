@@ -110,9 +110,34 @@ class ShipConfig:
     
     @classmethod
     def load_from_json(cls, filepath: str) -> 'ShipConfig':
-        """Load configuration from JSON file."""
+        """Load configuration from JSON file.
+        
+        Raises:
+            ValueError: If the configuration data is invalid.
+            FileNotFoundError: If the file does not exist.
+        """
         with open(filepath, 'r', encoding='utf-8') as f:
             data = json.load(f)
+        
+        # --- Schema validation ---
+        if not isinstance(data, dict):
+            raise ValueError("Ship config must be a JSON object")
+        
+        # ship_name is required
+        if 'ship_name' not in data or not isinstance(data['ship_name'], str) or not data['ship_name'].strip():
+            raise ValueError("Missing or empty required field: 'ship_name'")
+        
+        # tanks must be a non-empty list
+        tanks_data = data.get('tanks', [])
+        if not isinstance(tanks_data, list):
+            raise ValueError(f"'tanks' must be a list, got {type(tanks_data).__name__}")
+        if len(tanks_data) == 0:
+            raise ValueError("Ship configuration must have at least one tank")
+        
+        # Each tank must have an 'id'
+        for i, tank_data in enumerate(tanks_data):
+            if not isinstance(tank_data, dict) or 'id' not in tank_data:
+                raise ValueError(f"Tank at index {i} is missing required 'id' field")
         
         # Handle backward compatibility: generate trim_values from min/max/step if not present
         # Old config files only had trim_min, trim_max, and trim_step

@@ -71,15 +71,8 @@ class ConfigManager:
 
     def _get_config_path(self) -> Path:
         """Determine path to UllageMaster.ini."""
-        if getattr(sys, 'frozen', False):
-            base_dir = Path(sys.executable).parent
-        else:
-            # src/utils -> src -> root
-            base_dir = Path(__file__).parent.parent.parent
-            
-        config_dir = base_dir / "data" / "config"
-        config_dir.mkdir(parents=True, exist_ok=True)
-        return config_dir / "UllageMaster.ini"
+        from utils.paths import get_config_dir
+        return get_config_dir() / "UllageMaster.ini"
 
     def _load(self):
         """Load configuration from file or create with defaults."""

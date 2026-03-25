@@ -206,14 +206,9 @@ class ProtestPDFReport:
         logo_obj = None
         
         if logo_mode == "IMAGE":
-            # Get logo path
-            import sys
-            from pathlib import Path
-            if getattr(sys, 'frozen', False):
-                app_root = Path(sys.executable).parent
-            else:
-                app_root = Path(__file__).parent.parent.parent
-            logo_path = str(app_root / 'data' / 'config' / 'company_logo' / 'LOGO.PNG')
+            # Get logo path from centralized paths module
+            from utils.paths import get_logo_path
+            logo_path = str(get_logo_path())
             
             if os.path.exists(logo_path):
                 try:

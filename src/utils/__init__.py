@@ -2,6 +2,7 @@
 Utility modules for UllageMaster.
 """
 
+from .paths import get_app_root
 from .template_generator import generate_ship_template, get_template_filename
 from .template_parser import parse_ship_template, TemplateParseResult
 from .data_manager import (
@@ -20,6 +21,7 @@ from .decimal_utils import (
 )
 
 __all__ = [
+    'get_app_root',
     'generate_ship_template',
     'get_template_filename', 
     'parse_ship_template',

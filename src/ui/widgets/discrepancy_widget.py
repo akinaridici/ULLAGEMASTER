@@ -968,21 +968,11 @@ class DiscrepancyWidget(QWidget):
                         pass
         
         # Generate filename and get save location from user
-        import sys
         from pathlib import Path
         from PyQt6.QtWidgets import QFileDialog
+        from utils.paths import get_reports_dir
         
-        # Determine REPORTS folder (supports frozen EXE)
-        if getattr(sys, 'frozen', False):
-            app_dir = Path(sys.executable).parent
-        else:
-            app_dir = Path(__file__).parent.parent.parent.parent  # widgets -> ui -> src -> root
-        
-        reports_dir = app_dir / "REPORTS"
-        try:
-            reports_dir.mkdir(exist_ok=True)
-        except Exception:
-            reports_dir = Path.home()
+        reports_dir = get_reports_dir()
         
         safe_name = f"{parcel.name}_{parcel.receiver}".replace(" ", "_").replace("/", "-")
         default_filename = f"{self.voyage.voyage_number}_{safe_name}_{operation_type}_Protest.pdf"
@@ -1145,21 +1135,11 @@ class DiscrepancyWidget(QWidget):
                         pass
         
         # Generate filename and get save location from user
-        import sys
         from pathlib import Path
         from PyQt6.QtWidgets import QFileDialog
+        from utils.paths import get_reports_dir
         
-        # Determine REPORTS folder (supports frozen EXE)
-        if getattr(sys, 'frozen', False):
-            app_dir = Path(sys.executable).parent
-        else:
-            app_dir = Path(__file__).parent.parent.parent.parent  # widgets -> ui -> src -> root
-        
-        reports_dir = app_dir / "REPORTS"
-        try:
-            reports_dir.mkdir(exist_ok=True)
-        except Exception:
-            reports_dir = Path.home()
+        reports_dir = get_reports_dir()
         
         default_filename = f"{self.voyage.voyage_number}_ALL_{operation_type}_Protest.pdf"
         initial_path = str(reports_dir / default_filename)

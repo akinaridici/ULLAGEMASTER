@@ -34,15 +34,11 @@ class HistoryManager:
         Args:
             ini_path: Path to INI file. Defaults to data/config/report_history.ini
         """
-        import sys
+
         
         if ini_path is None:
-            # Determine base directory (supports frozen EXE and network shares)
-            if getattr(sys, 'frozen', False):
-                base_dir = Path(sys.executable).parent
-            else:
-                base_dir = Path(__file__).parent.parent.parent  # src/core -> src -> project root
-            self.ini_path = base_dir / "data" / "config" / "report_history.ini"
+            from utils.paths import get_config_dir
+            self.ini_path = get_config_dir() / "report_history.ini"
         else:
             self.ini_path = Path(ini_path)
         
