@@ -4,6 +4,7 @@ Suitable for email, terminal printing, and legacy systems.
 """
 
 from typing import TYPE_CHECKING, List
+from i18n import t
 
 if TYPE_CHECKING:
     from ..models.voyage import Voyage
@@ -94,7 +95,7 @@ def export_ascii_report(voyage: 'Voyage', filepath: str) -> bool:
         
         # Officers
         lines.append("")
-        lines.append(f"Chief Officer: {voyage.chief_officer:<30} Master: {voyage.master}")
+        lines.append(f"{t('footer.chief_officer')}: {voyage.chief_officer:<30} {t('footer.master')}: {voyage.master}")
         lines.append("")
         
         # Legend

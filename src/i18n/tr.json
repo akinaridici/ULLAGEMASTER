@@ -58,7 +58,7 @@
         "total_mt": "Toplam MT",
         "discrepancy_loading": "Fark (Yükleme)",
         "discrepancy_discharging": "Fark (Boşaltma)",
-        "chief_officer": "Birinci Kaptan",
+        "chief_officer": "2nci Kaptan",
         "master": "Kaptan",
         "stowage_plan": "İstifleme Planı",
         "total_ullage_report": "Toplam Ullage Raporu"
@@ -96,7 +96,8 @@
         "export_success": "Dışa aktarma başarılı",
         "export_error": "Dışa aktarma sırasında hata",
         "invalid_input": "Geçersiz giriş değeri",
-        "missing_table": "Bu tank için ullage tablosu yüklenmemiş"
+        "missing_table": "Bu tank için ullage tablosu yüklenmemiş",
+        "admin_permission": "Kaptan/2nci Kaptan'dan izin alınız ve lütfen Yönetici şifresini giriniz!"
     },
     "units": {
         "cm": "cm",

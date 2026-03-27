@@ -18,6 +18,8 @@ try:
 except ImportError:
     REPORTLAB_AVAILABLE = False
 
+from i18n import t
+
 if TYPE_CHECKING:
     from ..models.voyage import Voyage
 
@@ -196,7 +198,7 @@ def export_to_pdf(voyage: 'Voyage', filepath: str) -> bool:
         # Officers
         elements.append(Spacer(1, 1*cm))
         officers_data = [
-            ["Chief Officer:", voyage.chief_officer, "Master:", voyage.master]
+            [f"{t('footer.chief_officer')}:", voyage.chief_officer, f"{t('footer.master')}:", voyage.master]
         ]
         officers_table = Table(officers_data, colWidths=[3*cm, 6*cm, 3*cm, 6*cm])
         # Set font for officers table

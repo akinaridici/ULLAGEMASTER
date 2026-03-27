@@ -26,16 +26,20 @@ class TankGridDelegate(QStyledItemDelegate):
         
         super().paint(painter, option, index)
         
-        # Draw thick bottom line every 2 rows to separate tank pairs.
-        # Row pairs: (0,1)=Tank1, (2,3)=Tank2, etc.
-        # Draw separator AFTER the S tank (odd rows: 1, 3, 5, ...)
+        # Row pairs: 0=1P, 1=1S, 2=2P, 3=2S, etc.
+        # Draw a fine separator after P tanks, and a thick one after S tanks (pairs).
+        painter.save()
+        rect = option.rect
+        
         if (index.row() + 1) % 2 == 0:
-            painter.save()
-            # Bright silver line, 3px thick — clearly separates groups
+            # S Tank: Thick separator (3px) — separates tank groups
             painter.setPen(QPen(QColor("#94A3B8"), 3))
-            rect = option.rect
-            painter.drawLine(rect.bottomLeft(), rect.bottomRight())
-            painter.restore()
+        else:
+            # P Tank: Fine separator (1px) — subtle line between P and S
+            painter.setPen(QPen(QColor("#475569"), 1))
+            
+        painter.drawLine(rect.bottomLeft(), rect.bottomRight())
+        painter.restore()
 
 
 class ComboBoxDelegate(QStyledItemDelegate):

@@ -19,6 +19,7 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import traceback
+from i18n import t
 
 if TYPE_CHECKING:
     from models.voyage import Voyage
@@ -719,7 +720,7 @@ def generate_stowage_plan_pdf(
         if chief_officer:
             c.setFillColor(colors.black)
             c.setFont(font_norm, 9)
-            c.drawRightString(width - margin_x, margin_y + 0.8*cm, "Chief Officer:")
+            c.drawRightString(width - margin_x, margin_y + 0.8*cm, f"{t('footer.chief_officer')}:")
             c.setFont(font_bold, 10)
             c.drawRightString(width - margin_x, margin_y + 0.2*cm, chief_officer)
         

@@ -5,7 +5,8 @@ Displays parcel cards with calculated discrepancies for Loading and Discharging 
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
-    QGroupBox, QScrollArea, QFrame, QGridLayout, QSizePolicy, QMenu
+    QGroupBox, QScrollArea, QFrame, QGridLayout, QSizePolicy, QMenu,
+    QApplication
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QAction
@@ -50,12 +51,51 @@ class ParcelDiscrepancyCard(QFrame):
         self._init_ui()
     
     def _show_context_menu(self, pos):
-        """Show context menu with Protest option."""
+        """Show context menu with Protest and Copy options."""
         menu = QMenu(self)
-        protest_action = QAction("📋 Protest", self)
+        
+        protest_action = QAction("\uD83D\uDCCB Protest", self)
         protest_action.triggered.connect(lambda: self.protest_requested.emit(self.parcel.id, self.operation_type))
         menu.addAction(protest_action)
+        
+        copy_action = QAction("\uD83D\uDCC4 Copy", self)
+        copy_action.triggered.connect(self._copy_to_clipboard)
+        menu.addAction(copy_action)
+        
         menu.exec(self.mapToGlobal(pos))
+    
+    def _get_card_text(self) -> str:
+        """Extract card labels and values as text."""
+        ship_with_vef = self.ship_figure / (self.vef if self.vef else 1.0)
+        bl = self.bl_figure
+        ship_wo = self.ship_figure
+        
+        diff_wo = ship_wo - bl
+        diff_pct_wo = (diff_wo / bl * 1000) if bl != 0 else 0.0
+        diff_with = ship_with_vef - bl
+        diff_pct_with = (diff_with / bl * 1000) if bl != 0 else 0.0
+        
+        header_text = f"{self.parcel.name}"
+        if self.parcel.receiver:
+            header_text += f" - {self.parcel.receiver}"
+            
+        lines = [
+            header_text,
+            "-" * len(header_text),
+            f"B/L Figure: {bl:.3f}",
+            f"Ship Figure W/O VEF: {ship_wo:.3f}",
+            f"Quantity Difference W/O VEF: {diff_wo:.3f}",
+            f"Difference W/O VEF \u2030: {diff_pct_wo:.3f}",
+            f"Ship Figure with VEF: {ship_with_vef:.3f}",
+            f"Quantity Difference with VEF: {diff_with:.3f}",
+            f"Difference with VEF \u2030: {diff_pct_with:.3f}"
+        ]
+        return "\n".join(lines)
+
+    def _copy_to_clipboard(self):
+        """Copy card text to clipboard."""
+        text = self._get_card_text()
+        QApplication.clipboard().setText(text)
     
     def _get_contrast_color(self, hex_color: str) -> str:
         """Get contrasting text color based on background brightness."""
@@ -313,11 +353,17 @@ class DischargingDiscrepancyCard(QFrame):
         self._init_ui()
     
     def _show_context_menu(self, pos):
-        """Show context menu with Protest option."""
+        """Show context menu with Protest and Copy options."""
         menu = QMenu(self)
-        protest_action = QAction("📋 Protest", self)
+        
+        protest_action = QAction("\uD83D\uDCCB Protest", self)
         protest_action.triggered.connect(lambda: self.protest_requested.emit(self.parcel.id, self.operation_type))
         menu.addAction(protest_action)
+        
+        copy_action = QAction("\uD83D\uDCC4 Copy", self)
+        copy_action.triggered.connect(self._copy_to_clipboard)
+        menu.addAction(copy_action)
+        
         menu.exec(self.mapToGlobal(pos))
     
     def _get_contrast_color(self, hex_color: str) -> str:
@@ -325,6 +371,49 @@ class DischargingDiscrepancyCard(QFrame):
         c = QColor(hex_color)
         lum = 0.2126 * c.redF() + 0.7152 * c.greenF() + 0.0722 * c.blueF()
         return "#000000" if lum > 0.5 else "#ffffff"
+    
+    def _get_card_text(self) -> str:
+        """Extract card labels and values as text."""
+        bl = self.bl_figure
+        ship_load = self.ship_loading
+        ship_arrival = self.ship_arrival
+        vef = self.vef if self.vef != 0 else 1.0
+        ship_arrival_vef = ship_arrival / vef
+        transit_loss = ship_arrival - ship_load
+        arrival_bl_wo_pct = ((ship_arrival - bl) / bl * 1000) if bl != 0 else 0.0
+        arrival_bl_vef_pct = ((ship_arrival_vef - bl) / bl * 1000) if bl != 0 else 0.0
+        outturn = self.outturn
+        outturn_bl_diff = outturn - bl
+        outturn_bl_diff_pct = (outturn_bl_diff / bl * 1000) if bl != 0 else 0.0
+        outturn_arrival_diff = outturn - ship_arrival_vef
+        outturn_arrival_diff_pct = (outturn_arrival_diff / ship_arrival_vef * 1000) if ship_arrival_vef != 0 else 0.0
+        
+        header_text = f"{self.parcel.name}"
+        if self.parcel.receiver:
+            header_text += f" - {self.parcel.receiver}"
+            
+        lines = [
+            header_text,
+            "-" * len(header_text),
+            f"1. B/L Figure: {bl:.3f}",
+            f"2. Ship Figure Loading Port: {ship_load:.3f}",
+            f"3. Ship Arrival Figure: {ship_arrival:.3f}",
+            f"4. Ship Arrival with VEF: {ship_arrival_vef:.3f}",
+            f"5. Transit Loss: {transit_loss:.3f}",
+            f"6. Arrival-BL diff W/O VEF \u2030: {arrival_bl_wo_pct:.3f}",
+            f"7. Arrival-BL diff VEF \u2030: {arrival_bl_vef_pct:.3f}",
+            f"8. OUTTURN FIGURE: {outturn:.3f}",
+            f"9. OUTTURN-BL DIFF: {outturn_bl_diff:.3f}",
+            f"10. OUTTURN-BL DIFF \u2030: {outturn_bl_diff_pct:.3f}",
+            f"11. OUTTURN-SHIP ARRIVAL DIFF: {outturn_arrival_diff:.3f}",
+            f"12. OUTTURN-ARRIVAL DIFF \u2030: {outturn_arrival_diff_pct:.3f}"
+        ]
+        return "\n".join(lines)
+
+    def _copy_to_clipboard(self):
+        """Copy card text to clipboard."""
+        text = self._get_card_text()
+        QApplication.clipboard().setText(text)
     
     def _apply_permille_color(self, label: QLabel, value: float):
         """Apply color coding to permille labels."""
@@ -1019,12 +1108,38 @@ class DiscrepancyWidget(QWidget):
             QMessageBox.critical(self, "Error", f"Failed to generate protest letter:\n{e}")
     
     def _show_protest_all_menu(self, pos, widget, operation_type: str):
-        """Show context menu with Protest All option for group header."""
+        """Show context menu with Protest All and Copy All options for group header."""
         menu = QMenu(self)
+        
         protest_all_action = QAction("📋 Protest All", self)
         protest_all_action.triggered.connect(lambda: self._on_protest_all_requested(operation_type))
         menu.addAction(protest_all_action)
+        
+        copy_all_action = QAction("📄 Copy All", self)
+        copy_all_action.triggered.connect(lambda: self._on_copy_all_requested(operation_type))
+        menu.addAction(copy_all_action)
+        
         menu.exec(widget.mapToGlobal(pos))
+    
+    def _on_copy_all_requested(self, operation_type: str):
+        """Copy all cards in the section to clipboard."""
+        cards = self.loading_cards if operation_type == "loading" else self.discharging_cards
+        if not cards:
+            return
+            
+        all_text = []
+        # Sort by parcel name/id if needed, currently using dict order
+        for card in cards.values():
+            all_text.append(card._get_card_text())
+            
+        final_text = "\n" + ("=" * 40) + "\n\n"
+        final_text = final_text.join(all_text)
+        
+        # Add header for the whole copy
+        section_title = "LOADING OPERATIONS" if operation_type == "loading" else "DISCHARGING OPERATIONS"
+        header = f"=== {section_title} ===\n\n"
+        
+        QApplication.clipboard().setText(header + final_text)
     
     def _on_protest_all_requested(self, operation_type: str):
         """Handle protest all request - generate multi-page PDF with all parcels."""

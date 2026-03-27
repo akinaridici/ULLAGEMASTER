@@ -96,7 +96,8 @@
     "export_success": "Export completed successfully",
     "export_error": "Error during export",
     "invalid_input": "Invalid input value",
-    "missing_table": "Ullage table not loaded for this tank"
+    "missing_table": "Ullage table not loaded for this tank",
+    "admin_permission": "Ask for permission of the Master/Chief Officer and please enter Admin password!"
   },
   "units": {
     "cm": "cm",

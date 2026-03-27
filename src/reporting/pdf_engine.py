@@ -8,6 +8,7 @@ from reportlab.lib.units import mm
 
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from i18n import t
 
 class UllagePDFReport:
     """
@@ -371,7 +372,7 @@ class UllagePDFReport:
     def _build_footer(self):
         self.elements.append(Spacer(1, 2*mm))
         data = [
-             ["Signature, Master/Chief Officer", "Name in block letters", "Signature, Surveyor", "Name in block letters"],
+             [f"Signature, {t('footer.master')}/{t('footer.chief_officer')}", "Name in block letters", "Signature, Surveyor", "Name in block letters"],
              ["", "Harun Kurtuluş", "", ""] 
         ]
         # Total 275mm

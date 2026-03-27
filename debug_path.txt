@@ -1,5 +1,5 @@
-Frozen mode: False
-sys.executable: D:\ULLAGEMASTER\.venv\Scripts\python.exe
+Frozen mode: True
+sys.executable: D:\ULLAGEMASTER\UllageMaster.exe
 app_root: D:\ULLAGEMASTER
 data_dir: D:\ULLAGEMASTER\data
 data_dir exists: True

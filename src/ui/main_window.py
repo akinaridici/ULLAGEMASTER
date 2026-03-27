@@ -3548,7 +3548,7 @@ class MainWindow(QMainWindow):
                     QMessageBox.warning(
                         self, "Import Error",
                         "The selected file does not contain a valid ship configuration."
-                    )
+                )
             except Exception as e:
                 QMessageBox.critical(
                     self, "Import Error",
@@ -3568,8 +3568,7 @@ class MainWindow(QMainWindow):
             # Ask for Admin Password
             password, ok = QInputDialog.getText(
                 self, "Admin Password",
-                "Attention! Do you really want to reset all ullages, trim corrections?\n"
-                "Ask for permission of the Chief Officer and please enter Admin password!",
+                t("messages.admin_permission"),
                 QLineEdit.EchoMode.Password
             )
             

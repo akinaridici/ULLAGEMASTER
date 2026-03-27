@@ -123,7 +123,6 @@ QTableWidget {
 }
 QTableWidget::item {
     padding: 4px;
-    border-bottom: 1px solid #1e293b;
     background-color: transparent; /* Use delegate/model background */
 }
 QTableWidget::item:selected {
