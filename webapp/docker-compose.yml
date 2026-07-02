@@ -1,0 +1,20 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      # Change this on any real deployment:
+      ULLAGEMASTER_SECRET_KEY: ${ULLAGEMASTER_SECRET_KEY:-please-change-me-to-a-long-random-string}
+    volumes:
+      - ullagemaster-data:/srv/data
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  ullagemaster-data:

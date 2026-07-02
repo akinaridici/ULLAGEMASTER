@@ -1,0 +1,12 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+sqlalchemy>=2.0.30
+pydantic>=2.7.0
+pydantic[email]
+PyJWT>=2.8.0
+bcrypt>=4.1.0
+python-multipart>=0.0.9
+pandas>=2.0.0
+numpy>=1.26.0
+openpyxl>=3.1.0
+reportlab>=4.0.0
